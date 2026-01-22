@@ -5,28 +5,31 @@ import PlotManager from './components/PlotManager'
 
 function App() {
   const [currentFrame, setCurrentFrame] = useState(1)
-  const [allData, setAllData] = useState<{ frame_num: number; x: number; y: number }[]>([])
+  const [chunkData, setChunkData] = useState<{ frame_num: number; x: number; y: number }[]>([])
   const [isPlaying, setIsPlaying] = useState(true)
+  const [chunkRange, setChunkRange] = useState({ start: 1, end: 10 }) // Define chunk range
 
   const plotManager = new PlotManager()
 
-  // Fetch all frame data once
+  // Fetch data for the current chunk range
   useEffect(() => {
-    const fetchAllFrames = async () => {
+    const fetchChunkData = async () => {
       try {
-        const response = await fetch(`http://localhost:8000/data/frames`)
-        const allFrameData = await response.json()
-        setAllData(allFrameData)
+        const response = await fetch(
+          `http://localhost:8000/data/frames?start=${chunkRange.start}&end=${chunkRange.end}`
+        )
+        const frameData = await response.json()
+        setChunkData(frameData)
       } catch (error) {
-        console.error('Error fetching all frame data:', error)
+        console.error('Error fetching chunk data:', error)
       }
     }
 
-    fetchAllFrames()
-  }, [])
+    fetchChunkData()
+  }, [chunkRange]) // Refetch data when chunk range changes
 
   // Filter data for the current frame
-  const currentFrameData = allData.filter(point => point.frame_num === currentFrame)
+  const currentFrameData = chunkData.filter(point => point.frame_num === currentFrame)
 
   // Animation timer: auto-increment frame every second when playing, loop back to 1 after frame 50
   useEffect(() => {
@@ -34,13 +37,21 @@ function App() {
 
     const interval = setInterval(() => {
       setCurrentFrame(prev => {
-        if (prev >= 50) return 1
-        return prev + 1
+        const nextFrame = prev >= 50 ? 1 : prev + 1
+
+        // Update chunk range if the next frame is outside the current chunk
+        if (nextFrame < chunkRange.start || nextFrame > chunkRange.end) {
+          const newStart = Math.floor((nextFrame - 1) / 10) * 10 + 1
+          const newEnd = newStart + 9
+          setChunkRange({ start: newStart, end: newEnd })
+        }
+
+        return nextFrame
       })
     }, 1000)
 
     return () => clearInterval(interval)
-  }, [isPlaying])
+  }, [isPlaying, chunkRange])
 
   const handlePlotClick = (event: any) => {
     if (event.points && event.points.length > 0) {

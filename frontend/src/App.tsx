@@ -5,25 +5,28 @@ import PlotManager from './components/PlotManager'
 
 function App() {
   const [currentFrame, setCurrentFrame] = useState(1)
-  const [data, setData] = useState([])
+  const [allData, setAllData] = useState<{ frame_num: number; x: number; y: number }[]>([])
   const [isPlaying, setIsPlaying] = useState(true)
 
   const plotManager = new PlotManager()
 
-  // Fetch and update player positions when frame number changes
+  // Fetch all frame data once
   useEffect(() => {
-    const fetchFrame = async () => {
+    const fetchAllFrames = async () => {
       try {
-        const response = await fetch(`http://localhost:8000/data/frame/${currentFrame}`)
-        const frameData = await response.json()
-        setData(frameData)
+        const response = await fetch(`http://localhost:8000/data/frames`)
+        const allFrameData = await response.json()
+        setAllData(allFrameData)
       } catch (error) {
-        console.error(`Error fetching frame ${currentFrame}:`, error)
+        console.error('Error fetching all frame data:', error)
       }
     }
 
-    fetchFrame()
-  }, [currentFrame])
+    fetchAllFrames()
+  }, [])
+
+  // Filter data for the current frame
+  const currentFrameData = allData.filter(point => point.frame_num === currentFrame)
 
   // Animation timer: auto-increment frame every second when playing, loop back to 1 after frame 50
   useEffect(() => {
@@ -56,14 +59,14 @@ function App() {
       <Plot
         data={[
           {
-            x: data.map(point => point.x),
-            y: data.map(point => point.y),
+            x: currentFrameData.map(point => point.x),
+            y: currentFrameData.map(point => point.y),
             mode: 'markers',
             type: 'scatter',
             marker: { size: 10 },
           },
         ]}
-        layout={plotManager.getLayout(currentFrame)}
+        layout={plotManager.getLayout()}
         config={plotManager.getConfig()}
         onClick={handlePlotClick}
         onRelayout={(e: any) => {

@@ -1,36 +1,28 @@
-interface PlotLayout {
-  width: number
-  height: number
-  title: { text: string }
-  xaxis: { title: string; range: [number, number]; fixedrange: boolean }
-  yaxis: { title: string; range: [number, number]; fixedrange: boolean }
-  shapes: any[]
-  dragmode: string
-}
-
-interface PlotConfig {
-  modeBarButtonsToAdd: string[]
-}
+import type { Layout, Config } from 'plotly.js'
 
 class PlotManager {
-  private layout: PlotLayout
-  private config: PlotConfig
+  private layout: Partial<Layout>
+  private config: Partial<Config>
   private shapes: any[]
+  private isPlaying: boolean
+  private currentFrame: number
 
   constructor() {
     this.shapes = []
+    this.isPlaying = true
+    this.currentFrame = 1
 
     this.layout = {
       width: 800,
       height: 600,
       title: { text: 'Player Positions' },
       xaxis: {
-        title: 'X Coordinate',
+        title: { text: 'X Coordinate' }, // Updated to match Plotly's expected type
         range: [0, 100],
         fixedrange: true,
       },
       yaxis: {
-        title: 'Y Coordinate',
+        title: { text: 'Y Coordinate' }, // Updated to match Plotly's expected type
         range: [0, 100],
         fixedrange: true,
       },
@@ -46,20 +38,36 @@ class PlotManager {
         'drawcircle',
         'drawrect',
         'eraseshape',
-      ],
+      ] as any[], // Cast to `any[]` to satisfy the expected type
     }
   }
 
-  getLayout(currentFrame: number): PlotLayout {
+  getLayout(): Partial<Layout> {
     return {
       ...this.layout,
-      title: { text: `Player Positions - Frame ${currentFrame}` },
+      title: { text: `Player Positions - Frame ${this.currentFrame}` },
       shapes: this.shapes,
     }
   }
 
-  getConfig(): PlotConfig {
+  getConfig(): Partial<Config> {
     return this.config
+  }
+
+  getCurrentFrame(): number {
+    return this.currentFrame
+  }
+
+  setCurrentFrame(frame: number) {
+    this.currentFrame = frame
+  }
+
+  isAnimationPlaying(): boolean {
+    return this.isPlaying
+  }
+
+  toggleAnimation() {
+    this.isPlaying = !this.isPlaying
   }
 
   updateShapes(newShapes: any[]) {

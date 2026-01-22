@@ -23,3 +23,18 @@ async def get_frame_data(frame_number: int):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/frames")
+async def get_all_frame_data():
+    try:
+        if data_ingestor is None:
+            raise HTTPException(status_code=500, detail="DataIngestor not initialized")
+        
+        df = data_ingestor.load_data(data_ingestor.csv_path)
+        if df.empty:
+            raise HTTPException(status_code=404, detail="No data found")
+
+        return df.to_dict(orient="records")
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

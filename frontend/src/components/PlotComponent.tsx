@@ -18,9 +18,9 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ x, y }) => {
         },
       ]}
       layout={{
-        title: 'Scatter Plot',
-        xaxis: { title: 'X Axis' },
-        yaxis: { title: 'Y Axis' },
+        title: { text: 'Scatter Plot' }, // Updated to use an object
+        xaxis: { title: { text: 'X Axis' } }, // Updated to use an object
+        yaxis: { title: { text: 'Y Axis' } }, // Updated to use an object
         autosize: true,
       }}
     />

@@ -20,7 +20,6 @@ function App() {
 
       await dataManager.fetchChunk(start, end)
       const frameData = dataManager.getFrameData(currentFrame)
-      console.log('Frame Data:', frameData) // Debugging
       setCurrentFrameData({
         x: frameData.map(point => point.x),
         y: frameData.map(point => point.y),

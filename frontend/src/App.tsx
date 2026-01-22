@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
 import Plot from 'react-plotly.js'
 import './App.css'
+import PlotManager from './components/PlotManager'
 
 function App() {
   const [currentFrame, setCurrentFrame] = useState(1)
   const [data, setData] = useState([])
   const [isPlaying, setIsPlaying] = useState(true)
-  const [shapes, setShapes] = useState([])
+
+  const plotManager = new PlotManager()
 
   // Fetch and update player positions when frame number changes
   useEffect(() => {
@@ -50,7 +52,7 @@ function App() {
       <button onClick={() => setIsPlaying(!isPlaying)}>
         {isPlaying ? 'Pause' : 'Play'}
       </button>
-      <button onClick={() => setShapes([])}>Clear Lines</button>
+      <button onClick={() => plotManager.clearShapes()}>Clear Lines</button>
       <Plot
         data={[
           {
@@ -61,30 +63,12 @@ function App() {
             marker: { size: 10 },
           },
         ]}
-        layout={{
-          width: 800,
-          height: 600,
-          title: `Player Positions - Frame ${currentFrame}`,
-          xaxis: { 
-            title: 'X Coordinate',
-            range: [0, 100],
-            fixedrange: true
-          },
-          yaxis: { 
-            title: 'Y Coordinate',
-            range: [0, 100],
-            fixedrange: true
-          },
-          shapes: shapes,
-          dragmode: 'drawline',
-        }}
-        config={{
-          modeBarButtonsToAdd: ['drawline', 'drawopenpath', 'drawclosedpath', 'drawcircle', 'drawrect', 'eraseshape'],
-        }}
+        layout={plotManager.getLayout(currentFrame)}
+        config={plotManager.getConfig()}
         onClick={handlePlotClick}
         onRelayout={(e: any) => {
           if (e.shapes) {
-            setShapes(e.shapes)
+            plotManager.updateShapes(e.shapes)
           }
         }}
       />

@@ -44,10 +44,20 @@ function App() {
     setIsPlaying(!isPlaying)
   }
 
+  const handleFrameChange = (frame: number) => {
+    setCurrentFrame(frame)
+    setIsPlaying(false) // Pause the animation when the user moves the slider
+  }
+
   return (
     <>
       <h1>Frame {currentFrame} / 50</h1>
-      <Controls isPlaying={isPlaying} onPlayPause={handlePlayPause} />
+      <Controls
+        isPlaying={isPlaying}
+        onPlayPause={handlePlayPause}
+        currentFrame={currentFrame}
+        onFrameChange={handleFrameChange}
+      />
       <PlotComponent x={currentFrameData.x} y={currentFrameData.y} />
     </>
   )

@@ -6,15 +6,17 @@ import Controls from './components/Controls'
 
 function App() {
   const [currentFrame, setCurrentFrame] = useState(1)
-  const [isPlaying, setIsPlaying] = useState(true)
+  const [isPlaying, setIsPlaying] = useState(false) // Start with paused state
   const [currentFrameData, setCurrentFrameData] = useState<{ x: number[]; y: number[] }>({ x: [], y: [] })
   const [chunkRange, setChunkRange] = useState({ start: 1, end: 10 })
 
   const chunkSize = 10 // Fixed chunk size
   const dataManager = new DataManager()
 
-  // Fetch data for the current chunk range
+  // Fetch data for the current chunk range only when playing
   useEffect(() => {
+    if (!isPlaying) return
+
     const fetchData = async () => {
       const start = Math.floor((currentFrame - 1) / chunkSize) * chunkSize + 1
       const end = start + chunkSize - 1
@@ -29,7 +31,7 @@ function App() {
     }
 
     fetchData()
-  }, [currentFrame])
+  }, [currentFrame, isPlaying]) // Fetch data only when playing
 
   // Animation timer: auto-increment frame every second when playing, loop back to 1 after frame 50
   useEffect(() => {
@@ -43,6 +45,21 @@ function App() {
   }, [isPlaying])
 
   const handlePlayPause = () => {
+    if (!isPlaying) {
+      // Fetch data for the current frame when play is clicked
+      const start = Math.floor((currentFrame - 1) / chunkSize) * chunkSize + 1
+      const end = start + chunkSize - 1
+      setChunkRange({ start, end })
+
+      dataManager.fetchChunk(start, end).then(() => {
+        const frameData = dataManager.getFrameData(currentFrame)
+        setCurrentFrameData({
+          x: frameData.map(point => point.x),
+          y: frameData.map(point => point.y),
+        })
+      })
+    }
+
     setIsPlaying(!isPlaying)
   }
 

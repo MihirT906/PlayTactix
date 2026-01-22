@@ -1,0 +1,64 @@
+/* Controls.css */
+
+.controls-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.play-pause-button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.play-pause-button:hover {
+  background-color: #0056b3;
+}
+
+.frame-slider {
+  flex-grow: 1;
+  margin: 0 1rem;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 8px;
+  background: linear-gradient(
+    to right,
+    red var(--progress),
+    darkgray var(--progress),
+    darkgray var(--cache-progress),
+    lightgray var(--cache-progress)
+  );
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+}
+
+.frame-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: red;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.frame-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: red;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.frame-label {
+  font-size: 1rem;
+  color: #333;
+}

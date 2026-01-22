@@ -8,6 +8,7 @@ function App() {
   const [currentFrame, setCurrentFrame] = useState(1)
   const [isPlaying, setIsPlaying] = useState(true)
   const [currentFrameData, setCurrentFrameData] = useState<{ x: number[]; y: number[] }>({ x: [], y: [] })
+  const [chunkRange, setChunkRange] = useState({ start: 1, end: 10 })
 
   const chunkSize = 10 // Fixed chunk size
   const dataManager = new DataManager()
@@ -17,6 +18,7 @@ function App() {
     const fetchData = async () => {
       const start = Math.floor((currentFrame - 1) / chunkSize) * chunkSize + 1
       const end = start + chunkSize - 1
+      setChunkRange({ start, end })
 
       await dataManager.fetchChunk(start, end)
       const frameData = dataManager.getFrameData(currentFrame)
@@ -57,6 +59,7 @@ function App() {
         onPlayPause={handlePlayPause}
         currentFrame={currentFrame}
         onFrameChange={handleFrameChange}
+        chunkRange={chunkRange} // Pass chunkRange to Controls
       />
       <PlotComponent x={currentFrameData.x} y={currentFrameData.y} />
     </>

@@ -1,35 +1,31 @@
 import { useEffect, useState } from 'react'
-import Plot from 'react-plotly.js'
 import './App.css'
-import PlotManager from './components/PlotManager'
+import DataManager from './services/DataManager'
+import PlotComponent from './components/PlotComponent'
+import Controls from './components/Controls'
 
 function App() {
   const [currentFrame, setCurrentFrame] = useState(1)
-  const [chunkData, setChunkData] = useState<{ frame_num: number; x: number; y: number }[]>([])
   const [isPlaying, setIsPlaying] = useState(true)
   const [chunkRange, setChunkRange] = useState({ start: 1, end: 10 }) // Define chunk range
+  const [currentFrameData, setCurrentFrameData] = useState<{ x: number[]; y: number[] }>({ x: [], y: [] })
 
-  const plotManager = new PlotManager()
+  const dataManager = new DataManager()
 
   // Fetch data for the current chunk range
   useEffect(() => {
-    const fetchChunkData = async () => {
-      try {
-        const response = await fetch(
-          `http://localhost:8000/data/frames?start=${chunkRange.start}&end=${chunkRange.end}`
-        )
-        const frameData = await response.json()
-        setChunkData(frameData)
-      } catch (error) {
-        console.error('Error fetching chunk data:', error)
-      }
+    const fetchData = async () => {
+      await dataManager.fetchChunk(chunkRange.start, chunkRange.end)
+      const frameData = dataManager.getFrameData(currentFrame)
+      console.log('Frame Data:', frameData) // Debugging
+      setCurrentFrameData({
+        x: frameData.map(point => point.x),
+        y: frameData.map(point => point.y),
+      })
     }
 
-    fetchChunkData()
-  }, [chunkRange]) // Refetch data when chunk range changes
-
-  // Filter data for the current frame
-  const currentFrameData = chunkData.filter(point => point.frame_num === currentFrame)
+    fetchData()
+  }, [chunkRange, currentFrame])
 
   // Animation timer: auto-increment frame every second when playing, loop back to 1 after frame 50
   useEffect(() => {
@@ -53,39 +49,15 @@ function App() {
     return () => clearInterval(interval)
   }, [isPlaying, chunkRange])
 
-  const handlePlotClick = (event: any) => {
-    if (event.points && event.points.length > 0) {
-      const point = event.points[0]
-      console.log('Clicked point:', { x: point.x, y: point.y })
-    }
+  const handlePlayPause = () => {
+    setIsPlaying(!isPlaying)
   }
 
   return (
     <>
       <h1>Frame {currentFrame} / 50</h1>
-      <button onClick={() => setIsPlaying(!isPlaying)}>
-        {isPlaying ? 'Pause' : 'Play'}
-      </button>
-      <button onClick={() => plotManager.clearShapes()}>Clear Lines</button>
-      <Plot
-        data={[
-          {
-            x: currentFrameData.map(point => point.x),
-            y: currentFrameData.map(point => point.y),
-            mode: 'markers',
-            type: 'scatter',
-            marker: { size: 10 },
-          },
-        ]}
-        layout={plotManager.getLayout()}
-        config={plotManager.getConfig()}
-        onClick={handlePlotClick}
-        onRelayout={(e: any) => {
-          if (e.shapes) {
-            plotManager.updateShapes(e.shapes)
-          }
-        }}
-      />
+      <Controls isPlaying={isPlaying} onPlayPause={handlePlayPause} />
+      <PlotComponent x={currentFrameData.x} y={currentFrameData.y} />
     </>
   )
 }

@@ -45,21 +45,6 @@ function App() {
   }, [isPlaying])
 
   const handlePlayPause = () => {
-    if (!isPlaying) {
-      // Fetch data for the current frame when play is clicked
-      const start = Math.floor((currentFrame - 1) / chunkSize) * chunkSize + 1
-      const end = start + chunkSize - 1
-      setChunkRange({ start, end })
-
-      dataManager.fetchChunk(start, end).then(() => {
-        const frameData = dataManager.getFrameData(currentFrame)
-        setCurrentFrameData({
-          x: frameData.map(point => point.x),
-          y: frameData.map(point => point.y),
-        })
-      })
-    }
-
     setIsPlaying(!isPlaying)
   }
 

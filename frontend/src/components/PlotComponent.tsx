@@ -23,6 +23,12 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ x, y }) => {
         yaxis: { title: { text: 'Y Axis' } }, // Updated to use an object
         autosize: true,
       }}
+      config={{
+        editable: false,
+        displayModeBar: true,
+        modeBarButtonsToAdd: ['drawline', 'drawrect', 'eraseshape' as any],
+        modeBarButtonsToRemove: ['zoom', 'pan', 'select', 'lasso', 'zoomin', 'zoomout', 'autoScale2d'],
+      }}
     />
   )
 }

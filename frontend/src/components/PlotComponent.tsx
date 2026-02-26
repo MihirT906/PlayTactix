@@ -27,7 +27,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ x, y }) => {
         editable: false,
         displayModeBar: true,
         modeBarButtonsToAdd: ['drawline', 'drawrect', 'eraseshape' as any],
-        modeBarButtonsToRemove: ['zoom', 'pan', 'select', 'lasso', 'zoomin', 'zoomout', 'autoScale2d'],
+        modeBarButtonsToRemove: ['zoom', 'pan', 'select', 'lasso', 'zoomin', 'zoomout', 'autoScale2d' as any],
       }}
     />
   )

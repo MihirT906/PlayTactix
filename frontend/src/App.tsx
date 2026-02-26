@@ -4,14 +4,13 @@ import DataManager from './services/DataManager'
 import PlotComponent from './components/PlotComponent'
 import Controls from './components/Controls'
 
-function App() {
+function App({dataManager}: {dataManager: DataManager}) {
   const [currentFrame, setCurrentFrame] = useState(1)
   const [isPlaying, setIsPlaying] = useState(false) // Start with paused state
   const [currentFrameData, setCurrentFrameData] = useState<{ x: number[]; y: number[] }>({ x: [], y: [] })
   const [chunkRange, setChunkRange] = useState({ start: 1, end: 10 })
 
   const chunkSize = 10 // Fixed chunk size
-  const dataManager = new DataManager()
 
   // Fetch data for the current chunk range only when playing
   useEffect(() => {

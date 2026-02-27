@@ -45,6 +45,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ x, y }) => {
           color: 'blue',
           width: 2,
         },
+        editable: true,
       }
       setLines([newLine])
       console.log('Lines state updated:', lines)
@@ -87,9 +88,19 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ x, y }) => {
         yaxis: { title: { text: 'Y Axis' }, range: [0, 100] }, // Updated to use an object
         autosize: true,
         shapes: lines, // Add lines to the plot
+      //   shapes: [{
+      //   type: 'line',
+      //   x0: 10,
+      //   y0: 10,
+      //   x1: 90,
+      //   y1: 90,
+      //   line: { color: 'blue', width: 2 },
+      //   editable: true
+      // } as any]
       }}
+
       config={{
-        editable: true,
+        editable: false,
         displayModeBar: true,
         modeBarButtonsToAdd: [player_focus_button,'drawline', 'drawrect', 'eraseshape' as any],
         modeBarButtonsToRemove: ['zoom', 'pan', 'select', 'lasso', 'zoomin', 'zoomout', 'autoScale2d' as any],

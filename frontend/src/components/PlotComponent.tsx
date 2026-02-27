@@ -38,14 +38,10 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ x, y }) => {
           y: y,
           mode: 'markers',
           type: 'scatter',
-          marker: { size: 10 },
-          selectedpoints: selectedPoints,
-          selected: {
-            marker: { opacity: 1 }
+          marker: { 
+            size: 10
           },
-          unselected: {
-            marker: { opacity: 0.7 }
-          }
+          selectedpoints: selectedPoints,
         },
       ]}
       layout={{

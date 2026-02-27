@@ -50,8 +50,8 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ x, y }) => {
       ]}
       layout={{
         title: { text: 'Scatter Plot' }, // Updated to use an object
-        xaxis: { title: { text: 'X Axis' } }, // Updated to use an object
-        yaxis: { title: { text: 'Y Axis' } }, // Updated to use an object
+        xaxis: { title: { text: 'X Axis' }, range: [0, 100] }, // Updated to use an object
+        yaxis: { title: { text: 'Y Axis' }, range: [0, 100] }, // Updated to use an object
         autosize: true,
       }}
       config={{

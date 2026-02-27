@@ -3,6 +3,7 @@ import './App.css'
 import DataManager from './services/DataManager'
 import PlotComponent from './components/PlotComponent'
 import Controls from './components/Controls'
+import { CHUNK_SIZE, SLEEP_INTERVAL } from './config'
 
 function App({dataManager}: {dataManager: DataManager}) {
   const [currentFrame, setCurrentFrame] = useState(1)
@@ -10,7 +11,7 @@ function App({dataManager}: {dataManager: DataManager}) {
   const [currentFrameData, setCurrentFrameData] = useState<{ x: number[]; y: number[] }>({ x: [], y: [] })
   const [chunkRange, setChunkRange] = useState({ start: 1, end: 10 })
 
-  const chunkSize = 10 // Fixed chunk size
+  const chunkSize = CHUNK_SIZE // Fixed chunk size
 
   // Fetch data for the current chunk range only when playing
   useEffect(() => {
@@ -38,7 +39,7 @@ function App({dataManager}: {dataManager: DataManager}) {
 
     const interval = setInterval(() => {
       setCurrentFrame(prev => (prev >= 50 ? 1 : prev + 1))
-    }, 1000)
+    }, SLEEP_INTERVAL)
 
     return () => clearInterval(interval)
   }, [isPlaying])

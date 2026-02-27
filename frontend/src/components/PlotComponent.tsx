@@ -1,6 +1,30 @@
 import React, { useState, useMemo, useEffect } from 'react'
 import Plot from 'react-plotly.js'
 import Plotly from 'plotly.js-dist-min'
+import objectHash from "object-hash";
+
+
+class AnnotationStore {
+  annotations: Record<string, { frameStart: number; frameEnd: number | null; shape: object }>;
+
+  constructor() {
+    this.annotations = {};
+  }
+
+  addAnnotation(key: string, annotation: any) {
+    this.annotations[key] = annotation;
+  }
+
+  removeAnnotation(key: string) {
+    delete this.annotations[key];
+  }
+
+  getAnnotations() {
+    return this.annotations;
+  }
+}
+
+const annotationStore = new AnnotationStore(); // Create an instance of the store
 
 interface PlotComponentProps {
   x: number[]
@@ -11,9 +35,6 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ x, y }) => {
   const [focusPoints, setFocusPoints] = useState<number[]>([0,1]) 
   const [focusEnabled, setFocusEnabled] = useState(false)
   const [lines, setLines] = useState<any[]>([])
-  const [connectedPlayers, setConnectedPlayers] = useState<{ from: number; to: number }[]>([])
-  const [connectionEnabled, setConnectionEnabled] = useState(false)
-
 
   const player_focus_button = useMemo(() => ({
     name: 'Player Focus',
@@ -22,14 +43,6 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ x, y }) => {
         setFocusEnabled(prev => !prev)
       },
   }), [])
-
-  // const connect_players_button = useMemo(() => ({
-  //   name: 'Connect Players',
-  //   icon: Plotly.Icons.spikeline,
-  //   click: () => {
-  //       setConnectionEnabled(prev => !prev)
-  //     },
-  // }), [])
 
   useEffect(() => {
     console.log('Current focus points:', focusPoints)
@@ -68,6 +81,24 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ x, y }) => {
     })
   }
 
+  const handleRelayout = (eventData: any) => {
+    if (eventData["shapes"]){
+      eventData["shapes"].forEach((shape: any) => {
+        console.log('Relayout shape data:', shape)
+        const uniqueKey = objectHash(shape);
+
+        const annotation = {
+          frameStart: null,
+          frameEnd: null,
+          shape: shape
+        };
+
+        annotationStore.addAnnotation(uniqueKey, annotation)
+        console.log('Current annotations in store:', annotationStore.getAnnotations())
+      })
+    }
+  }
+
   return (
     <Plot
       data={[
@@ -87,16 +118,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ x, y }) => {
         xaxis: { title: { text: 'X Axis' }, range: [0, 100] }, // Updated to use an object
         yaxis: { title: { text: 'Y Axis' }, range: [0, 100] }, // Updated to use an object
         autosize: true,
-        shapes: lines, // Add lines to the plot
-      //   shapes: [{
-      //   type: 'line',
-      //   x0: 10,
-      //   y0: 10,
-      //   x1: 90,
-      //   y1: 90,
-      //   line: { color: 'blue', width: 2 },
-      //   editable: true
-      // } as any]
+        //shapes: lines,
       }}
 
       config={{
@@ -106,6 +128,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ x, y }) => {
         modeBarButtonsToRemove: ['zoom', 'pan', 'select', 'lasso', 'zoomin', 'zoomout', 'autoScale2d' as any],
       }}
       onClick={handleClick}
+      onRelayout={handleRelayout}
     />
   )
 }

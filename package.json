@@ -1,10 +1,12 @@
 {
   "dependencies": {
+    "object-hash": "^3.0.0",
     "plotly.js": "^3.3.1",
     "plotly.js-dist-min": "^3.4.0",
     "react-plotly.js": "^2.6.0"
   },
   "devDependencies": {
+    "@types/object-hash": "^3.0.6",
     "@types/plotly.js": "^3.0.9",
     "@types/react-plotly.js": "^2.6.4"
   }

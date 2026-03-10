@@ -1,30 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react'
 import Plot from 'react-plotly.js'
 import Plotly from 'plotly.js-dist-min'
-import objectHash from "object-hash";
+import AnnotationStore from '../services/AnnotationStore'
 
-
-class AnnotationStore {
-  annotations: Record<string, { frameStart: number; frameEnd: number | null; shape: object }>;
-
-  constructor() {
-    this.annotations = {};
-  }
-
-  addAnnotation(key: string, annotation: any) {
-    this.annotations[key] = annotation;
-  }
-
-  removeAnnotation(key: string) {
-    delete this.annotations[key];
-  }
-
-  getAnnotations() {
-    return this.annotations;
-  }
-}
-
-const annotationStore = new AnnotationStore(); // Create an instance of the store
+const annotationStore = new AnnotationStore()
 
 interface PlotComponentProps {
   x: number[]
@@ -45,28 +24,28 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ x, y }) => {
       },
   }), [])
 
-  // useEffect(() => {
-  //   console.log('Current focus points:', focusPoints)
-  //   if (focusPoints.length > 1){
-  //     console.log('Connection is possible')
-  //     const newLine = {
-  //       type: 'line',
-  //       x0: x[focusPoints[0]], // Start x-coordinate
-  //       y0: y[focusPoints[0]], // Start y-coordinate
-  //       x1: x[focusPoints[focusPoints.length - 1]], // End x-coordinate
-  //       y1: y[focusPoints[focusPoints.length - 1]], // End y-coordinate
-  //       line: {
-  //         color: 'blue',
-  //         width: 2,
-  //       },
-  //       editable: true,
-  //     }
-  //     setLines([newLine])
-  //     console.log('Lines state updated:', lines)
-  //   } else {
-  //     setLines([])
-  //   }
-  // }, [focusPoints, x, y]) // Logs the updated state whenever focusPoints changes
+  const updateLines = () => {
+    console.log("Annotation Store Lines:", annotationStore.getPlayerFocusLines())
+    setLines([]) // Clear existing lines before adding new ones
+    for (const [firstPoint, secondPoint] of annotationStore.getPlayerFocusLines() as [number, number][]) {
+      const newLine = {
+        type: 'line',
+        x0: x[firstPoint], // Start x-coordinate
+        y0: y[firstPoint], // Start y-coordinate
+        x1: x[secondPoint], // End x-coordinate
+        y1: y[secondPoint], // End y-coordinate
+        line: {
+          color: 'blue',
+          width: 2,
+        },
+        editable: true,
+      }
+      setLines((prev) => [...prev, newLine]) // Add the new line to the existing lines
+    }
+  }
+  useEffect(() => {
+    updateLines()
+  }, [x, y]) // Logs the updated state whenever focusPoints changes
 
   const handleClick = (event: any) => {
     if (!focusEnabled) return
@@ -79,30 +58,16 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ x, y }) => {
     }
     else {
       // Add a line from firstPoint to pointIndex
-      console.log('Adding line from point', firstPoint, 'to point', pointIndex)
-      const newLine = {
-        type: 'line',
-        x0: x[firstPoint], // Start x-coordinate
-        y0: y[firstPoint], // Start y-coordinate
-        x1: x[pointIndex], // End x-coordinate
-        y1: y[pointIndex], // End y-coordinate
-        line: {
-          color: 'blue',
-          width: 2,
-        },
-        editable: true,
+      if (firstPoint === pointIndex) {
+        console.log('Clicked the same point again, resetting first point.')
+        setFirstPoint(null)
+        return
       }
-      setLines((prev) => [...prev, newLine]) // Add the new line to the existing lines
+      annotationStore.addPlayerFocusAnnotation(firstPoint, pointIndex)
+      updateLines()
       setFirstPoint(null) // Reset first point for the next line
       console.log('Lines state updated:', lines)
     }
-    // setFocusPoints((prev) => {
-    //   if (prev.includes(pointIndex)) {
-    //     return prev.filter((i) => i !== pointIndex)
-    //   } else {
-    //     return [...prev, pointIndex]
-    //   }
-    // })
     return []
   }
 

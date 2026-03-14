@@ -25,8 +25,20 @@ export default class AnnotationStore {
         console.log('Annotation added to store:', uniqueKey, ":", annotation);
     }
 
+    deletePlayerFocusAnnotation(eventData: any) {
+        if (!eventData["shapes"]) return;
+        console.log("Current annotations before deletion:", Array.from(this.player_focus_annotations.values()));
+
+        for (const [key, annotation] of this.player_focus_annotations.entries()) {
+            const isPresent = eventData["shapes"].some((shape: any) => shape.name === `Player1:${annotation.points[0]},Player2:${annotation.points[1]}`);
+            if (!isPresent) {
+                this.player_focus_annotations.delete(key);
+                console.log('Annotation deleted from store:', key, ":", annotation);
+            }
+        }
+    }
+
     getPlayerFocusLines() {
-        // I want to return an array of tuples of the form [point1, point2] for each annotation
         return Array.from(this.player_focus_annotations.values()).map(annotation => annotation.points);
     }
 

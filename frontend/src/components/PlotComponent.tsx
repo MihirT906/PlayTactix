@@ -26,8 +26,10 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ x, y }) => {
 
   const updateLines = () => {
     console.log("Annotation Store Lines:", annotationStore.getPlayerFocusLines())
-    setLines([]) // Clear existing lines before adding new ones
+    setLines([])
+    setFocusPoints([])
     for (const [firstPoint, secondPoint] of annotationStore.getPlayerFocusLines() as [number, number][]) {
+      setFocusPoints(prev => [...prev, firstPoint, secondPoint])
       const newLine = {
         type: 'line',
         x0: x[firstPoint], // Start x-coordinate
@@ -39,6 +41,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ x, y }) => {
           width: 2,
         },
         editable: true,
+        name: `Player1:${firstPoint},Player2:${secondPoint}`,
       }
       setLines((prev) => [...prev, newLine]) // Add the new line to the existing lines
     }
@@ -73,21 +76,8 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ x, y }) => {
 
   const handleRelayout = (eventData: any) => {
     console.log('Relayout event data:', eventData)
-    // if (eventData["shapes"]){
-    //   eventData["shapes"].forEach((shape: any) => {
-    //     console.log('Relayout shape data:', shape)
-    //     const uniqueKey = objectHash(shape);
-
-    //     const annotation = {
-    //       frameStart: null,
-    //       frameEnd: null,
-    //       shape: shape
-    //     };
-
-    //     annotationStore.addAnnotation(uniqueKey, annotation)
-    //     console.log('Current annotations in store:', annotationStore.getAnnotations())
-    //   })
-    // }
+    annotationStore.deletePlayerFocusAnnotation(eventData)
+    updateLines()
   }
 
   return (
@@ -101,7 +91,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ x, y }) => {
           marker: { 
             size: 10
           },
-          selectedpoints: focusPoints,
+          selectedpoints: [firstPoint].concat(focusPoints),
         },
       ]}
       layout={{

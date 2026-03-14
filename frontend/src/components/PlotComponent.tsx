@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react'
 import Plot from 'react-plotly.js'
 import Plotly from 'plotly.js-dist-min'
 import AnnotationStore from '../services/AnnotationStore'
+import { SELECTED_POINTS_OPACITY, UNSELECTED_POINTS_OPACITY } from '../config'
 
 const annotationStore = new AnnotationStore()
 
@@ -11,25 +12,25 @@ interface PlotComponentProps {
 }
 
 const PlotComponent: React.FC<PlotComponentProps> = ({ x, y }) => {
-  const [focusPoints, setFocusPoints] = useState<number[]>([])
-  const [firstPoint, setFirstPoint] = useState<number | null>(null)
-  const [focusEnabled, setFocusEnabled] = useState(false)
+  const [focusPoints, setFocusPoints] = useState<number[]>([]) // Points that are highlighted on click
+  const [firstPoint, setFirstPoint] = useState<number | null>(null) // First point selected when drawing a line between two players
+  const [focusEnabled, setFocusEnabled] = useState(false) // 'Player Focus' mode toggled to draw lines
   const [lines, setLines] = useState<any[]>([])
 
-  const player_focus_button = useMemo(() => ({
+  const player_focus_button = useMemo(() => ({ // Button to toggle 'Player Focus' mode
     name: 'Player Focus',
-    icon: Plotly.Icons.tooltip_basic, //spikeline, ;;;;bullseye, certificate, chart-line, circle-nodes, dice-d20, people-arrows, 
+    icon: Plotly.Icons.tooltip_basic,
     click: () => {
         setFocusEnabled(prev => !prev)
       },
   }), [])
 
-  const updateLines = () => {
+  const updateLines = () => { // Creates lines to add to Plotly.layout using the player focus lines stored in annotationStore
     console.log("Annotation Store Lines:", annotationStore.getPlayerFocusLines())
-    setLines([])
-    setFocusPoints([])
+    setLines([]) // Clear existing lines before adding new ones
+    setFocusPoints([]) // Clear existing focus points before adding new ones
     for (const [firstPoint, secondPoint] of annotationStore.getPlayerFocusLines() as [number, number][]) {
-      setFocusPoints(prev => [...prev, firstPoint, secondPoint])
+      setFocusPoints(prev => [...prev, firstPoint, secondPoint]) // Add all players that have lines connected to them to focusPoints
       const newLine = {
         type: 'line',
         x0: x[firstPoint], // Start x-coordinate
@@ -41,16 +42,17 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ x, y }) => {
           width: 2,
         },
         editable: true,
-        name: `Player1:${firstPoint},Player2:${secondPoint}`,
+        name: `Player1:${firstPoint},Player2:${secondPoint}`, // Using this name to identify the players connected by the line
       }
-      setLines((prev) => [...prev, newLine]) // Add the new line to the existing lines
+      setLines((prev) => [...prev, newLine]) // Add a new line based on updated player positions
     }
   }
-  useEffect(() => {
-    updateLines()
-  }, [x, y]) // Logs the updated state whenever focusPoints changes
 
-  const handleClick = (event: any) => {
+  useEffect(() => { // Lines have to be recreated every frame as player positions move
+    updateLines()
+  }, [x, y]) 
+
+  const handleClick = (event: any) => { // Allows the user to 'Focus' on a player or draw lines between them
     if (!focusEnabled) return
     if (!event?.points?.length) return
     const pointIndex = event.points[0].pointIndex
@@ -74,7 +76,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ x, y }) => {
     return []
   }
 
-  const handleRelayout = (eventData: any) => {
+  const handleRelayout = (eventData: any) => { // Handles deletion of lines
     console.log('Relayout event data:', eventData)
     annotationStore.deletePlayerFocusAnnotation(eventData)
     updateLines()
@@ -89,17 +91,25 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ x, y }) => {
           mode: 'markers',
           type: 'scatter',
           marker: { 
-            size: 10
+            size: 10,
+            opacity: 1
+            //opacity: [firstPoint].concat(focusPoints).length > 0 ? 0.7 : 1,
           },
           selectedpoints: [firstPoint].concat(focusPoints),
-        },
+          selected: {
+            marker: { opacity: SELECTED_POINTS_OPACITY },
+          },
+          unselected: {
+            marker: { opacity: [firstPoint].concat(focusPoints).length > 0 ? UNSELECTED_POINTS_OPACITY: SELECTED_POINTS_OPACITY },
+          },
+        } as any,
       ]}
       layout={{
-        title: { text: 'Scatter Plot' }, // Updated to use an object
-        xaxis: { title: { text: 'X Axis' }, range: [0, 100] }, // Updated to use an object
-        yaxis: { title: { text: 'Y Axis' }, range: [0, 100] }, // Updated to use an object
+        title: { text: 'Scatter Plot' },
+        xaxis: { title: { text: 'X Axis' }, range: [0, 100] },
+        yaxis: { title: { text: 'Y Axis' }, range: [0, 100] },
         autosize: true,
-        shapes: lines,
+        shapes: lines, // Contains player focus lines
       }}
 
       config={{

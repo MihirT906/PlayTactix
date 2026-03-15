@@ -16,6 +16,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ x, y }) => {
   const [firstPoint, setFirstPoint] = useState<number | null>(null) // First point selected when drawing a line between two players
   const [focusEnabled, setFocusEnabled] = useState(false) // 'Player Focus' mode toggled to draw lines
   const [lines, setLines] = useState<any[]>([])
+  const [dragMode, setDragMode] = useState<string>('select')
 
   const player_focus_button = useMemo(() => ({ // Button to toggle 'Player Focus' mode
     name: 'Player Focus',
@@ -78,8 +79,14 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ x, y }) => {
 
   const handleRelayout = (eventData: any) => { // Handles deletion of lines
     console.log('Relayout event data:', eventData)
-    annotationStore.deletePlayerFocusAnnotation(eventData)
-    updateLines()
+    if ('dragmode' in eventData) {
+      setDragMode(eventData['dragmode'])
+    }
+    else if ('shapes' in eventData) {
+      annotationStore.handleAnnotationRelayout(eventData)
+      //annotationStore.deletePlayerFocusAnnotation(eventData)
+      updateLines()
+    }
   }
 
   return (
@@ -93,7 +100,6 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ x, y }) => {
           marker: { 
             size: 10,
             opacity: 1
-            //opacity: [firstPoint].concat(focusPoints).length > 0 ? 0.7 : 1,
           },
           selectedpoints: [firstPoint].concat(focusPoints),
           selected: {
@@ -109,6 +115,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ x, y }) => {
         xaxis: { title: { text: 'X Axis' }, range: [0, 100] },
         yaxis: { title: { text: 'Y Axis' }, range: [0, 100] },
         autosize: true,
+        dragmode: dragMode as any,
         shapes: lines, // Contains player focus lines
       }}
 

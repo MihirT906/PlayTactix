@@ -10,7 +10,6 @@ export default class DataManager {
     if (this.isChunkCached(start, end)) return // uncomment this and fix caching
 
     try {
-      //console.log(`Fetching data for frames ${start} to ${end}`)
       const response = await fetch(`http://localhost:8000/data/frames?start=${start}&end=${end}`)
       const data = await response.json()
       data.forEach((point: { frame_num: number; player_id: number, x: number; y: number }) => {
@@ -18,9 +17,7 @@ export default class DataManager {
           this.cache.set(point.frame_num, [])
         }
         this.cache.get(point.frame_num)?.push(point)
-        //console.log(`Cached frame ${point.frame_num} with ${this.cache.get(point.frame_num)?.length} points`)
       })
-      // console.log('Added chunk to cache')
       
       // Evict old chunks if cache exceeds the limit
       this.evictOldChunks()
@@ -35,14 +32,11 @@ export default class DataManager {
   }
 
   private isChunkCached(start: number, end: number): boolean {
-    //console.log("In check:", this.cache)
       for (let i = start; i <= end; i++) {
           if (!this.cache.has(i)) {
-              // console.log(`Frame ${i} is not cached`);
               return false;
           }
       }
-      // console.log(`Chunk ${start}-${end} is cached`);
       return true;
   }
 
@@ -51,7 +45,6 @@ export default class DataManager {
       const oldestKey = this.cache.keys().next().value
       if (oldestKey !== undefined) {
         this.cache.delete(oldestKey)
-        // console.log(`Evicted frame ${oldestKey} from cache`)
       }
     }
   }

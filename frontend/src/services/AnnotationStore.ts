@@ -7,33 +7,14 @@ interface PlayerFocusAnnotation {
     frameEnd?: number;
 }
 
-// interface DrawAnnnotation {
-//     type: string;
-//     editable: boolean;
-//     line: {
-//         color: string;
-//         width: number;
-//         dash: string;
-//     };
-//     name?: string;
-//     x0: number;
-//     y0: number;
-//     x1: number;
-//     y1: number;
-//     frameStart?: number;
-//     frameEnd?: number;
-// }
 
 export default class AnnotationStore {
     private player_focus_annotations: Map<string, PlayerFocusAnnotation> = new Map()
     private draw_annotations: Map<string, any> = new Map()
 
-    constructor() {
-        console.log('AnnotationStore initialized with empty annotations')
-    }
-
-    displayPlayerFocusAnnotations() {
+    displayAllShapes() {
         console.log('Current Player Focus Annotations:', Array.from(this.player_focus_annotations.values()))
+        console.log('Current Draw Annotations:', Array.from(this.draw_annotations.values()))
     }
 
     addPlayerFocusAnnotation(point1: number, point2: number, currentFrame: number) {

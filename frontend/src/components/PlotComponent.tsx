@@ -58,8 +58,9 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, x, y }) => 
 
   useEffect(() => { // Lines have to be recreated every frame as player positions move
     updateLines()
-    // updateShapes()
+    updateShapes()
     setDragMode('select')
+    // annotationStore.displayAllShapes()
   }, [x, y]) 
 
   const handleClick = (event: any) => { // Allows the user to 'Focus' on a player or draw lines between them

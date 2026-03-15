@@ -63,7 +63,7 @@ function App({dataManager}: {dataManager: DataManager}) {
         onFrameChange={handleFrameChange}
         chunkRange={chunkRange} // Pass chunkRange to Controls
       />
-      <PlotComponent x={currentFrameData.x} y={currentFrameData.y} />
+      <PlotComponent currentFrame={currentFrame}x={currentFrameData.x} y={currentFrameData.y} />
     </>
   )
 }

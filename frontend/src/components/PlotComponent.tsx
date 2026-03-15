@@ -17,6 +17,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, x, y }) => 
   const [firstPoint, setFirstPoint] = useState<number | null>(null) // First point selected when drawing a line between two players
   const [focusEnabled, setFocusEnabled] = useState(false) // 'Player Focus' mode toggled to draw lines
   const [lines, setLines] = useState<any[]>([])
+  const [shapes, setShapes] = useState<any[]>([])
   const [dragMode, setDragMode] = useState<string>('select')
 
   const player_focus_button = useMemo(() => ({ // Button to toggle 'Player Focus' mode
@@ -28,7 +29,6 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, x, y }) => 
   }), [])
 
   const updateLines = () => { // Creates lines to add to Plotly.layout using the player focus lines stored in annotationStore
-    console.log("Annotation Store Lines:", annotationStore.getPlayerFocusLines(currentFrame))
     setLines([]) // Clear existing lines before adding new ones
     setFocusPoints([]) // Clear existing focus points before adding new ones
     for (const [firstPoint, secondPoint] of annotationStore.getPlayerFocusLines(currentFrame) as [number, number][]) {
@@ -50,8 +50,16 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, x, y }) => 
     }
   }
 
+  const updateShapes = () => {
+    console.log("Annotation Store Draw Shapes:", annotationStore.getDrawAnnotations(currentFrame).values())
+    const drawShapes = annotationStore.getDrawAnnotations(currentFrame)
+    setShapes(Array.from(drawShapes)) // Update shapes based on the draw annotations in the store
+  }
+
   useEffect(() => { // Lines have to be recreated every frame as player positions move
     updateLines()
+    // updateShapes()
+    setDragMode('select')
   }, [x, y]) 
 
   const handleClick = (event: any) => { // Allows the user to 'Focus' on a player or draw lines between them
@@ -73,7 +81,6 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, x, y }) => 
       annotationStore.addPlayerFocusAnnotation(firstPoint, pointIndex, currentFrame)
       updateLines()
       setFirstPoint(null) // Reset first point for the next line
-      console.log('Lines state updated:', lines)
     }
     return []
   }
@@ -87,6 +94,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, x, y }) => 
       annotationStore.handleAnnotationRelayout(eventData, currentFrame)
       //annotationStore.deletePlayerFocusAnnotation(eventData)
       updateLines()
+      updateShapes()
     }
   }
 
@@ -117,7 +125,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, x, y }) => 
         yaxis: { title: { text: 'Y Axis' }, range: [0, 100] },
         autosize: true,
         dragmode: dragMode as any,
-        shapes: lines, // Contains player focus lines
+        shapes: [...lines, ...shapes], // Contains player focus lines
       }}
 
       config={{

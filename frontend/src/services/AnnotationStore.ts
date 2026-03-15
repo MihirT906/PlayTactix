@@ -7,6 +7,23 @@ interface PlayerFocusAnnotation {
     frameEnd?: number;
 }
 
+// interface DrawAnnnotation {
+//     type: string;
+//     editable: boolean;
+//     line: {
+//         color: string;
+//         width: number;
+//         dash: string;
+//     };
+//     name?: string;
+//     x0: number;
+//     y0: number;
+//     x1: number;
+//     y1: number;
+//     frameStart?: number;
+//     frameEnd?: number;
+// }
+
 export default class AnnotationStore {
     private player_focus_annotations: Map<string, PlayerFocusAnnotation> = new Map()
     private draw_annotations: Map<string, any> = new Map()
@@ -35,7 +52,10 @@ export default class AnnotationStore {
     }
 
     deletePlayerFocusAnnotation(playerFocusShapes: any, currentFrame: number) {
-        for (const [key, annotation] of this.player_focus_annotations.entries()) {
+        const currentPlayerFocusAnnotations = Array.from(this.player_focus_annotations.values()).filter(annotation => {
+            return annotation.frameStart !== undefined && annotation.frameStart <= currentFrame && (annotation.frameEnd === undefined || annotation.frameEnd > currentFrame);
+        });
+        for (const [key, annotation] of currentPlayerFocusAnnotations.entries()) {
             const isPresent = playerFocusShapes.some((shape: any) => shape.name === `Player1:${annotation.points[0]},Player2:${annotation.points[1]}`);
             if (!isPresent) {
                 annotation.frameEnd = currentFrame;
@@ -51,27 +71,46 @@ export default class AnnotationStore {
         return currentPlayerFocusAnnotations.map(annotation => annotation.points);
     }
 
-    // addOrDeleteDrawShapes(drawShapes: any){
-    //     // Delete draw shapes that do not exist anymore
-    //     for (const [key, annotation] of this.draw_annotations.entries()) {
-    //         const isPresent = drawShapes.some((shape: any) => objectHash(shape) === key);
-    //         if (!isPresent) {
-    //             this.draw_annotations.delete(key);
-    //             console.log('Draw annotation deleted from store:', key, ":", annotation);
-    //         }
-    //     }
-    //     // Add newly drawn shapes
-    //     for (const shape of drawShapes) {
-    // }
+    getDrawAnnotations(currentFrame: number) {
+        const currentDrawAnnotations = Array.from(this.draw_annotations.values()).filter((annotation: any) => {
+            return annotation.frameStart !== undefined && annotation.frameStart <= currentFrame && (annotation.frameEnd === undefined || annotation.frameEnd > currentFrame);
+        });
+        return currentDrawAnnotations
+    }
+
+    addOrDeleteDrawShapes(drawShapes: any, currentFrame: number) {
+        // Delete draw shapes that do not exist anymore
+        const currentDrawAnnotations = new Map(
+            Array.from(this.draw_annotations.entries()).filter(([key, annotation]) => {
+                return annotation.frameStart !== undefined &&
+                    annotation.frameStart <= currentFrame &&
+                    (annotation.frameEnd === undefined || annotation.frameEnd > currentFrame);
+            })
+        );
+        for (const [key, annotation] of currentDrawAnnotations.entries()) {
+            const isPresent = drawShapes.some((shape: any) => objectHash(shape) === key);
+            if (!isPresent) {
+                annotation.frameEnd = currentFrame;
+                console.log('Draw annotation deleted from store:', key, ":", annotation);
+            }
+        }
+
+        // Add newly drawn shapes
+        for (const shape of drawShapes) {
+            const uniqueKey = objectHash(shape);
+            if (this.draw_annotations.has(uniqueKey)) continue;
+            shape.frameStart = currentFrame;
+            shape.frameEnd = undefined;
+            this.draw_annotations.set(uniqueKey, shape);
+        }
+    }
 
     handleAnnotationRelayout(eventData: any, currentFrame: number) {
-        console.log('Relayout event data (handleAnnotationRelayout):', eventData)
         const shapes = eventData["shapes"] || [];
-        // if (!shapes.length) return;
         const drawShapes = shapes.filter((shape: any) => shape.name == undefined);
         const playerFocusShapes = shapes.filter((shape: any) => !drawShapes.includes(shape));
         this.deletePlayerFocusAnnotation(playerFocusShapes, currentFrame);
-        // this.addOrDeleteDrawShapes(drawShapes);
+        this.addOrDeleteDrawShapes(drawShapes, currentFrame);
     }
 
 }

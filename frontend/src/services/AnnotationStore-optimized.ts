@@ -7,6 +7,22 @@ interface Annotation {
     shape: any;
 }
 
+function createShapeKey(shape: any, frameStart: number): string {
+    if (shape.points) {
+        return `playerFocus|${frameStart}|${shape.points.sort((a: number, b: number) => a - b).join(',')}`;
+    }
+    const type = shape.type;
+    const x0 = shape.x0;
+    const y0 = shape.y0;
+    const x1 = shape.x1;
+    const y1 = shape.y1;
+    const round = (v: any) =>
+        typeof v === 'number' ? Number(v.toFixed(3)) : v; // Round numbers to 3 decimal places for consistency
+
+    const parts = [type, round(x0), round(y0), round(x1), round(y1)];
+    return parts.join('|');
+}
+
 export default class AnnotationStore {
     private start_events: Map<number, Array<string>> = new Map(); // Maps start frame number to an array of annotation keys (sweep line algorithm)
     private end_events: Map<number, Array<string>> = new Map() // Maps end frame number to an array of annotation keys (sweep line algorithm)
@@ -59,9 +75,15 @@ export default class AnnotationStore {
                 points: [point1, point2]
             }
         };
-        const uniqueKey = objectHash(annotation);
-        if (this.active_annotations.has(uniqueKey)) return;
-
+        // const uniqueKey = createShapeKey(annotation.shape, currentFrame);
+        // if (this.active_annotations.has(uniqueKey)) return;
+        // loop through active annotations to check if an identical annotation already exists (to prevent duplicates from relayout events)
+        for (const existingAnnotation of this.active_annotations.values()) {
+            if (existingAnnotation.shape.points.sort().toString() === annotation.shape.points.sort().toString()) {
+                return;
+            }
+        }
+        const uniqueKey = createShapeKey(annotation.shape, currentFrame);
         annotation.frameStart = currentFrame;
         this.start_events.set(currentFrame, [...(this.start_events.get(currentFrame) || []), uniqueKey]);
         annotation.frameEnd = undefined;
@@ -86,8 +108,10 @@ export default class AnnotationStore {
         // Delete draw shapes that do not exist anymore
         for (const [key, annotation] of this.active_annotations.entries()) {
             if (annotation.type !== 'draw') continue;
-            const isPresent = drawShapes.some((shape: any) => objectHash(shape) === key);
+            const isPresent = drawShapes.some((shape: any) => createShapeKey(shape, currentFrame) === key);
             if (!isPresent) {
+                console.log('Deleting annotation with key:', key);
+                console.log('drawShapes keys:', drawShapes.map((shape: any) => createShapeKey(shape, currentFrame)));
                 annotation.frameEnd = currentFrame;
                 this.end_events.set(currentFrame, [...(this.end_events.get(currentFrame) || []), key]);
             }
@@ -95,7 +119,7 @@ export default class AnnotationStore {
 
         // Add new draw shapes that have been captured
         for (const shape of drawShapes) {
-            const uniqueKey = objectHash(shape);
+            const uniqueKey = createShapeKey(shape, currentFrame);
             if (this.active_annotations.has(uniqueKey)) continue;
             this.start_events.set(currentFrame, [...(this.start_events.get(currentFrame) || []), uniqueKey]);
             const annotation: Annotation = {

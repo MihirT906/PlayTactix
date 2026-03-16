@@ -4,7 +4,7 @@ export const APP_CONFIG = {
 	},
 	timing: {
 		chunkSize: 10,
-		sleepIntervalMs: 100,
+		sleepIntervalMs: 1000,
 	},
 	selection: {
 		selectedPointsOpacity: 1,

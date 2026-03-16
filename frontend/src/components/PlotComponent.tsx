@@ -97,6 +97,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, x, y, annot
       updateLines()
       updateShapes()
     }
+    annotationStore.describeAnnotationStore() // For debugging - logs the current state of the annotation store after every relayout event
   }
 
   return (

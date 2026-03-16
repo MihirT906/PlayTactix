@@ -1,0 +1,22 @@
+.annotation-display {
+    height: 600px; /* Fixed height */
+    width: 300px; /* Fixed width */
+    background-color: lightgray;
+    border-radius: 8px;
+    overflow-y: auto;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    color: #333;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); 
+}
+
+.annotation-box {
+    background-color: rgb(89, 153, 255); /* Blue background */
+    color: white; /* White text */
+    border-radius: 8px; /* Rounded corners */
+    padding: 10px; /* Inner spacing */
+    margin: 8px; /* Space between boxes */
+    font-family: Arial, sans-serif; /* Consistent font */
+    font-size: 14px; /* Text size */
+    word-wrap: break-word; /* Wrap long text */
+}

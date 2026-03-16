@@ -5,6 +5,7 @@ import AnnotationStore from './services/AnnotationStore-optimized'
 import PlotComponent from './components/PlotComponent'
 import Controls from './components/Controls'
 import { CHUNK_SIZE, SLEEP_INTERVAL } from './config'
+import AnnotationDisplay from './components/AnnotationDisplay'
 
 function App({dataManager, annotationStore}: {dataManager: DataManager, annotationStore: AnnotationStore}) {
   const [currentFrame, setCurrentFrame] = useState(1)
@@ -55,18 +56,23 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
   }
 
   return (
-    <>
-      <h1>Frame {currentFrame} / 50</h1>
-      <Controls
-        isPlaying={isPlaying}
-        onPlayPause={handlePlayPause}
-        currentFrame={currentFrame}
-        onFrameChange={handleFrameChange}
-        chunkRange={chunkRange} // Pass chunkRange to Controls
-        annotationStore={annotationStore}
-      />
-      <PlotComponent currentFrame={currentFrame} x={currentFrameData.x} y={currentFrameData.y} annotationStore={annotationStore} />
-    </>
+    <div className="app-container">
+      <div className="main-content">
+        <h1>Frame {currentFrame} / 50</h1>
+        <Controls
+          isPlaying={isPlaying}
+          onPlayPause={handlePlayPause}
+          currentFrame={currentFrame}
+          onFrameChange={handleFrameChange}
+          chunkRange={chunkRange} // Pass chunkRange to Controls
+          annotationStore={annotationStore}
+        />
+        <PlotComponent currentFrame={currentFrame} x={currentFrameData.x} y={currentFrameData.y} annotationStore={annotationStore} />
+      </div>
+      <div className="right-panel">
+        <AnnotationDisplay annotationStore={annotationStore} currentFrame={currentFrame} />
+      </div>
+    </div>
   )
 }
 

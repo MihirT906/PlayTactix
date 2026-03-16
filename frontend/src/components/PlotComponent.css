@@ -1,0 +1,5 @@
+.PlotComponent {
+  width: 600px; /* Fixed width */
+  height: 400px; /* Fixed height */
+  display: block; /* Ensure it behaves as a block-level element */
+}

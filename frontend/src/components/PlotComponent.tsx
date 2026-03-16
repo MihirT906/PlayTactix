@@ -99,7 +99,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, x, y, annot
   }
 
   return (
-    <Plot
+    <Plot className='PlotComponent'
       data={[
         {
           x: x,

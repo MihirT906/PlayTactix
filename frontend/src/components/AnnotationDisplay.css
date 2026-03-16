@@ -47,15 +47,28 @@
 }
 
 .annotation-box {
-    background: linear-gradient(150deg, var(--annotation-card-bg-start, #2563eb), var(--annotation-card-bg-end, #1d4ed8));
-    color: var(--annotation-card-text, #ffffff);
     border-radius: 12px;
     padding: 12px;
     display: flex;
     flex-direction: column;
     gap: 8px;
-    box-shadow: 0 6px 14px rgba(37, 99, 235, 0.28);
     word-break: break-word;
+    transition: opacity 0.2s ease;
+}
+
+.annotation-box--active {
+    background: linear-gradient(150deg, #2563eb, #1d4ed8);
+    color: #ffffff;
+    box-shadow: 0 6px 14px rgba(37, 99, 235, 0.35);
+    border: 1px solid transparent;
+}
+
+.annotation-box--inactive {
+    background: #f8fafc;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
+    opacity: 0.75;
 }
 
 .annotation-row {
@@ -87,4 +100,52 @@
     border: 1px solid var(--annotation-type-border, rgba(255, 255, 255, 0.35));
     border-radius: 999px;
     padding: 2px 10px;
+}
+
+.annotation-box--inactive .annotation-type-badge {
+    background: #e2e8f0;
+    color: #64748b;
+    border-color: #cbd5e1;
+}
+
+.annotation-box--inactive .annotation-label {
+    opacity: 0.7;
+}
+
+.annotation-status-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 2px;
+}
+
+.annotation-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.dot--active {
+    background: #86efac;
+    box-shadow: 0 0 0 2px rgba(134, 239, 172, 0.35);
+}
+
+.dot--inactive {
+    background: #94a3b8;
+}
+
+.annotation-status-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.status--active {
+    color: #bbf7d0;
+}
+
+.status--inactive {
+    color: #94a3b8;
 }

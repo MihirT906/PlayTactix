@@ -7,15 +7,32 @@ const AnnotationDisplay: React.FC<{ annotationStore: any, currentFrame: number }
         return [...annotationStore.active_annotations.values()];
     };
 
+    const activeAnnotations = getActiveAnnotations();
+
     return (
         <div className="annotation-display">
-            <h3>Active Annotations:</h3>
-            {getActiveAnnotations().map((annotation, index) => (
+            <div className="annotation-display-header">
+                <h3>Active Annotations</h3>
+                <span className="annotation-current-frame">Frame {currentFrame}</span>
+            </div>
+
+            {activeAnnotations.length === 0 && (
+                <div className="annotation-empty-state">No active annotations</div>
+            )}
+
+            {activeAnnotations.map((annotation, index) => (
                 <div key={index} className="annotation-box">
-                    <div style={{ textAlign: "center", lineHeight: "1.5" }}>
-                        <p><strong>Frame Start:</strong> {annotation.frameStart}</p>
-                        <p><strong>Frame End:</strong> {annotation.frameEnd}</p>
-                        <p><strong>Type:</strong> {annotation.type}</p>
+                    <div className="annotation-row">
+                        <span className="annotation-label">Frame Start</span>
+                        <span className="annotation-value">{annotation.frameStart}</span>
+                    </div>
+                    <div className="annotation-row">
+                        <span className="annotation-label">Frame End</span>
+                        <span className="annotation-value">{annotation.frameEnd}</span>
+                    </div>
+                    <div className="annotation-row">
+                        <span className="annotation-label">Type</span>
+                        <span className="annotation-type-badge">{annotation.type}</span>
                     </div>
                 </div>
             ))}

@@ -1,22 +1,90 @@
 .annotation-display {
-    height: 600px; /* Fixed height */
-    width: 300px; /* Fixed width */
-    background-color: lightgray;
-    border-radius: 8px;
+    height: 600px;
+    width: 300px;
+    background: var(--annotation-panel-bg, #f3f4f6);
+    border: 1px solid var(--annotation-panel-border, #d1d5db);
+    border-radius: 12px;
+    padding: 14px;
     overflow-y: auto;
-    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
     font-size: 14px;
-    color: #333;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); 
+    color: var(--annotation-text, #1f2937);
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+}
+
+.annotation-display-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+
+.annotation-display-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--annotation-heading, #111827);
+}
+
+.annotation-current-frame {
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--annotation-frame-bg, #e5e7eb);
+    color: var(--annotation-frame-text, #374151);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.annotation-empty-state {
+    border: 1px dashed var(--annotation-empty-border, #cbd5e1);
+    border-radius: 10px;
+    padding: 18px 12px;
+    text-align: center;
+    color: var(--annotation-empty-text, #64748b);
+    background: var(--annotation-empty-bg, #f8fafc);
 }
 
 .annotation-box {
-    background-color: rgb(89, 153, 255); /* Blue background */
-    color: white; /* White text */
-    border-radius: 8px; /* Rounded corners */
-    padding: 10px; /* Inner spacing */
-    margin: 8px; /* Space between boxes */
-    font-family: Arial, sans-serif; /* Consistent font */
-    font-size: 14px; /* Text size */
-    word-wrap: break-word; /* Wrap long text */
+    background: linear-gradient(150deg, var(--annotation-card-bg-start, #2563eb), var(--annotation-card-bg-end, #1d4ed8));
+    color: var(--annotation-card-text, #ffffff);
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    box-shadow: 0 6px 14px rgba(37, 99, 235, 0.28);
+    word-break: break-word;
+}
+
+.annotation-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.annotation-label {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    opacity: 0.9;
+}
+
+.annotation-value {
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.annotation-type-badge {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    background: var(--annotation-type-bg, rgba(255, 255, 255, 0.2));
+    color: var(--annotation-type-text, #ffffff);
+    border: 1px solid var(--annotation-type-border, rgba(255, 255, 255, 0.35));
+    border-radius: 999px;
+    padding: 2px 10px;
 }

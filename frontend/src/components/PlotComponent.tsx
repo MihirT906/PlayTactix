@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react'
 import Plot from 'react-plotly.js'
 import Plotly from 'plotly.js-dist-min'
 import AnnotationStore from '../services/AnnotationStore-optimized'
-import { SELECTED_POINTS_OPACITY, UNSELECTED_POINTS_OPACITY } from '../config'
+import { APP_CONFIG, SELECTED_POINTS_OPACITY, UNSELECTED_POINTS_OPACITY } from '../config'
 
 // const annotationStore = new AnnotationStore()
 
@@ -14,6 +14,7 @@ interface PlotComponentProps {
 }
 
 const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, x, y, annotationStore }) => {
+  const plotConfig = APP_CONFIG.plot
   const [focusPoints, setFocusPoints] = useState<number[]>([]) // Points that are highlighted on click
   const [firstPoint, setFirstPoint] = useState<number | null>(null) // First point selected when drawing a line between two players
   const [focusEnabled, setFocusEnabled] = useState(false) // 'Player Focus' mode toggled to draw lines
@@ -41,8 +42,8 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, x, y, annot
         x1: x[secondPoint], // End x-coordinate
         y1: y[secondPoint], // End y-coordinate
         line: {
-          color: 'blue',
-          width: 2,
+          color: plotConfig.focusLineColor,
+          width: plotConfig.focusLineWidth,
         },
         editable: true,
         name: `Player1:${firstPoint},Player2:${secondPoint}`, // Using this name to identify the players connected by the line
@@ -107,7 +108,8 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, x, y, annot
           mode: 'markers',
           type: 'scatter',
           marker: { 
-            size: 10,
+            size: plotConfig.markerSize,
+            color: plotConfig.markerColor,
             opacity: 1
           },
           selectedpoints: [firstPoint].concat(focusPoints),
@@ -120,9 +122,11 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, x, y, annot
         } as any,
       ]}
       layout={{
-        title: { text: 'Scatter Plot' },
-        xaxis: { title: { text: 'X Axis' }, range: [0, 100] },
-        yaxis: { title: { text: 'Y Axis' }, range: [0, 100] },
+        title: { text: plotConfig.title },
+        xaxis: { title: { text: plotConfig.xAxisTitle }, range: plotConfig.xAxisRange },
+        yaxis: { title: { text: plotConfig.yAxisTitle }, range: plotConfig.yAxisRange },
+        paper_bgcolor: plotConfig.paperBackgroundColor,
+        plot_bgcolor: plotConfig.plotBackgroundColor,
         autosize: true,
         dragmode: dragMode as any,
         shapes: [...lines, ...shapes], // Contains player focus lines
@@ -131,8 +135,8 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, x, y, annot
       config={{
         editable: false,
         displayModeBar: true,
-        modeBarButtonsToAdd: [player_focus_button,'drawline', 'drawrect', 'eraseshape' as any],
-        modeBarButtonsToRemove: ['zoom', 'pan', 'select', 'lasso', 'zoomin', 'zoomout', 'autoScale2d' as any],
+        modeBarButtonsToAdd: [player_focus_button, ...plotConfig.modeBarButtonsToAdd as any],
+        modeBarButtonsToRemove: [...plotConfig.modeBarButtonsToRemove as any],
       }}
       onClick={handleClick}
       onRelayout={handleRelayout}

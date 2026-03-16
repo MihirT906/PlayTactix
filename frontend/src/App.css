@@ -5,7 +5,7 @@
   margin: 0;
   padding: 24px;
   box-sizing: border-box;
-  background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+  background: linear-gradient(180deg, var(--app-bg-gradient-start, #f8fafc) 0%, var(--app-bg-gradient-end, #eef2ff) 100%);
 }
 
 .app-shell {
@@ -20,10 +20,10 @@
   gap: 16px;
   margin-bottom: 20px;
   padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.85);
-  border: 1px solid #dbe3f1;
+  background: var(--surface-bg, rgba(255, 255, 255, 0.85));
+  border: 1px solid var(--surface-border, #dbe3f1);
   border-radius: 14px;
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 8px 20px var(--surface-shadow, rgba(15, 23, 42, 0.06));
 }
 
 .app-title {
@@ -31,15 +31,15 @@
   font-size: 1.8rem;
   font-weight: 800;
   letter-spacing: 0.02em;
-  color: #0f172a;
+  color: var(--app-title-color, #0f172a);
 }
 
 .frame-status {
   padding: 6px 12px;
   border-radius: 999px;
-  border: 1px solid #c6d2ef;
-  background: #e8efff;
-  color: #1e3a8a;
+  border: 1px solid var(--frame-pill-border, #c6d2ef);
+  background: var(--frame-pill-bg, #e8efff);
+  color: var(--frame-pill-text, #1e3a8a);
   font-weight: 600;
   font-size: 0.9rem;
 }
@@ -57,10 +57,10 @@
   flex-direction: column;
   gap: 16px;
   padding: 18px;
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid #dbe3f1;
+  background: var(--surface-bg, rgba(255, 255, 255, 0.92));
+  border: 1px solid var(--surface-border, #dbe3f1);
   border-radius: 14px;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 10px 24px var(--surface-shadow, rgba(15, 23, 42, 0.06));
 }
 
 .right-panel {

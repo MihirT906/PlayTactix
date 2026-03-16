@@ -4,7 +4,7 @@ import DataManager from './services/DataManager'
 import AnnotationStore from './services/AnnotationStore-optimized'
 import PlotComponent from './components/PlotComponent'
 import Controls from './components/Controls'
-import { CHUNK_SIZE, SLEEP_INTERVAL } from './config'
+import { APP_CONFIG, CHUNK_SIZE, SLEEP_INTERVAL, THEME_CSS_VARIABLES } from './config'
 import AnnotationDisplay from './components/AnnotationDisplay'
 
 function App({dataManager, annotationStore}: {dataManager: DataManager, annotationStore: AnnotationStore}) {
@@ -14,6 +14,16 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
   const [chunkRange, setChunkRange] = useState({ start: 1, end: 10 })
 
   const chunkSize = CHUNK_SIZE // Fixed chunk size
+
+  useEffect(() => {
+    const root = document.documentElement
+
+    Object.entries(THEME_CSS_VARIABLES).forEach(([variable, value]) => {
+      root.style.setProperty(variable, value)
+    })
+
+    document.title = APP_CONFIG.brand.title
+  }, [])
 
   // Fetch data for the current chunk range only when playing
   useEffect(() => {
@@ -58,7 +68,7 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
   return (
     <div className="app-shell">
       <header className="app-header">
-        <h1 className="app-title">PlayTactix</h1>
+        <h1 className="app-title">{APP_CONFIG.brand.title}</h1>
         <div className="frame-status">Frame {currentFrame} / 50</div>
       </header>
 

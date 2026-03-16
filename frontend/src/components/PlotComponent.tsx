@@ -52,8 +52,8 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, x, y }) => 
   }
 
   const updateShapes = () => {
-    console.log("Annotation Store Draw Shapes:", annotationStore.getDrawAnnotations(currentFrame).values())
     const drawShapes = annotationStore.getDrawAnnotations(currentFrame)
+    console.log('draw shapes from store:', drawShapes)
     setShapes(Array.from(drawShapes)) // Update shapes based on the draw annotations in the store
   }
 

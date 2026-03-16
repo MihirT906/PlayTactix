@@ -13,6 +13,28 @@ export default class AnnotationStore {
     private active_annotations: Map<string, Annotation> = new Map() // Contains all currently active annotations
     private annotations: Map<string, Annotation> = new Map() // Contains all annotations
     
+    reconstruct_active_annotations(currentFrame: number) {
+        // Reconstructs active annotations from start_events and end_events based on the current frame
+        this.active_annotations.clear()
+        for (const [frame, annotationKeys] of this.start_events.entries()) {
+            if (frame > currentFrame) continue;
+
+            for (const key of annotationKeys) {
+                const annotation = this.annotations.get(key)
+                if (annotation){
+                    this.active_annotations.set(key, annotation)
+                }
+            }
+        }
+        for (const [frame, annotationKeys] of this.end_events.entries()) {
+            if (frame > currentFrame) continue;
+
+            for (const key of annotationKeys) {
+                this.active_annotations.delete(key)
+            }
+        }
+    }
+    
     update_active_annotation(currentFrame: number) {
         // Keeps active annotations current
         const shapes_to_remove = this.end_events.get(currentFrame) || []
@@ -50,6 +72,7 @@ export default class AnnotationStore {
     deletePlayerFocusAnnotation(playerFocusShapes: any, currentFrame: number){
         // Delete player focus annotations that do not exist anymore
         for (const [key, annotation] of this.active_annotations.entries()) {
+            if (annotation.type !== 'playerFocus') continue;
             const isPresent = playerFocusShapes.some((shape: any) => shape.name === `Player1:${annotation.shape.points[0]},Player2:${annotation.shape.points[1]}`);
             if (!isPresent) {
                 annotation.frameEnd = currentFrame;
@@ -62,6 +85,7 @@ export default class AnnotationStore {
     addOrDeleteDrawShapes(drawShapes: any, currentFrame: number){
         // Delete draw shapes that do not exist anymore
         for (const [key, annotation] of this.active_annotations.entries()) {
+            if (annotation.type !== 'draw') continue;
             const isPresent = drawShapes.some((shape: any) => objectHash(shape) === key);
             if (!isPresent) {
                 annotation.frameEnd = currentFrame;

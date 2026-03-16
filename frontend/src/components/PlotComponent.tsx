@@ -4,15 +4,16 @@ import Plotly from 'plotly.js-dist-min'
 import AnnotationStore from '../services/AnnotationStore-optimized'
 import { SELECTED_POINTS_OPACITY, UNSELECTED_POINTS_OPACITY } from '../config'
 
-const annotationStore = new AnnotationStore()
+// const annotationStore = new AnnotationStore()
 
 interface PlotComponentProps {
   currentFrame: number
   x: number[]
   y: number[]
+  annotationStore: AnnotationStore
 }
 
-const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, x, y }) => {
+const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, x, y, annotationStore }) => {
   const [focusPoints, setFocusPoints] = useState<number[]>([]) // Points that are highlighted on click
   const [firstPoint, setFirstPoint] = useState<number | null>(null) // First point selected when drawing a line between two players
   const [focusEnabled, setFocusEnabled] = useState(false) // 'Player Focus' mode toggled to draw lines
@@ -31,7 +32,6 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, x, y }) => 
   const updateLines = () => { // Creates lines to add to Plotly.layout using the player focus lines stored in annotationStore
     setLines([]) // Clear existing lines before adding new ones
     setFocusPoints([]) // Clear existing focus points before adding new ones
-    console.log('player focus lines from store:', annotationStore.getPlayerFocusLines(currentFrame))
     for (const [firstPoint, secondPoint] of annotationStore.getPlayerFocusLines(currentFrame) as [number, number][]) {
       setFocusPoints(prev => [...prev, firstPoint, secondPoint]) // Add all players that have lines connected to them to focusPoints
       const newLine = {
@@ -53,7 +53,6 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, x, y }) => 
 
   const updateShapes = () => {
     const drawShapes = annotationStore.getDrawAnnotations(currentFrame)
-    console.log('draw shapes from store:', drawShapes)
     setShapes(Array.from(drawShapes)) // Update shapes based on the draw annotations in the store
   }
 
@@ -61,7 +60,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, x, y }) => 
     updateLines()
     updateShapes()
     setDragMode('select')
-    // annotationStore.displayAllShapes()
+    annotationStore.update_active_annotation(currentFrame) // Update active annotations in the store based on the current frame
   }, [x, y]) 
 
   const handleClick = (event: any) => { // Allows the user to 'Focus' on a player or draw lines between them
@@ -94,7 +93,6 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, x, y }) => 
     }
     else if ('shapes' in eventData) {
       annotationStore.handleAnnotationRelayout(eventData, currentFrame)
-      //annotationStore.deletePlayerFocusAnnotation(eventData)
       updateLines()
       updateShapes()
     }

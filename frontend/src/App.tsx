@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import './App.css'
 import DataManager from './services/DataManager'
+import AnnotationStore from './services/AnnotationStore-optimized'
 import PlotComponent from './components/PlotComponent'
 import Controls from './components/Controls'
 import { CHUNK_SIZE, SLEEP_INTERVAL } from './config'
 
-function App({dataManager}: {dataManager: DataManager}) {
+function App({dataManager, annotationStore}: {dataManager: DataManager, annotationStore: AnnotationStore}) {
   const [currentFrame, setCurrentFrame] = useState(1)
   const [isPlaying, setIsPlaying] = useState(false) // Start with paused state
   const [currentFrameData, setCurrentFrameData] = useState<{ x: number[]; y: number[] }>({ x: [], y: [] })
@@ -62,8 +63,9 @@ function App({dataManager}: {dataManager: DataManager}) {
         currentFrame={currentFrame}
         onFrameChange={handleFrameChange}
         chunkRange={chunkRange} // Pass chunkRange to Controls
+        annotationStore={annotationStore}
       />
-      <PlotComponent currentFrame={currentFrame}x={currentFrameData.x} y={currentFrameData.y} />
+      <PlotComponent currentFrame={currentFrame} x={currentFrameData.x} y={currentFrameData.y} annotationStore={annotationStore} />
     </>
   )
 }

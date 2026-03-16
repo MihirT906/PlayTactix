@@ -117,6 +117,13 @@ export default class AnnotationStore {
         return Array.from(this.active_annotations.values()).filter(annotation => annotation.type === 'draw').map(annotation => annotation.shape);
     }
 
+    describeAnnotationStore(){
+        console.log('Start Events:', this.start_events)
+        console.log('End Events:', this.end_events)
+        console.log('Active Annotations:', this.active_annotations)
+        console.log('All Annotations:', this.annotations)
+    }
+
     handleAnnotationRelayout(eventData: any, currentFrame: number) {
         const shapes = eventData["shapes"] || [];
         const drawShapes = shapes.filter((shape: any) => shape.name == undefined);

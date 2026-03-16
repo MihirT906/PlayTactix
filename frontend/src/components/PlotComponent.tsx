@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react'
 import Plot from 'react-plotly.js'
 import Plotly from 'plotly.js-dist-min'
-import AnnotationStore from '../services/AnnotationStore'
+import AnnotationStore from '../services/AnnotationStore-optimized'
 import { SELECTED_POINTS_OPACITY, UNSELECTED_POINTS_OPACITY } from '../config'
 
 const annotationStore = new AnnotationStore()
@@ -31,6 +31,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, x, y }) => 
   const updateLines = () => { // Creates lines to add to Plotly.layout using the player focus lines stored in annotationStore
     setLines([]) // Clear existing lines before adding new ones
     setFocusPoints([]) // Clear existing focus points before adding new ones
+    console.log('player focus lines from store:', annotationStore.getPlayerFocusLines(currentFrame))
     for (const [firstPoint, secondPoint] of annotationStore.getPlayerFocusLines(currentFrame) as [number, number][]) {
       setFocusPoints(prev => [...prev, firstPoint, secondPoint]) // Add all players that have lines connected to them to focusPoints
       const newLine = {

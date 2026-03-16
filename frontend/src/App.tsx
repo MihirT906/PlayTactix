@@ -56,21 +56,27 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
   }
 
   return (
-    <div className="app-container">
-      <div className="main-content">
-        <h1>Frame {currentFrame} / 50</h1>
-        <Controls
-          isPlaying={isPlaying}
-          onPlayPause={handlePlayPause}
-          currentFrame={currentFrame}
-          onFrameChange={handleFrameChange}
-          chunkRange={chunkRange} // Pass chunkRange to Controls
-          annotationStore={annotationStore}
-        />
-        <PlotComponent currentFrame={currentFrame} x={currentFrameData.x} y={currentFrameData.y} annotationStore={annotationStore} />
-      </div>
-      <div className="right-panel">
-        <AnnotationDisplay annotationStore={annotationStore} currentFrame={currentFrame} />
+    <div className="app-shell">
+      <header className="app-header">
+        <h1 className="app-title">PlayTactix</h1>
+        <div className="frame-status">Frame {currentFrame} / 50</div>
+      </header>
+
+      <div className="app-container">
+        <div className="main-content">
+          <Controls
+            isPlaying={isPlaying}
+            onPlayPause={handlePlayPause}
+            currentFrame={currentFrame}
+            onFrameChange={handleFrameChange}
+            chunkRange={chunkRange} // Pass chunkRange to Controls
+            annotationStore={annotationStore}
+          />
+          <PlotComponent currentFrame={currentFrame} x={currentFrameData.x} y={currentFrameData.y} annotationStore={annotationStore} />
+        </div>
+        <div className="right-panel">
+          <AnnotationDisplay annotationStore={annotationStore} currentFrame={currentFrame} />
+        </div>
       </div>
     </div>
   )

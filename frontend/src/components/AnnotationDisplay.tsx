@@ -34,10 +34,24 @@ const AnnotationDisplay: React.FC<{ annotationStore: any, currentFrame: number }
                             <span className="annotation-label">Frame End</span>
                             <span className="annotation-value">{annotation.frameEnd ?? "—"}</span>
                         </div>
-                        <div className="annotation-row">
-                            <span className="annotation-label">Type</span>
-                            <span className="annotation-type-badge">{annotation.type}</span>
-                        </div>
+                        {annotation.type === "playerFocus" && (
+                            <div className="annotation-visual-block" aria-label="Player link diagram">
+                                <div className="player-node">
+                                    <span className="player-node-label">Player 1</span>
+                                    <span className="player-node-value">{annotation.shape.points[0] ?? "?"}</span>
+                                </div>
+                                <div className="player-node">
+                                    <span className="player-node-label">Player 2</span>
+                                    <span className="player-node-value">{annotation.shape.points[1] ?? "?"}</span>
+                                </div>
+                            </div>
+                        )}
+                        {annotation.type === "draw" && (
+                            <div className="annotation-visual-block" aria-label="Draw shape diagram">
+                                <span className="annotation-draw-label">Drawn Shape</span>
+                                <span className="annotation-draw-value">{annotation.shape.type}</span>
+                            </div>
+                        )}
                     </div>
                 );
             })}

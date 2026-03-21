@@ -1,6 +1,7 @@
 import React from 'react'
 import './Controls.css' // Importing a CSS file for styling
 import AnnotationStore from '../services/AnnotationStore-optimized'
+import { FaPlay, FaPause } from 'react-icons/fa'
 
 interface ControlsProps {
   isPlaying: boolean
@@ -25,7 +26,7 @@ const Controls: React.FC<ControlsProps> = ({ isPlaying, onPlayPause, currentFram
   return (
     <div className="controls-container">
       <button className="play-pause-button" onClick={onPlayPause}>
-        {isPlaying ? 'Pause' : 'Play'}
+        {isPlaying ? <FaPause /> : <FaPlay />}
       </button>
       <input
         className="frame-slider"

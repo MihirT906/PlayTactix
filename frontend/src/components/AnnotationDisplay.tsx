@@ -1,7 +1,7 @@
 import type React from "react";
 import "./AnnotationDisplay.css";
 
-const AnnotationDisplay: React.FC<{ annotationStore: any, currentFrame: number }> = ({ annotationStore, currentFrame }) => {
+const AnnotationDisplay: React.FC<{ annotationStore: any, currentFrame: number, annotationUpdateEvent: boolean }> = ({ annotationStore, currentFrame, annotationUpdateEvent }) => {
     const allAnnotations = [...annotationStore.annotations.entries()] as [string, any][];
     const activeKeys = new Set(annotationStore.active_annotations.keys());
 

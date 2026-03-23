@@ -11,9 +11,10 @@ interface PlotComponentProps {
   x: number[]
   y: number[]
   annotationStore: AnnotationStore
+  onAnnotationUpdate?: () => void // Optional callback to trigger when annotations are updated
 }
 
-const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, x, y, annotationStore }) => {
+const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, x, y, annotationStore, onAnnotationUpdate }) => {
   const plotConfig = APP_CONFIG.plot
   const [focusPoints, setFocusPoints] = useState<number[]>([]) // Points that are highlighted on click
   const [firstPoint, setFirstPoint] = useState<number | null>(null) // First point selected when drawing a line between two players
@@ -82,6 +83,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, x, y, annot
       }
       annotationStore.addPlayerFocusAnnotation(firstPoint, pointIndex, currentFrame)
       updateLines()
+      onAnnotationUpdate?.()
       setFirstPoint(null) // Reset first point for the next line
     }
     return []
@@ -96,6 +98,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, x, y, annot
       annotationStore.handleAnnotationRelayout(eventData, currentFrame)
       updateLines()
       updateShapes()
+      onAnnotationUpdate?.() 
     }
     annotationStore.describeAnnotationStore() // For debugging - logs the current state of the annotation store after every relayout event
   }

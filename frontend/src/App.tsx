@@ -12,6 +12,7 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
   const [isPlaying, setIsPlaying] = useState(false) // Start with paused state
   const [currentFrameData, setCurrentFrameData] = useState<{ x: number[]; y: number[] }>({ x: [], y: [] })
   const [chunkRange, setChunkRange] = useState({ start: 1, end: 10 })
+  const [annotationUpdateEvent, setAnnotationUpdateEvent] = useState(false) // State to trigger re-render on annotation updates
 
   const chunkSize = CHUNK_SIZE // Fixed chunk size
 
@@ -82,10 +83,10 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
             chunkRange={chunkRange} // Pass chunkRange to Controls
             annotationStore={annotationStore}
           />
-          <PlotComponent currentFrame={currentFrame} x={currentFrameData.x} y={currentFrameData.y} annotationStore={annotationStore} />
+          <PlotComponent currentFrame={currentFrame} x={currentFrameData.x} y={currentFrameData.y} annotationStore={annotationStore} onAnnotationUpdate={() => setAnnotationUpdateEvent(!annotationUpdateEvent)} />
         </div>
         <div className="right-panel">
-          <AnnotationDisplay annotationStore={annotationStore} currentFrame={currentFrame} />
+          <AnnotationDisplay annotationStore={annotationStore} currentFrame={currentFrame} annotationUpdateEvent={annotationUpdateEvent} />
         </div>
       </div>
     </div>

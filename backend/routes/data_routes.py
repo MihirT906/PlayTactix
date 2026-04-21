@@ -1,42 +1,35 @@
+import json
 from fastapi import APIRouter, HTTPException, Query
-from services.data_ingestor import DataIngestor
+from services.data_ingestor_github import SkillCornerDataIngestor
 
 router = APIRouter(prefix="/data", tags=["frames"])
 
-data_ingestor: DataIngestor = None
+data_ingestor: SkillCornerDataIngestor = None
 
-def set_data_ingestor(ingestor: DataIngestor):
+def set_data_ingestor(ingestor: SkillCornerDataIngestor):
     global data_ingestor
     data_ingestor = ingestor
-
-@router.get("/frame/{frame_number}")
-async def get_frame_data(frame_number: int):
+    
+@router.get("/match/{match_id}/")
+async def get_match_data(match_id: int):
     try:
-        if data_ingestor is None:
-            raise HTTPException(status_code=500, detail="DataIngestor not initialized")
+        sc_data_ingestor = SkillCornerDataIngestor()
+        sc_data_ingestor.load_data(match_id)
         
-        coordinates_df = data_ingestor.get_frame_data(frame_number)
-        if coordinates_df.empty:
-            raise HTTPException(status_code=404, detail=f"No data found for frame number {frame_number}")
-
-        return coordinates_df.to_dict(orient="records")
-
+        return {"message": f"Data for match {match_id} has been saved to gold_tracking_data.pkl"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/frames")
 async def get_frame_data(start: int = Query(1), end: int = Query(50)):
     try:
-        if data_ingestor is None:
-            raise HTTPException(status_code=500, detail="DataIngestor not initialized")
+        with open(f"../data/gold_tracking_data.json", "r") as f:
+            gold_tracking_data = json.load(f)
         
-        df = data_ingestor.load_data(data_ingestor.csv_path)
-        if df.empty:
-            raise HTTPException(status_code=404, detail="No data found")
+        frames = gold_tracking_data['frames']
+        filtered_frames = {frame_num: frames[str(frame_num)] for frame_num in range(start, end + 1) if str(frame_num) in frames}
 
-        # Filter data for the requested frame range
-        filtered_data = df[(df["frame_num"] >= start) & (df["frame_num"] <= end)]
-        return filtered_data.to_dict(orient="records")
+        return filtered_frames
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

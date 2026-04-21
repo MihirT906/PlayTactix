@@ -1,30 +1,52 @@
+import json
+
 import pandas as pd
-import requests
 import numpy as np
+import os
+from typing import List, Dict, Optional
+import requests
 
-
-class DataLoader:
+class SkillCornerDataIngestor:
     def __init__(self):
         pass
-
+        # Get the absolute path to the backend directory
+        # backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        # self.csv_path = os.path.join(backend_dir, "..", "data", DATA_FILE_NAME)
+    
     def _time_to_seconds(self, time_str) -> int:
         """Convert time string in HH:MM:SS format to total seconds."""
         if time_str is None:
             return 90 * 60  # 120 minutes = 7200 seconds
         h, m, s = map(int, time_str.split(":"))
         return h * 3600 + m * 60 + s
-
-    def load_tracking_data(self, match_id) -> pd.DataFrame:
+    
+    def _get_bronze_tracking_data(self, match_id) -> pd.DataFrame:
         """Load tracking data for a specific match."""
 
         # Ingest tracking data from Github
         tracking_data_github_url = f"https://media.githubusercontent.com/media/SkillCorner/opendata/741bdb798b0c1835057e3fa77244c1571a00e4aa/data/matches/{match_id}/{match_id}_tracking_extrapolated.jsonl"
         raw_data = pd.read_json(tracking_data_github_url, lines=True)
+
+        return raw_data
+    
+    def _get_bronze_meta_data(self, match_id) -> pd.DataFrame:
+    
+        # Ingest metadata from Github
+        meta_data_github_url = f"https://raw.githubusercontent.com/SkillCorner/opendata/741bdb798b0c1835057e3fa77244c1571a00e4aa/data/matches/{match_id}/{match_id}_match.json"
+        response = requests.get(meta_data_github_url)
+        raw_match_data = response.json()
+        
+        return raw_match_data
+    
+    def _get_silver_tracking_data(self, bronze_tracking_data):
         raw_df = pd.json_normalize(
-            raw_data.to_dict("records"),
+            bronze_tracking_data.to_dict("records"),
             "player_data",
             ["frame", "timestamp", "period", "possession", "ball_data"],
         )
+        
+        raw_df["x"] = raw_df["x"].round(2)
+        raw_df["y"] = raw_df["y"].round(2)
 
         # Extract 'player_id' and 'group from the 'possession' dictionary
         raw_df["possession_player_id"] = raw_df["possession"].apply(
@@ -43,21 +65,14 @@ class DataLoader:
         raw_df = raw_df.drop(columns=["possession", "ball_data"])
 
         # Add the match_id identifier to your dataframe
-        raw_df["match_id"] = match_id
+        # raw_df["match_id"] = match_id
         tracking_df = raw_df.copy()
-
+        
         return tracking_df
-
-    def load_meta_data(self, match_id) -> pd.DataFrame:
-        """Load metadata for a specific match."""
-
-        # Ingest metadata from Github
-        meta_data_github_url = f"https://raw.githubusercontent.com/SkillCorner/opendata/741bdb798b0c1835057e3fa77244c1571a00e4aa/data/matches/{match_id}/{match_id}_match.json"
-        response = requests.get(meta_data_github_url)
-        raw_match_data = response.json()
-
+    
+    def _get_silver_meta_data(self, bronze_meta_data):
         # The output has nested json elements. We process them
-        raw_match_df = pd.json_normalize(raw_match_data, max_level=2)
+        raw_match_df = pd.json_normalize(bronze_meta_data, max_level=2)
         raw_match_df["home_team_side"] = raw_match_df["home_team_side"].astype(str)
 
         players_df = pd.json_normalize(
@@ -146,21 +161,74 @@ class DataLoader:
         ]
         players_df = players_df[columns_to_keep]
         return players_df
+        
 
-    def load_event_data(self, match_id) -> pd.DataFrame:
+    def _get_gold_tracking_data(self, silver_tracking_data, silver_meta_data):
+        silver_tracking_data = silver_tracking_data.merge(
+            silver_meta_data, left_on=["player_id"], right_on=["id"]
+        )
+        frames = {}
+        for frame_number, group in silver_tracking_data.groupby("frame"):
+            frames[frame_number] = {
+                #'is_detected': group['is_detected'].iloc[0],
+                #'timestamp': group['timestamp'].iloc[0],
+                'period': group['period'].iloc[0],
+                'players': {
+                    'x': group['x'].tolist(),
+                    'y': group['y'].tolist(),
+                    'player_id': group['player_id'].tolist(),
+                    'id': group['id'].tolist(),
+                    'short_name': group['short_name'].tolist(),
+                    'number': group['number'].tolist(),
+                    'team_id': group['team_id'].tolist(),
+                    'total_time': group['total_time'].tolist(),
+                    'player_role.name': group['player_role.name'].tolist(),
+                    'player_role.acronym': group['player_role.acronym'].tolist(),
+                    'is_gk': group['is_gk'].tolist(),
+                    'direction_player_1st_half': group['direction_player_1st_half'].tolist(),
+                    'direction_player_2nd_half': group['direction_player_2nd_half'].tolist(),
+                },
+                'ball': {
+                    'ball_x': group['ball_x'].iloc[0],
+                    'ball_y': group['ball_y'].iloc[0],
+                    'ball_z': group['ball_z'].iloc[0],
+                    #'is_detected_ball': group['is_detected_ball'].iloc[0],
+                }
+            }
+            
+        return frames
+
+    
+    def _load_event_data(self, match_id) -> pd.DataFrame:
         """Load event data for a specific match."""
 
         event_data_github_url = f"https://raw.githubusercontent.com/SkillCorner/opendata/refs/heads/master/data/matches/{match_id}/{match_id}_dynamic_events.csv"
         raw_data = pd.read_csv(event_data_github_url)
-        # raw_data = pd.read_csv('../../sandbox/sample_data/1886347_dynamic_events.csv')
+
         return raw_data
+    
+    def load_data(self, match_id) -> Dict[str, pd.DataFrame]:
+        bronze_tracking_data = self._get_bronze_tracking_data(match_id)
+        bronze_meta_data = self._get_bronze_meta_data(match_id)
+        silver_tracking_data = self._get_silver_tracking_data(bronze_tracking_data)
+        silver_meta_data = self._get_silver_meta_data(bronze_meta_data)
+        gold_tracking_data = self._get_gold_tracking_data(silver_tracking_data, silver_meta_data)
+        
+        final_data = {
+            'match_id': match_id,
+            'frames': gold_tracking_data
+        }
+        with open(f"../data/gold_tracking_data.json", "w") as f:
+            json.dump(final_data, f)
+            
+        return gold_tracking_data
+    
+    def get_frame_data(self, frame_number: int, match_id: str = 1886347):
+        df_dict = self.load_data(match_id)
+        df = df_dict["enriched_tracking_data"]
 
-    def create_enriched_tracking_data(self, match_id) -> pd.DataFrame:
-        """Merge tracking data with metadata to create enriched tracking data."""
+        if "frame" not in df.columns:
+            raise ValueError("DataFrame must contain a 'frame' column")
 
-        tracking_df = self.load_tracking_data(match_id)
-        meta_df = self.load_meta_data(match_id)
-        enriched_tracking_data = tracking_df.merge(
-            meta_df, left_on=["player_id"], right_on=["id"]
-        )
-        return enriched_tracking_data
+        frame_df = df[df["frame"] == frame_number]
+        return frame_df.to_dict(orient="records")

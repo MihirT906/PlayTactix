@@ -8,13 +8,14 @@ import { APP_CONFIG, CHUNK_SIZE, SLEEP_INTERVAL, THEME_CSS_VARIABLES } from './c
 import AnnotationDisplay from './components/AnnotationDisplay'
 
 function App({dataManager, annotationStore}: {dataManager: DataManager, annotationStore: AnnotationStore}) {
+  const [currentFrame, setCurrentFrame] = useState(1)
   const [isPlaying, setIsPlaying] = useState(false) // Start with paused state
-  const [chunkRange, setChunkRange] = useState({ start: 10, end: 100 })
+  const [isFetching, setIsFetching] = useState(false) // State to track if data is being fetched
+  const [currentFrameData, setCurrentFrameData] = useState<{ x: number[]; y: number[] }>({ x: [], y: [] })
+  const [chunkRange, setChunkRange] = useState({ start: 1, end: 100 })
+  const [annotationUpdateEvent, setAnnotationUpdateEvent] = useState(false) // State to trigger re-render on annotation updates
 
-  const [currentFrame, setCurrentFrame] = useState(10)
-  const [currentFrameData, setCurrentFrameData] = useState<{ x: number[]; y: number[] } | null>(null)
-  const [isFetching, setIsFetching] = useState(false) // Track if data is being fetched
-  const [annotationUpdateEvent, setAnnotationUpdateEvent] = useState(false)
+  const chunkSize = CHUNK_SIZE // Fixed chunk size
 
   useEffect(() => {
     const root = document.documentElement
@@ -26,27 +27,42 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
     document.title = APP_CONFIG.brand.title
   }, [])
 
-
+  // Fetch data for the current chunk range only when playing
   useEffect(() => {
-    const fetchFrameData = async () => {
-      setIsFetching(true) // Set fetching flag to true
-      const frameData = await dataManager.getFrameData(currentFrame)
+    console.log(`useEffect triggered: currentFrame=${currentFrame}, isPlaying=${isPlaying}`);
+    if (!isPlaying || isFetching) return;
+
+    const fetchData = async () => {
+      setIsFetching(true); // Start fetching
+      const start = Math.floor((currentFrame - 1) / chunkSize) * chunkSize + 1;
+      const end = start + chunkSize - 1;
+      setChunkRange({ start, end });
+
+      await dataManager.fetchChunk(start, end);
+      const frameData = dataManager.getFrameData(currentFrame);
+
       if (frameData) {
-        setCurrentFrameData({ x: frameData.players.x, y: frameData.players.y })
-      } else {
-        console.warn(`No data available for frame ${currentFrame}`)
-        setCurrentFrameData(null)
+        setCurrentFrameData({
+          x: frameData.players.x,
+          y: frameData.players.y,
+        });
       }
-      setIsFetching(false) // Set fetching flag to false
-    }
+      setIsFetching(false); // End fetching
+    };
 
-    fetchFrameData()
-  }, [currentFrame])
+    fetchData();
+  }, [currentFrame, isPlaying]); // Fetch data only when playing
 
+  // Animation timer: auto-increment frame every second when playing, loop back to 1 after frame 50
   useEffect(() => {
-    if (!isPlaying || isFetching) return // Only proceed if not fetching
+    if (!isPlaying) return
+    if (isFetching) return
+
+    console.log('Incrementing frame', isFetching)
     const interval = setInterval(() => {
-      setCurrentFrame(prev => (prev >= 500 ? 10 : prev + 1))
+      if (!isFetching) {
+        setCurrentFrame(prev => (prev >= 50 ? 1 : prev + 1))
+      }
     }, SLEEP_INTERVAL)
 
     return () => clearInterval(interval)
@@ -78,7 +94,7 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
             chunkRange={chunkRange} // Pass chunkRange to Controls
             annotationStore={annotationStore}
           />
-          <PlotComponent currentFrame={currentFrame} x={currentFrameData? currentFrameData.x : []} y={currentFrameData? currentFrameData.y : []} annotationStore={annotationStore} onAnnotationUpdate={() => setAnnotationUpdateEvent(!annotationUpdateEvent)} />
+          <PlotComponent currentFrame={currentFrame} x={currentFrameData.x} y={currentFrameData.y} annotationStore={annotationStore} onAnnotationUpdate={() => setAnnotationUpdateEvent(!annotationUpdateEvent)} />
         </div>
         <div className="right-panel">
           <AnnotationDisplay annotationStore={annotationStore} currentFrame={currentFrame} annotationUpdateEvent={annotationUpdateEvent} />
@@ -86,22 +102,6 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
       </div>
     </div>
   )
-  // return (
-  //   <div className="app-shell">
-  //     <div className="frame-status"> Frame {currentFrame} </div>
-  //     <div> Frame Status {isFetching ? 'Fetching...' : 'Ready'}</div>
-  //     <div className="frame-data"> {currentFrameData ? currentFrameData.x.join(', ') : 'No data available'} </div>
-  //     <Controls
-  //           isPlaying={isPlaying}
-  //           onPlayPause={handlePlayPause}
-  //           currentFrame={currentFrame}
-  //           onFrameChange={handleFrameChange}
-  //           chunkRange={chunkRange} // Pass chunkRange to Controls
-  //           annotationStore={annotationStore}
-  //     />
-  //   </div>
-
-  // )
 }
 
 export default App

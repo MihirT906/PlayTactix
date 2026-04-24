@@ -3,8 +3,8 @@ export const APP_CONFIG = {
 		title: 'PlayTactix',
 	},
 	timing: {
-		chunkSize: 10,
-		sleepIntervalMs: 1000,
+		chunkSize: 100,
+		sleepIntervalMs: 100,
 	},
 	selection: {
 		selectedPointsOpacity: 1,
@@ -14,8 +14,8 @@ export const APP_CONFIG = {
 		title: 'Player Positions',
 		xAxisTitle: 'X Axis',
 		yAxisTitle: 'Y Axis',
-		xAxisRange: [0, 100] as [number, number],
-		yAxisRange: [0, 100] as [number, number],
+		xAxisRange: [-50, 50] as [number, number],
+		yAxisRange: [-50, 50] as [number, number],
 		markerSize: 10,
 		markerColor: '#d85e1d',
 		focusLineColor: '#2563eb',

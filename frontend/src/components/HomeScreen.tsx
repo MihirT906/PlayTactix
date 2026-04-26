@@ -69,36 +69,38 @@ const HomeScreen = () => {
         setLoading(true);
         try {
             await matchDataManager.downloadMatchData(matchId);
-            navigate('/app'); // Navigate to /app after download
+            
         } catch (error) {
             console.error(`Error downloading match data for match ${matchId}:`, error);
         } finally {
+            navigate('/app'); // Navigate to /app after download
             setLoading(false);
         }
     };
 
     return (
-        <div className="home-screen">
+        <div className={`home-screen ${loading ? 'loading' : ''}`}>
             <h1 className="home-title">Welcome to PlayTactix</h1>
-            {loading ? (
-                <div className="loading-indicator">Loading matches...</div> // Loading indicator
-            ) : (
-                <div className="match-list">
-                    {matches.map((match) => (
-                        <button
-                            key={match.id}
-                            className="match-card"
-                            onClick={() => handleMatchClick(match.id)}
-                            disabled={loading} // Disable buttons when loading
-                        >
-                            <h2>{match.home_team.short_name} vs {match.away_team.short_name}</h2>
-                            <p>{new Date(match.date_time).toLocaleString()}</p>
-                            <p>{match.stadium.name}, {match.stadium.city}</p>
-                            <p>Score: {match.home_team_score} - {match.away_team_score}</p>
-                        </button>
-                    ))}
+            {loading && (
+                <div className="loading-overlay">
+                    <div className="spinner"></div>
                 </div>
             )}
+            <div className="match-list">
+                {matches.map((match) => (
+                    <button
+                        key={match.id}
+                        className="match-card"
+                        onClick={() => handleMatchClick(match.id)}
+                        disabled={loading} // Disable buttons when loading
+                    >
+                        <h2>{match.home_team.short_name} vs {match.away_team.short_name}</h2>
+                        <p>{new Date(match.date_time).toLocaleString()}</p>
+                        <p>{match.stadium.name}, {match.stadium.city}</p>
+                        <p>Score: {match.home_team_score} - {match.away_team_score}</p>
+                    </button>
+                ))}
+            </div>
         </div>
     );
 };

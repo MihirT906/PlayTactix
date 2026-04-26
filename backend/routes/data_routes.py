@@ -13,6 +13,12 @@ def set_data_ingestor(ingestor: SkillCornerDataIngestor):
 @router.get("/match/{match_id}/")
 async def get_match_data(match_id: int):
     try:
+        with open("../data/gold_tracking_data.json", "r") as f:
+            gold_tracking_data = json.load(f)
+
+        if gold_tracking_data.get("match_id") == match_id:
+            return {"message": f"Data for match {match_id} already exists in gold_tracking_data.json"}
+
         sc_data_ingestor = SkillCornerDataIngestor()
         sc_data_ingestor.load_data(match_id)
         

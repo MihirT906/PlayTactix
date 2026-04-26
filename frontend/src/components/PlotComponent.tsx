@@ -3,6 +3,8 @@ import Plot from 'react-plotly.js'
 import Plotly from 'plotly.js-dist-min'
 import AnnotationStore from '../services/AnnotationStore-optimized'
 import { APP_CONFIG, SELECTED_POINTS_OPACITY, UNSELECTED_POINTS_OPACITY } from '../config'
+// Import the background image
+import backgroundImage from '../../../data/background_image.png';
 
 // const annotationStore = new AnnotationStore()
 
@@ -23,6 +25,9 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, x, y, annot
   const [shapes, setShapes] = useState<any[]>([])
   const [dragMode, setDragMode] = useState<string>('select')
 
+  const image_src = backgroundImage; // Set the background image source
+
+  console.log(image_src)
   const player_focus_button = useMemo(() => ({ // Button to toggle 'Player Focus' mode
     name: 'Player Focus',
     icon: Plotly.Icons.tooltip_basic,
@@ -104,47 +109,65 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, x, y, annot
   }
 
   return (
-    <Plot className='PlotComponent'
-      data={[
-        {
-          x: x,
-          y: y,
-          mode: 'markers',
-          type: 'scatter',
-          marker: { 
-            size: plotConfig.markerSize,
-            color: plotConfig.markerColor,
-            opacity: 1
-          },
-          selectedpoints: [firstPoint].concat(focusPoints),
-          selected: {
-            marker: { opacity: SELECTED_POINTS_OPACITY },
-          },
-          unselected: {
-            marker: { opacity: [firstPoint].concat(focusPoints).length > 0 ? UNSELECTED_POINTS_OPACITY: SELECTED_POINTS_OPACITY },
-          },
-        } as any,
-      ]}
-      layout={{
-        title: { text: plotConfig.title },
-        xaxis: { title: { text: plotConfig.xAxisTitle }, range: plotConfig.xAxisRange },
-        yaxis: { title: { text: plotConfig.yAxisTitle }, range: plotConfig.yAxisRange },
-        paper_bgcolor: plotConfig.paperBackgroundColor,
-        plot_bgcolor: plotConfig.plotBackgroundColor,
-        autosize: true,
-        dragmode: dragMode as any,
-        shapes: [...lines, ...shapes], // Contains player focus lines
-      }}
+    <div className="plot-container">
+      <Plot className='PlotComponent'
+        data={[
+          {
+            x: x,
+            y: y,
+            mode: 'markers',
+            type: 'scatter',
+            marker: { 
+              size: plotConfig.markerSize,
+              color: plotConfig.markerColor,
+              opacity: 1
+            },
+            selectedpoints: [firstPoint].concat(focusPoints),
+            selected: {
+              marker: { opacity: SELECTED_POINTS_OPACITY },
+            },
+            unselected: {
+              marker: { opacity: [firstPoint].concat(focusPoints).length > 0 ? UNSELECTED_POINTS_OPACITY: SELECTED_POINTS_OPACITY },
+            },
+          } as any,
+        ]}
+        layout={{
+          title: { text: plotConfig.title },
+          xaxis: { title: { text: plotConfig.xAxisTitle }, range: [-56.5, 56.5], showgrid: false, visible: false },
+          yaxis: { title: { text: plotConfig.yAxisTitle }, range: [-38, 38], showgrid: false, visible: false },
+          width: 700,
+          height: 500,
+          paper_bgcolor: plotConfig.paperBackgroundColor,
+          plot_bgcolor: plotConfig.plotBackgroundColor,
+          // autosize: true,
+          dragmode: dragMode as any,
+          shapes: [...lines, ...shapes], // Contains player focus lines
+          images: [
+            {
+              source: image_src,
+              xref: 'x',
+              yref: 'y',
+              x: -56.5,
+              y: 38,
+              sizex: 113,
+              sizey: 76,
+              layer: 'below',
+              opacity: 0.8,
+              sizing: 'stretch',
+            }
+          ]
+        }}
 
-      config={{
-        editable: false,
-        displayModeBar: true,
-        modeBarButtonsToAdd: [player_focus_button, ...plotConfig.modeBarButtonsToAdd as any],
-        modeBarButtonsToRemove: [...plotConfig.modeBarButtonsToRemove as any],
-      }}
-      onClick={handleClick}
-      onRelayout={handleRelayout}
-    />
+        config={{
+          editable: false,
+          displayModeBar: true,
+          modeBarButtonsToAdd: [player_focus_button, ...plotConfig.modeBarButtonsToAdd as any],
+          modeBarButtonsToRemove: [...plotConfig.modeBarButtonsToRemove as any],
+        }}
+        onClick={handleClick}
+        onRelayout={handleRelayout}
+      />
+    </div>
   )
 }
 

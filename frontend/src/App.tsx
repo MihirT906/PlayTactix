@@ -6,6 +6,7 @@ import PlotComponent from './components/PlotComponent'
 import Controls from './components/Controls'
 import { APP_CONFIG, CHUNK_SIZE, SLEEP_INTERVAL, THEME_CSS_VARIABLES } from './config'
 import AnnotationDisplay from './components/AnnotationDisplay'
+import { Link } from 'react-router-dom';
 
 function App({dataManager, annotationStore}: {dataManager: DataManager, annotationStore: AnnotationStore}) {
   const [isPlaying, setIsPlaying] = useState(false) // Start with paused state
@@ -63,6 +64,11 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
 
   return (
     <div className="app-shell">
+      <aside className="sidebar">
+        <Link to="/" className="home-icon">
+          <span>🏠</span>
+        </Link>
+      </aside>
       <header className="app-header">
         <h1 className="app-title">{APP_CONFIG.brand.title}</h1>
         <div className="frame-status">Frame {currentFrame} / 50</div>

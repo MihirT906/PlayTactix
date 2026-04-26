@@ -3,3 +3,11 @@
   height: 400px; /* Fixed height */
   display: block; /* Ensure it behaves as a block-level element */
 }
+
+.plot-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+}

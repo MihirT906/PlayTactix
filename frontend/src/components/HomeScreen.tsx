@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import './HomeScreen.css';
+import MatchDataManager from '../services/MatchDataManager';
+import { useNavigate } from 'react-router-dom';
 
 const HomeScreen = () => {
     const [matches, setMatches] = useState<{
@@ -11,6 +13,14 @@ const HomeScreen = () => {
         home_team_score: number;
         away_team_score: number;
     }[]>([]);
+    const [loading, setLoading] = useState<boolean>(false); // Added loading state
+    const navigate = useNavigate(); // Added useNavigate hook
+
+    const matchDataManager = new MatchDataManager();
+
+    useEffect(() => {
+        console.log('Loading state:', loading); // Debugging loading state
+    }, [loading]);
 
     useEffect(() => {
         const fetchMatchData = async () => {
@@ -54,19 +64,41 @@ const HomeScreen = () => {
         fetchMatchData();
     }, []);
 
+    const handleMatchClick = async (matchId: string) => {
+        console.log(`Match ${matchId} clicked`);
+        setLoading(true);
+        try {
+            await matchDataManager.downloadMatchData(matchId);
+            navigate('/app'); // Navigate to /app after download
+        } catch (error) {
+            console.error(`Error downloading match data for match ${matchId}:`, error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="home-screen">
             <h1 className="home-title">Welcome to PlayTactix</h1>
-            <div className="match-list">
-                {matches.map((match) => (
-                    <div key={match.id} className="match-card">
-                        <h2>{match.home_team.short_name} vs {match.away_team.short_name}</h2>
-                        <p>{new Date(match.date_time).toLocaleString()}</p>
-                        <p>{match.stadium.name}, {match.stadium.city}</p>
-                        <p>Score: {match.home_team_score} - {match.away_team_score}</p>
-                    </div>
-                ))}
-            </div>
+            {loading ? (
+                <div className="loading-indicator">Loading matches...</div> // Loading indicator
+            ) : (
+                <div className="match-list">
+                    {matches.map((match) => (
+                        <button
+                            key={match.id}
+                            className="match-card"
+                            onClick={() => handleMatchClick(match.id)}
+                            disabled={loading} // Disable buttons when loading
+                        >
+                            <h2>{match.home_team.short_name} vs {match.away_team.short_name}</h2>
+                            <p>{new Date(match.date_time).toLocaleString()}</p>
+                            <p>{match.stadium.name}, {match.stadium.city}</p>
+                            <p>Score: {match.home_team_score} - {match.away_team_score}</p>
+                        </button>
+                    ))}
+                </div>
+            )}
         </div>
     );
 };

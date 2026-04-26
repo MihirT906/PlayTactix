@@ -30,6 +30,8 @@
     padding: 15px;
     text-align: center;
     transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+    border: none;
 }
 
 .match-card:hover {
@@ -47,4 +49,11 @@
     font-size: 1rem;
     color: #475569;
     margin: 5px 0;
+}
+
+.loading-indicator {
+    font-size: 1.5rem;
+    color: #1e293b;
+    text-align: center;
+    margin-top: 20px;
 }

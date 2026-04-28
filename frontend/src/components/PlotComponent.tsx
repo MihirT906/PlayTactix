@@ -132,11 +132,12 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, x, y, annot
           } as any,
         ]}
         layout={{
-          title: { text: plotConfig.title },
-          xaxis: { title: { text: plotConfig.xAxisTitle }, range: [-56.5, 56.5], showgrid: false, visible: false },
-          yaxis: { title: { text: plotConfig.yAxisTitle }, range: [-38, 38], showgrid: false, visible: false },
+          // title: { text: plotConfig.title },
+          xaxis: { range: [-56.5, 56.5], showgrid: false, visible: false },
+          yaxis: { range: [-38, 38], showgrid: false, visible: false },
           width: 700,
           height: 500,
+          margin: { l: 0, r: 0, t: 20, b: 20 },
           paper_bgcolor: plotConfig.paperBackgroundColor,
           plot_bgcolor: plotConfig.plotBackgroundColor,
           // autosize: true,

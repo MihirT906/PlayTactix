@@ -11,9 +11,9 @@ export const APP_CONFIG = {
 		unselectedPointsOpacity: 0.6,
 	},
 	plot: {
-		title: 'Player Positions',
-		xAxisTitle: 'X Axis',
-		yAxisTitle: 'Y Axis',
+		// title: 'Player Positions',
+		// xAxisTitle: 'X Axis',
+		// yAxisTitle: 'Y Axis',
 		xAxisRange: [-50, 50] as [number, number],
 		yAxisRange: [-50, 50] as [number, number],
 		markerSize: 10,

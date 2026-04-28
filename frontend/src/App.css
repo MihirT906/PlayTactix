@@ -46,11 +46,11 @@
 
 
 .app-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh; /* Ensure it takes full viewport height */
+  display: grid; /* Use grid layout */
+  grid-template-columns: 3fr 1fr; /* Allocate width: 3 parts for main-content, 1 part for right-panel */
   gap: 20px; /* Add spacing between app-container and right-panel */
+  max-width: 1400px; /* Match the width of the app-header */
+  margin: 0 auto; /* Center the container horizontally */
 }
 
 .main-content {
@@ -62,6 +62,8 @@
   border: 1px solid var(--surface-border, #dbe3f1);
   border-radius: 14px;
   box-shadow: 0 10px 24px var(--surface-shadow, rgba(15, 23, 42, 0.06));
+  justify-content: center; /* Center content vertically */
+  align-items: center; /* Center content horizontally */
 }
 
 .right-panel {

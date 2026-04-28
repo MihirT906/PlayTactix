@@ -80,6 +80,7 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
             isPlaying={isPlaying}
             onPlayPause={handlePlayPause}
             currentFrame={currentFrame}
+            frameRange={{ start: 10, end: 500 }} // Pass frame range
             onFrameChange={handleFrameChange}
             chunkRange={chunkRange} // Pass chunkRange to Controls
             annotationStore={annotationStore}

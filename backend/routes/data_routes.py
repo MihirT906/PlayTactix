@@ -10,7 +10,7 @@ def set_data_ingestor(ingestor: SkillCornerDataIngestor):
     global data_ingestor
     data_ingestor = ingestor
     
-@router.get("/match/{match_id}/")
+@router.get("/match/{match_id}")
 async def get_match_data(match_id: int):
     try:
         with open("../data/gold_tracking_data.json", "r") as f:

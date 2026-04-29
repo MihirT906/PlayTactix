@@ -1,0 +1,157 @@
+{
+  "match": {
+    "id": 1886347,
+    "status": "closed",
+    "date_time": "2024-11-30T04:00:00Z",
+    "competition": {
+      "name": "A-League",
+      "season": "2024/2025",
+      "round": {
+        "name": "Round 6",
+        "number": 6
+      }
+    }
+  },
+
+  "venue": {
+    "stadium": "Mount Smart Stadium",
+    "city": "Auckland",
+    "capacity": 25000,
+    "pitch": {
+      "length": 104,
+      "width": 68
+    }
+  },
+
+  "teams": {
+    "home": {
+      "id": 4177,
+      "name": "Auckland FC",
+      "score": 2,
+      "kit": {
+        "type": "Home",
+        "jersey_color": "#2800f0",
+        "number_color": "#ffffff"
+      },
+      "playing_time": {
+        "minutes_tip": 31.13,
+        "minutes_otip": 22.2
+      }
+    },
+    "away": {
+      "id": 1805,
+      "name": "Newcastle United Jets FC",
+      "score": 0,
+      "kit": {
+        "type": "Away",
+        "jersey_color": "#ffffff",
+        "number_color": "#000000"
+      },
+      "playing_time": {
+        "minutes_tip": 22.2,
+        "minutes_otip": 31.13
+      }
+    }
+  },
+
+  "match_periods": [
+    {
+      "period": 1,
+      "name": "First Half",
+      "frames": {
+        "start": 10,
+        "end": 27790
+      },
+      "duration": {
+        "frames": 27780,
+        "minutes": 46.3
+      }
+    },
+    {
+      "period": 2,
+      "name": "Second Half",
+      "frames": {
+        "start": 27800,
+        "end": 59060
+      },
+      "duration": {
+        "frames": 31260,
+        "minutes": 52.1
+      }
+    }
+  ],
+
+  "players": [
+    {
+      "id": 38673,
+      "name": "Guillermo Luis May Bartesaghi",
+      "team_id": 4177,
+      "position": "Center Forward",
+      "number": 10,
+      "stats": {
+        "minutes_played": 86.65,
+        "goals": 0,
+        "yellow_cards": 0,
+        "red_cards": 0
+      }
+    },
+    {
+      "id": 51713,
+      "name": "Callan Elliot",
+      "team_id": 4177,
+      "position": "Right Back",
+      "number": 17,
+      "stats": {
+        "minutes_played": 98.4,
+        "goals": 0,
+        "yellow_cards": 0,
+        "red_cards": 0
+      }
+    },
+    {
+      "id": 133498,
+      "name": "Francis De Vries",
+      "team_id": 4177,
+      "position": "Left Back",
+      "number": 15,
+      "stats": {
+        "minutes_played": 98.4,
+        "goals": 1,
+        "yellow_cards": 0,
+        "red_cards": 0
+      }
+    },
+    {
+      "id": 43829,
+      "name": "Neyder Moreno Betancur",
+      "team_id": 4177,
+      "position": "Right Winger",
+      "number": 25,
+      "stats": {
+        "minutes_played": 27.22,
+        "goals": 1,
+        "yellow_cards": 0,
+        "red_cards": 0
+      }
+    },
+    {
+      "id": 51009,
+      "name": "Ryan Scott",
+      "team_id": 1805,
+      "position": "Goalkeeper",
+      "number": 1,
+      "stats": {
+        "minutes_played": 98.4,
+        "goals": 0,
+        "yellow_cards": 0,
+        "red_cards": 0
+      }
+    }
+  ],
+
+  "meta": {
+    "home_team_side": ["right_to_left", "left_to_right"],
+    "ball_trackable_object": 55,
+    "referees": []
+  }
+}

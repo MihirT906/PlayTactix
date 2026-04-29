@@ -71,6 +71,57 @@
   justify-content: center;
 }
 
+.match-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px; /* Reduced vertical spacing */
+  padding: 16px; /* Reduced padding */
+  background: var(--match-info-bg, #ffffff);
+  border: 1px solid var(--match-info-border, #d1d5db);
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  width: 100%; /* Match the width of app-header */
+  max-width: 1400px; /* Same max-width as app-header */
+  margin: 10px auto; /* Reduced vertical margin */
+  font-family: Arial, sans-serif;
+  text-align: center;
+}
+
+.match-info .score {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  align-items: center;
+  gap: 12px; /* Reduced spacing */
+  margin-bottom: 12px; /* Reduced margin */
+}
+
+.match-info .team {
+  font-size: 2rem; /* Reduced font size */
+  font-weight: bold;
+  color: #1d4ed8;
+}
+
+.match-info .score-value {
+  font-size: 2.5rem; /* Slightly reduced font size */
+  font-weight: bold;
+  color: #1d4ed8;
+}
+
+.match-info .details {
+  text-align: center;
+  font-size: 0.9rem; /* Reduced font size */
+  color: var(--match-info-text, #374151);
+  margin-top: 12px; /* Reduced margin */
+}
+
+.match-info .details .date,
+.match-info .details .stadium {
+  margin: 2px 0; /* Reduced spacing */
+  font-weight: 600;
+  color: #111827;
+}
+
 @media (max-width: 1100px) {
   #root {
     padding: 16px;
@@ -83,4 +134,11 @@
   .right-panel {
     justify-content: stretch;
   }
+}
+
+:root {
+  --match-info-bg: #ffffff;
+  --match-info-border: #d1d5db;
+  --match-info-title: #111827;
+  --match-info-text: #000000; /* Changed text color to black for better visibility */
 }

@@ -215,7 +215,7 @@ class SkillCornerDataIngestor:
         gold_tracking_data = self._get_gold_tracking_data(silver_tracking_data, silver_meta_data)
         
         final_data = {
-            'match_id': match_id,
+            'match': bronze_meta_data,
             'frames': gold_tracking_data
         }
         with open(f"../data/gold_tracking_data.json", "w") as f:

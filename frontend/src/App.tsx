@@ -7,11 +7,35 @@ import Controls from './components/Controls'
 import { APP_CONFIG, CHUNK_SIZE, SLEEP_INTERVAL, THEME_CSS_VARIABLES } from './config'
 import AnnotationDisplay from './components/AnnotationDisplay'
 import { Link } from 'react-router-dom';
+interface MatchData {
+  id: number;
+  home_team_score: number;
+  away_team_score: number;
+  date_time: string;
+  stadium: {
+    id: number;
+    name: string;
+    city: string;
+    capacity: number;
+  };
+  home_team: {
+    id: number;
+    name: string;
+    short_name: string;
+    acronym: string;
+  };
+  away_team: {
+    id: number;
+    name: string;
+    short_name: string;
+    acronym: string;
+  };
+}
 
 function App({dataManager, annotationStore}: {dataManager: DataManager, annotationStore: AnnotationStore}) {
   const [isPlaying, setIsPlaying] = useState(false) // Start with paused state
   const [chunkRange, setChunkRange] = useState({ start: 10, end: 100 })
-
+  const [matchData, setMatchData] = useState<MatchData | null>(null)
   const [currentFrame, setCurrentFrame] = useState(10)
   const [currentFrameData, setCurrentFrameData] = useState<{ x: number[]; y: number[] } | null>(null)
   const [isFetching, setIsFetching] = useState(false) // Track if data is being fetched
@@ -45,6 +69,20 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
   }, [currentFrame])
 
   useEffect(() => {
+    const fetchMatchData = async () => {
+      const data = await dataManager.fetchMatchMetaData()
+      if (data) {
+        setMatchData(data)
+        console.log('Match metadata:', data)
+      } else {
+        console.warn('No match metadata available')
+      }
+    }
+
+    fetchMatchData()
+  }, [])
+
+  useEffect(() => {
     if (!isPlaying || isFetching) return // Only proceed if not fetching
     const interval = setInterval(() => {
       setCurrentFrame(prev => (prev >= 500 ? 10 : prev + 1))
@@ -73,6 +111,17 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
         <h1 className="app-title">{APP_CONFIG.brand.title}</h1>
         <div className="frame-status">Frame {currentFrame} / 50</div>
       </header>
+      <div className="match-info">
+        <div className="score">
+          <div className="team">{matchData?.home_team.name}</div>
+          <div className="score-value">{matchData?.home_team_score} - {matchData?.away_team_score}</div>
+          <div className="team">{matchData?.away_team.name}</div>
+        </div>
+        <div className="details">
+          <div className="date">{matchData?.date_time ? new Date(matchData.date_time).toLocaleString() : 'Date not available'}</div>
+          <div className="stadium">{matchData?.stadium.name}, {matchData?.stadium.city}</div>
+        </div>
+      </div>
 
       <div className="app-container">
         <div className="main-content">
@@ -93,22 +142,6 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
       </div>
     </div>
   )
-  // return (
-  //   <div className="app-shell">
-  //     <div className="frame-status"> Frame {currentFrame} </div>
-  //     <div> Frame Status {isFetching ? 'Fetching...' : 'Ready'}</div>
-  //     <div className="frame-data"> {currentFrameData ? currentFrameData.x.join(', ') : 'No data available'} </div>
-  //     <Controls
-  //           isPlaying={isPlaying}
-  //           onPlayPause={handlePlayPause}
-  //           currentFrame={currentFrame}
-  //           onFrameChange={handleFrameChange}
-  //           chunkRange={chunkRange} // Pass chunkRange to Controls
-  //           annotationStore={annotationStore}
-  //     />
-  //   </div>
-
-  // )
 }
 
 export default App

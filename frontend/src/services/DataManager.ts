@@ -30,11 +30,12 @@ export default class DataManager {
   // private cacheLimit = 20 // Maximum number of frames to cache
   private buffer: Map<number, FrameData> = new Map()
   private bufferLimit = 100
-
+  private metaData: any = null
 
   constructor() {
     console.log('DataManager initialized with empty buffer')
   }
+
   async fetchChunk(start: number, end: number): Promise<void> {
     console.log('fetchChunk called with range:', start, end)
     if (this.isChunkCached(start, end)) return // uncomment this and fix caching
@@ -52,6 +53,17 @@ export default class DataManager {
     } catch (error) {
       console.error('Error fetching chunk data:', error)
     }
+  }
+
+  async fetchMatchMetaData(){
+    try {
+      const response = await fetch(`http://localhost:8000/data/match_meta`)
+      const data = await response.json()
+      return data
+    } catch (error) {
+      console.error('Error fetching match metadata:', error)
+    }
+    return null
   }
 
   async getFrameData(frame: number) {

@@ -8,6 +8,7 @@ import { APP_CONFIG, CHUNK_SIZE, SLEEP_INTERVAL, THEME_CSS_VARIABLES } from './c
 import AnnotationDisplay from './components/AnnotationDisplay'
 import { Link } from 'react-router-dom';
 import type { MatchData } from './types/DataInterfaces';
+import MatchDetailsDisplay from './components/MatchDetailsDisplay'
 
 function App({dataManager, annotationStore}: {dataManager: DataManager, annotationStore: AnnotationStore}) {
   const [isPlaying, setIsPlaying] = useState(false) // Start with paused state
@@ -88,39 +89,8 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
         <h1 className="app-title">{APP_CONFIG.brand.title}</h1>
         <div className="frame-status">Frame {currentFrame} / 50</div>
       </header>
-      <div className="match-info">
-        <div className="score">
-          <div className="team">
-            {matchData?.home_team.name}
-            <ul className="players-list">
-              {matchData?.players
-                .filter(player => player.team_id === matchData.home_team.id && player.goal > 0)
-                .map(player => (
-                  <li key={player.id} className="player-item">
-                    {player.first_name} {player.last_name} - {player.goal} goal(s)
-                  </li>
-                ))}
-            </ul>
-          </div>
-          <div className="score-value">{matchData?.home_team_score} - {matchData?.away_team_score}</div>
-          <div className="team">
-            {matchData?.away_team.name}
-            <ul className="players-list">
-              {matchData?.players
-                .filter(player => player.team_id === matchData.away_team.id && player.goal > 0)
-                .map(player => (
-                  <li key={player.id} className="player-item">
-                    {player.first_name} {player.last_name} - {player.goal} goal(s)
-                  </li>
-                ))}
-            </ul>
-          </div>
-        </div>
-        <div className="details">
-          <div className="date">{matchData?.date_time ? new Date(matchData.date_time).toLocaleString() : 'Date not available'}</div>
-          <div className="stadium">{matchData?.stadium.name}, {matchData?.stadium.city}</div>
-        </div>
-      </div>
+      
+      <MatchDetailsDisplay matchData={matchData!} />
 
       <div className="app-container">
         <div className="main-content">

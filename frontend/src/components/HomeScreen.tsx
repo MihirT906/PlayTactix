@@ -87,16 +87,6 @@ const HomeScreen = () => {
                         className="match-card"
                         onClick={() => handleMatchClick(match.id)}
                         disabled={loading} // Disable buttons when loading
-                        // style={{
-                        //     background: `linear-gradient(
-                        //         to right,
-                        //         ${match.home_team_kit?.jersey_color ?? "#3b82f6"},
-                        //         ${match.away_team_kit?.jersey_color ?? "#ef4444"}
-                        //     )`,
-                        //     backgroundSize: "100% 5px",
-                        //     backgroundRepeat: "no-repeat",
-                        //     backgroundPosition: "top"
-                        // }}
                         style={{
                             "--home-color": match.home_team_kit?.jersey_color ?? "#3b82f6",
                             "--away-color": match.away_team_kit?.jersey_color ?? "#ef4444",
@@ -107,20 +97,6 @@ const HomeScreen = () => {
                             `
                         } as React.CSSProperties}
                     >
-                        {/* <div className="team-shirt left">
-                        <svg viewBox="0 0 64 64">
-                            <path d="M20 6 L28 10 H36 L44 6 L54 16 L48 24 V54 H16 V24 L10 16 Z" />
-                        </svg>
-                        </div>
-                        <div className='team-shirt right'>
-                            <svg viewBox='0 0 64 64'>
-                                <path d="M20 6 L28 10 H36 L44 6 L54 16 L48 24 V54 H16 V24 L10 16 Z" />
-                            </svg>
-                        </div>
-                        <h2>{match.home_team.short_name} vs {match.away_team.short_name}</h2>
-                        <p>{new Date(match.date_time).toLocaleString()}</p>
-                        <p>{match.stadium.name}, {match.stadium.city}</p>
-                        <p>Score: {match.home_team_score} - {match.away_team_score}</p> */}
                         <div className="match-header">
                             <div className="team-row">
                                 <div className="team">

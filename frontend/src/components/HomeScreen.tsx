@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import './HomeScreen.css';
 import MatchDataManager from '../services/MatchDataManager';
 import { useNavigate } from 'react-router-dom';

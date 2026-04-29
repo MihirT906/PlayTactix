@@ -5,15 +5,6 @@ import { useNavigate } from 'react-router-dom';
 import type { MatchData } from '../types/DataInterfaces';
 
 const HomeScreen = () => {
-    // const [matches, setMatches] = useState<{
-    //     id: string;
-    //     date_time: string;
-    //     stadium: { name: string; city: string };
-    //     home_team: { short_name: string };
-    //     away_team: { short_name: string };
-    //     home_team_score: number;
-    //     away_team_score: number;
-    // }[]>([]);
     const [matches, setMatches] = useState<MatchData[]>([]);
     const [loading, setLoading] = useState<boolean>(false); // Added loading state
     const navigate = useNavigate(); // Added useNavigate hook
@@ -96,21 +87,65 @@ const HomeScreen = () => {
                         className="match-card"
                         onClick={() => handleMatchClick(match.id)}
                         disabled={loading} // Disable buttons when loading
+                        // style={{
+                        //     background: `linear-gradient(
+                        //         to right,
+                        //         ${match.home_team_kit?.jersey_color ?? "#3b82f6"},
+                        //         ${match.away_team_kit?.jersey_color ?? "#ef4444"}
+                        //     )`,
+                        //     backgroundSize: "100% 5px",
+                        //     backgroundRepeat: "no-repeat",
+                        //     backgroundPosition: "top"
+                        // }}
                         style={{
-                            background: `linear-gradient(
-                                to right,
-                                ${match.home_team_kit?.jersey_color ?? "#3b82f6"},
-                                ${match.away_team_kit?.jersey_color ?? "#ef4444"}
-                            )`,
-                            backgroundSize: "100% 5px",
-                            backgroundRepeat: "no-repeat",
-                            backgroundPosition: "top"
-                        }}
+                            "--home-color": match.home_team_kit?.jersey_color ?? "#3b82f6",
+                            "--away-color": match.away_team_kit?.jersey_color ?? "#ef4444",
+
+                            boxShadow: `
+                                inset 0 0 0 0 transparent,
+                                0 4px 12px rgba(0,0,0,0.08)
+                            `
+                        } as React.CSSProperties}
                     >
+                        {/* <div className="team-shirt left">
+                        <svg viewBox="0 0 64 64">
+                            <path d="M20 6 L28 10 H36 L44 6 L54 16 L48 24 V54 H16 V24 L10 16 Z" />
+                        </svg>
+                        </div>
+                        <div className='team-shirt right'>
+                            <svg viewBox='0 0 64 64'>
+                                <path d="M20 6 L28 10 H36 L44 6 L54 16 L48 24 V54 H16 V24 L10 16 Z" />
+                            </svg>
+                        </div>
                         <h2>{match.home_team.short_name} vs {match.away_team.short_name}</h2>
                         <p>{new Date(match.date_time).toLocaleString()}</p>
                         <p>{match.stadium.name}, {match.stadium.city}</p>
-                        <p>Score: {match.home_team_score} - {match.away_team_score}</p>
+                        <p>Score: {match.home_team_score} - {match.away_team_score}</p> */}
+                        <div className="match-header">
+                            <div className="team-row">
+                                <div className="team">
+                                    <div className="team-shirt left">
+                                        <svg viewBox="0 0 64 64">
+                                            <path d="M20 6 L28 10 H36 L44 6 L54 16 L48 24 V54 H16 V24 L10 16 Z" />
+                                        </svg>
+                                    </div>
+                                    <span>{match.home_team.short_name}</span>
+                                </div>
+                                <div className="details"> 
+                                    <span className="competition">{match.competition_edition.name}</span>
+                                    <span className="vs">{match.home_team_score} - {match.away_team_score}</span>
+                                </div>
+                                
+                                <div className="team">
+                                    <div className="team-shirt right">
+                                        <svg viewBox="0 0 64 64">
+                                            <path d="M20 6 L28 10 H36 L44 6 L54 16 L48 24 V54 H16 V24 L10 16 Z" />
+                                        </svg>
+                                    </div>
+                                    <span>{match.away_team.short_name}</span>
+                                </div>
+                            </div>
+                        </div>
                     </button>
                 ))}
             </div>

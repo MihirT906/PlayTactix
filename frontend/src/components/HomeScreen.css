@@ -23,20 +23,181 @@
 }
 
 .match-card {
+    position: relative;
     background: #ffffff;
-    border: 1px solid #dbe3f1;
     border-radius: 10px;
-    box-shadow: 0 4px 10px rgba(15, 23, 42, 0.1);
     padding: 15px;
     text-align: center;
-    transition: transform 0.2s, box-shadow 0.2s;
     cursor: pointer;
-    border: none;
+    overflow: hidden;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    flex-direction: column;
+    display: flex;
+
+    /* thin color anchors */
+    border-left: 2px solid var(--home-color);
+    border-right: 2px solid var(--away-color);
 }
 
+/* GRADIENT LAYERS (narrowed) */
+.match-card::before,
+.match-card::after {
+    content: none; /* Remove gradient by default */
+    position: absolute;
+    top: 0;
+    width: 40px;              /* ⬅️ reduced from 80px */
+    height: 100%;
+    opacity: 0.18;            /* slightly stronger since width is smaller */
+    transition: opacity 0.3s ease, width 0.3s ease;
+    pointer-events: none;
+}
+
+/* LEFT */
+.match-card::before {
+    left: 0;
+    background: linear-gradient(
+        to right,
+        var(--home-color),
+        transparent
+    );
+}
+
+/* RIGHT */
+.match-card::after {
+    right: 0;
+    background: linear-gradient(
+        to left,
+        var(--away-color),
+        transparent
+    );
+}
+
+/* HOVER */
 .match-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.2);
+    transform: translateY(-4px);
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+}
+
+/* Slight expansion only (still tight) */
+.match-card:hover::before {
+    width: 60px;   /* ⬅️ reduced from 120px */
+    opacity: 0.28;
+}
+
+.match-card:hover::after {
+    width: 60px;
+    opacity: 0.28;
+}
+
+.match-card:hover::before,
+.match-card:hover::after {
+    content: ""; /* Add gradient on hover */
+    position: absolute;
+    top: 0;
+    width: 60px;
+    height: 100%;
+    opacity: 0.28;
+    transition: opacity 0.3s ease, width 0.3s ease;
+    pointer-events: none;
+}
+
+.match-card:hover::before {
+    left: 0;
+    background: linear-gradient(to right, var(--home-color), transparent);
+}
+
+.match-card:hover::after {
+    right: 0;
+    background: linear-gradient(to left, var(--away-color), transparent);
+}
+
+/* container */
+.match-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+/* row for both teams */
+.team-row {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+/* each team block */
+.team {
+    display: flex;
+    flex-direction: column; /* Stack the jersey and name vertically */
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(255, 255, 255, 0.8); /* Ensure text visibility */
+    padding: 10px;
+    border-radius: 5px;
+    font-size: 0.8rem;
+    color: #0f172a;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.details {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 5px;
+}
+
+.competition {
+    font-size: 0.7rem;
+    font-weight: bold;
+    color: #334155;
+    margin: 10px 0;
+}
+
+/* VS text */
+.vs {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #334155;
+    margin: 10px 0;
+}
+
+/* shirt */
+.team-shirt {
+    width: 32px;
+    height: 32px;
+    margin-bottom: 8px; /* Add spacing between the jersey and the name */
+    margin-right: 8px;
+}
+
+.team-shirt svg {
+    width: 100%;
+    height: 100%;
+    fill: currentColor;
+
+    stroke: #000;          /* 👈 black border */
+    stroke-width: 2;       /* 👈 thickness (tweak this) */
+    stroke-linejoin: round; /* smoother corners */
+}
+
+/* colors */
+.team-shirt.left {
+    color: var(--home-color);
+}
+
+.team-shirt.right {
+    color: var(--away-color);
+}
+
+/* HOVER EFFECT */
+.match-card:hover .team-shirt.left {
+    transform: translateY(-50%) scale(1.1);
+    filter: drop-shadow(0 0 6px var(--home-color));
+}
+
+.match-card:hover .team-shirt.right {
+    transform: translateY(-50%) scale(1.1);
+    filter: drop-shadow(0 0 6px var(--away-color));
 }
 
 .match-card h2 {

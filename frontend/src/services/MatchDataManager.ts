@@ -4,7 +4,7 @@ export default class MatchDataManager {
         console.log('Match DataManager initialized');
     }
 
-    async downloadMatchData(matchId: string): Promise<void> {
+    async downloadMatchData(matchId: number): Promise<void> {
         console.log(`Downloading data for match: ${matchId}`);
         try {
             const response = await fetch(`http://localhost:8000/data/match/${matchId}`);

@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react'
 import Plot from 'react-plotly.js'
 import Plotly from 'plotly.js-dist-min'
 import AnnotationStore from '../services/AnnotationStore-optimized'
+import type { FrameData } from '../types/FrameDataInterfaces'
 import { APP_CONFIG, SELECTED_POINTS_OPACITY, UNSELECTED_POINTS_OPACITY } from '../config'
 // Import the background image
 import backgroundImage from '../../../data/background_image.png';
@@ -10,13 +11,14 @@ import backgroundImage from '../../../data/background_image.png';
 
 interface PlotComponentProps {
   currentFrame: number
-  x: number[]
-  y: number[]
+  // x: number[]
+  // y: number[]
+  frameData: FrameData | null
   annotationStore: AnnotationStore
   onAnnotationUpdate?: () => void // Optional callback to trigger when annotations are updated
 }
 
-const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, x, y, annotationStore, onAnnotationUpdate }) => {
+const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, frameData, annotationStore, onAnnotationUpdate }) => {
   const plotConfig = APP_CONFIG.plot
   const [focusPoints, setFocusPoints] = useState<number[]>([]) // Points that are highlighted on click
   const [firstPoint, setFirstPoint] = useState<number | null>(null) // First point selected when drawing a line between two players
@@ -42,10 +44,10 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, x, y, annot
       setFocusPoints(prev => [...prev, firstPoint, secondPoint]) // Add all players that have lines connected to them to focusPoints
       const newLine = {
         type: 'line',
-        x0: x[firstPoint], // Start x-coordinate
-        y0: y[firstPoint], // Start y-coordinate
-        x1: x[secondPoint], // End x-coordinate
-        y1: y[secondPoint], // End y-coordinate
+        x0: frameData?.players.x[firstPoint], // Start x-coordinate
+        y0: frameData?.players.y[firstPoint], // Start y-coordinate
+        x1: frameData?.players.x[secondPoint], // End x-coordinate
+        y1: frameData?.players.y[secondPoint], // End y-coordinate
         line: {
           color: plotConfig.focusLineColor,
           width: plotConfig.focusLineWidth,
@@ -67,7 +69,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, x, y, annot
     updateShapes()
     setDragMode('select')
     annotationStore.update_active_annotation(currentFrame) // Update active annotations in the store based on the current frame
-  }, [x, y]) 
+  }, [frameData]) 
 
   const handleClick = (event: any) => { // Allows the user to 'Focus' on a player or draw lines between them
     if (!focusEnabled) return
@@ -112,8 +114,8 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, x, y, annot
       <Plot className='PlotComponent'
         data={[
           {
-            x: x,
-            y: y,
+            x: frameData?.players.x,
+            y: frameData?.players.y,
             mode: 'markers',
             type: 'scatter',
             marker: { 

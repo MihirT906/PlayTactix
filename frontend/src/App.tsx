@@ -7,7 +7,8 @@ import Controls from './components/Controls'
 import { APP_CONFIG, CHUNK_SIZE, SLEEP_INTERVAL, THEME_CSS_VARIABLES } from './config'
 import AnnotationDisplay from './components/AnnotationDisplay'
 import { Link } from 'react-router-dom';
-import type { MatchData } from './types/DataInterfaces';
+import type { MatchData } from './types/MatchDataInterfaces';
+import type { FrameData } from './types/FrameDataInterfaces'
 import MatchDetailsDisplay from './components/MatchDetailsDisplay'
 
 function App({dataManager, annotationStore}: {dataManager: DataManager, annotationStore: AnnotationStore}) {
@@ -15,7 +16,7 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
   const [chunkRange, setChunkRange] = useState({ start: 10, end: 100 })
   const [matchData, setMatchData] = useState<MatchData | null>(null)
   const [currentFrame, setCurrentFrame] = useState(10)
-  const [currentFrameData, setCurrentFrameData] = useState<{ x: number[]; y: number[] } | null>(null)
+  const [currentFrameData, setCurrentFrameData] = useState<FrameData | null>(null)
   const [isFetching, setIsFetching] = useState(false) // Track if data is being fetched
   const [annotationUpdateEvent, setAnnotationUpdateEvent] = useState(false)
 
@@ -35,7 +36,7 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
       setIsFetching(true) // Set fetching flag to true
       const frameData = await dataManager.getFrameData(currentFrame)
       if (frameData) {
-        setCurrentFrameData({ x: frameData.players.x, y: frameData.players.y })
+        setCurrentFrameData(frameData)
       } else {
         console.warn(`No data available for frame ${currentFrame}`)
         setCurrentFrameData(null)
@@ -107,7 +108,7 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
             chunkRange={chunkRange} // Pass chunkRange to Controls
             annotationStore={annotationStore}
           />
-          <PlotComponent currentFrame={currentFrame} x={currentFrameData? currentFrameData.x : []} y={currentFrameData? currentFrameData.y : []} annotationStore={annotationStore} onAnnotationUpdate={() => setAnnotationUpdateEvent(!annotationUpdateEvent)} />
+          <PlotComponent currentFrame={currentFrame} frameData={currentFrameData} annotationStore={annotationStore} onAnnotationUpdate={() => setAnnotationUpdateEvent(!annotationUpdateEvent)} />
         </div>
         <div className="right-panel">
           <AnnotationDisplay annotationStore={annotationStore} currentFrame={currentFrame} annotationUpdateEvent={annotationUpdateEvent} />

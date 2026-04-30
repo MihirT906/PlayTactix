@@ -1,4 +1,4 @@
-import type { MatchData } from '../types/DataInterfaces';
+import type { MatchData } from '../types/MatchDataInterfaces';
 import './MatchDetailsDisplay.css'
 const MatchDetailsDisplay = ({ matchData }: { matchData: MatchData }) => {
 

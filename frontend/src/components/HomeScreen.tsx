@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import './HomeScreen.css';
 import MatchDataManager from '../services/MatchDataManager';
 import { useNavigate } from 'react-router-dom';
-import type { MatchData } from '../types/DataInterfaces';
+import type { MatchData } from '../types/MatchDataInterfaces';
 
 const HomeScreen = () => {
     const [matches, setMatches] = useState<MatchData[]>([]);

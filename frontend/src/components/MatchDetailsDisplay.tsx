@@ -5,8 +5,8 @@ const MatchDetailsDisplay = ({ matchData }: { matchData: MatchData }) => {
 return (
     <div className="match-info"
         style={{
-            "--home-color": matchData.home_team_kit?.jersey_color ?? "#3b82f6",
-            "--away-color": matchData.away_team_kit?.jersey_color ?? "#ef4444",
+            "--home-color": matchData?.home_team_kit?.jersey_color ?? "#3b82f6",
+            "--away-color": matchData?.away_team_kit?.jersey_color ?? "#ef4444",
 
             boxShadow: `
                         inset 0 0 0 0 transparent,
@@ -31,14 +31,14 @@ return (
                         <path d="M20 6 L28 10 H36 L44 6 L54 16 L48 24 V54 H16 V24 L10 16 Z" />
                     </svg>
                 </div>
-                <span>{matchData.home_team.short_name}</span>
+                <span>{matchData?.home_team?.short_name}</span>
             </div>
             <div className="details"> 
                 <span className="venue">
-                    {matchData.competition_edition.name}
+                    {matchData?.competition_edition?.name}
                 </span>
-                <span className="vs">{matchData.home_team_score} - {matchData.away_team_score}</span>
-                <span className="venue">{matchData.stadium.name}, {matchData.stadium.city}</span>
+                <span className="vs">{matchData?.home_team_score} - {matchData?.away_team_score}</span>
+                <span className="venue">{matchData?.stadium?.name}, {matchData?.stadium?.city}</span>
             </div>
             <div className="team">
                 <div className="team-shirt right">
@@ -46,7 +46,7 @@ return (
                         <path d="M20 6 L28 10 H36 L44 6 L54 16 L48 24 V54 H16 V24 L10 16 Z" />
                     </svg>
                 </div>
-                <span>{matchData.away_team.short_name}</span>
+                <span>{matchData?.away_team?.short_name}</span>
             </div>
             <div className="team">
                 <ul className="players-list">

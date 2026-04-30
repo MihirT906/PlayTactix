@@ -27,7 +27,6 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, x, y, annot
 
   const image_src = backgroundImage; // Set the background image source
 
-  console.log(image_src)
   const player_focus_button = useMemo(() => ({ // Button to toggle 'Player Focus' mode
     name: 'Player Focus',
     icon: Plotly.Icons.tooltip_basic,

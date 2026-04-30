@@ -72,7 +72,6 @@ export default class DataManager {
       console.log(`Frame ${frame} found in buffer`);
       return this.buffer.get(frame)!;
     } else {
-      const CHUNK_SIZE = 100;
       const start = Math.floor((frame - 1) / CHUNK_SIZE) * CHUNK_SIZE + 1;
       const end = start + CHUNK_SIZE - 1;
 

@@ -39,7 +39,7 @@ const Controls: React.FC<ControlsProps> = ({ isPlaying, onPlayPause, currentFram
         onMouseUp={handleSliderDragEnd}
         style={{
           '--progress': `${((currentFrame - frameRange.start) / (frameRange.end - frameRange.start)) * 100}%`,
-          '--cache-progress': `${((chunkRange.end - chunkRange.start) / (frameRange.end - frameRange.start)) * 100}%`,
+          '--cache-progress': `${((chunkRange.end) / (frameRange.end - frameRange.start)) * 100}%`,
         } as React.CSSProperties}
       />
       <span className="frame-label">Frame: {currentFrame}</span>

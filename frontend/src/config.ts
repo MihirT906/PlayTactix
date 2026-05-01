@@ -16,7 +16,7 @@ export const APP_CONFIG = {
 		// yAxisTitle: 'Y Axis',
 		xAxisRange: [-50, 50] as [number, number],
 		yAxisRange: [-50, 50] as [number, number],
-		markerSize: 10,
+		markerSize: 15,
 		markerColor: '#d85e1d',
 		focusLineColor: '#2563eb',
 		focusLineWidth: 2,

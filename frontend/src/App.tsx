@@ -36,6 +36,7 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
       setIsFetching(true) // Set fetching flag to true
       const frameData = await dataManager.getFrameData(currentFrame)
       if (frameData) {
+        console.log(`Data for frame ${currentFrame}:`, frameData)
         setCurrentFrameData(frameData)
       } else {
         console.warn(`No data available for frame ${currentFrame}`)
@@ -108,7 +109,7 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
             chunkRange={chunkRange} // Pass chunkRange to Controls
             annotationStore={annotationStore}
           />
-          <PlotComponent currentFrame={currentFrame} frameData={currentFrameData} annotationStore={annotationStore} onAnnotationUpdate={() => setAnnotationUpdateEvent(!annotationUpdateEvent)} />
+          <PlotComponent currentFrame={currentFrame} matchData = {matchData} frameData={currentFrameData} annotationStore={annotationStore} onAnnotationUpdate={() => setAnnotationUpdateEvent(!annotationUpdateEvent)} />
         </div>
         <div className="right-panel">
           <AnnotationDisplay annotationStore={annotationStore} currentFrame={currentFrame} annotationUpdateEvent={annotationUpdateEvent} />

@@ -6,19 +6,19 @@ import type { FrameData } from '../types/FrameDataInterfaces'
 import { APP_CONFIG, SELECTED_POINTS_OPACITY, UNSELECTED_POINTS_OPACITY } from '../config'
 // Import the background image
 import backgroundImage from '../../../data/background_image.png';
+import type { MatchData } from '../types/MatchDataInterfaces'
 
 // const annotationStore = new AnnotationStore()
 
 interface PlotComponentProps {
   currentFrame: number
-  // x: number[]
-  // y: number[]
   frameData: FrameData | null
+  matchData: MatchData | null
   annotationStore: AnnotationStore
   onAnnotationUpdate?: () => void // Optional callback to trigger when annotations are updated
 }
 
-const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, frameData, annotationStore, onAnnotationUpdate }) => {
+const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, frameData, annotationStore, onAnnotationUpdate }) => {
   const plotConfig = APP_CONFIG.plot
   const [focusPoints, setFocusPoints] = useState<number[]>([]) // Points that are highlighted on click
   const [firstPoint, setFirstPoint] = useState<number | null>(null) // First point selected when drawing a line between two players
@@ -116,19 +116,42 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, frameData, 
           {
             x: frameData?.players.x,
             y: frameData?.players.y,
-            mode: 'markers',
+            mode: 'markers+text',
             type: 'scatter',
-            marker: { 
-              size: plotConfig.markerSize,
-              color: plotConfig.markerColor,
-              opacity: 1
+            text: frameData?.players.number.map((num) => num.toString()),
+            textposition: 'center',
+            textfont: {
+              family: 'Arial Black, Arial, sans-serif',
+              size: 8,
+              color: frameData?.players.team_id.map((id) => {
+                if (id === matchData?.home_team.id) {
+                  return matchData?.home_team_kit.number_color;
+                } else if (id === matchData?.away_team.id) {
+                  return matchData?.away_team_kit.number_color;
+                } else {
+                  return '#000000'; // Default color if team ID doesn't match
+                }
+              })
             },
-            selectedpoints: [firstPoint].concat(focusPoints),
+            marker: {
+              size: plotConfig.markerSize,
+              color: frameData?.players.team_id.map((id) => {
+                if (id === matchData?.home_team.id) {
+                  return matchData?.home_team_kit.jersey_color;
+                } else if (id === matchData?.away_team.id) {
+                  return matchData?.away_team_kit.jersey_color;
+                } else {
+                  return plotConfig.markerColor; // Default color if team ID doesn't match
+                }
+              }),
+              opacity: SELECTED_POINTS_OPACITY,
+            },
+            selectedpoints: firstPoint !== null || focusPoints.length > 0 ? [firstPoint, ...focusPoints] : undefined, // Highlight points that are either the first point selected or have focus lines connected to them
             selected: {
               marker: { opacity: SELECTED_POINTS_OPACITY },
             },
             unselected: {
-              marker: { opacity: [firstPoint].concat(focusPoints).length > 0 ? UNSELECTED_POINTS_OPACITY: SELECTED_POINTS_OPACITY },
+              marker: { opacity: firstPoint !== null || focusPoints.length > 0 ? SELECTED_POINTS_OPACITY : SELECTED_POINTS_OPACITY },
             },
           } as any,
         ]}

@@ -3,7 +3,7 @@ import Plot from 'react-plotly.js'
 import Plotly from 'plotly.js-dist-min'
 import AnnotationStore from '../services/AnnotationStore-optimized'
 import type { FrameData } from '../types/FrameDataInterfaces'
-import { APP_CONFIG, SELECTED_POINTS_OPACITY, UNSELECTED_POINTS_OPACITY } from '../config'
+import { APP_CONFIG, SELECTED_POINTS_OPACITY, UNSELECTED_POINTS_OPACITY, THEME_CSS_VARIABLES } from '../config'
 // Import the background image
 import backgroundImage from '../../../data/background_image.png';
 import type { MatchData } from '../types/MatchDataInterfaces'
@@ -151,7 +151,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
               marker: { opacity: SELECTED_POINTS_OPACITY },
             },
             unselected: {
-              marker: { opacity: firstPoint !== null || focusPoints.length > 0 ? SELECTED_POINTS_OPACITY : SELECTED_POINTS_OPACITY },
+              marker: { opacity: firstPoint !== null || focusPoints.length > 0 ? UNSELECTED_POINTS_OPACITY : SELECTED_POINTS_OPACITY },
             },
           } as any,
         ]}
@@ -161,9 +161,9 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
           yaxis: { range: [-38, 38], showgrid: false, visible: false },
           width: 700,
           height: 500,
-          margin: { l: 0, r: 0, t: 20, b: 20 },
-          paper_bgcolor: plotConfig.paperBackgroundColor,
-          plot_bgcolor: plotConfig.plotBackgroundColor,
+          margin: { l: 20, r: 20, t: 20, b: 20 },
+          paper_bgcolor: '#4cbb17',
+          plot_bgcolor: '#4cbb17',
           // autosize: true,
           dragmode: dragMode as any,
           shapes: [...lines, ...shapes], // Contains player focus lines

@@ -9,7 +9,7 @@ const AnnotationDisplay: React.FC<{ annotationStore: any, currentFrame: number, 
         <div className="annotation-display">
             <div className="annotation-display-header">
                 <h3>Annotations</h3>
-                <span className="annotation-current-frame">Frame {currentFrame}</span>
+                {/* <span className="annotation-current-frame">Frame {currentFrame}</span> */}
             </div>
 
             {allAnnotations.length === 0 && (

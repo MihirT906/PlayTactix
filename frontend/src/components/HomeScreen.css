@@ -3,14 +3,14 @@
     flex-direction: column;
     align-items: center;
     padding: 20px;
-    background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+    background: var(--app-bg-primary, #000000);
     min-height: 100vh;
 }
 
 .home-title {
     font-size: 2.5rem;
     font-weight: bold;
-    color: #0f172a;
+    color: var(--app-bg-accent, orange);
     margin-bottom: 20px;
 }
 
@@ -24,7 +24,7 @@
 
 .match-card {
     position: relative;
-    background: #ffffff;
+    background: var(--app-bg-secondary, #ffffff);
     border-radius: 10px;
     padding: 15px;
     text-align: center;
@@ -35,8 +35,8 @@
     display: flex;
 
     /* thin color anchors */
-    border-left: 4px solid var(--home-color);
-    border-right: 4px solid var(--away-color);
+    /* border-left: 4px solid var(--home-color);
+    border-right: 4px solid var(--away-color); */
 }
 
 /* GRADIENT LAYERS (narrowed) */
@@ -76,6 +76,7 @@
 .match-card:hover {
     transform: translateY(-4px);
     box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+    background: var(--app-bg-accent, #ffffff);
 }
 
 /* Slight expansion only (still tight) */
@@ -134,11 +135,11 @@
     flex-direction: column; /* Stack the jersey and name vertically */
     align-items: center;
     justify-content: center;
-    background-color: rgba(255, 255, 255, 0.8); /* Ensure text visibility */
+    background: transparent;
     padding: 10px;
     border-radius: 5px;
     font-size: 0.8rem;
-    color: #0f172a;
+    color: #000000;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
@@ -166,8 +167,8 @@
 
 /* shirt */
 .team-shirt {
-    width: 32px;
-    height: 32px;
+    width: 50px;
+    height: 50px;
     margin-bottom: 8px; /* Add spacing between the jersey and the name */
     margin-right: 8px;
 }

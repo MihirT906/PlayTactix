@@ -93,7 +93,7 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
       </aside>
       <header className="app-header">
         <h1 className="app-title">{APP_CONFIG.brand.title}</h1>
-        <div className="frame-status">Frame {currentFrame} / 50</div>
+        {/* <div className="frame-status">Frame {currentFrame} / 50</div> */}
       </header>
       
       <MatchDetailsDisplay matchData={matchData!} />

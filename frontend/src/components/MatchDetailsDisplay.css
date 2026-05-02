@@ -6,8 +6,8 @@
   gap: 16px;
   margin-bottom: 20px;
   padding: 12px 12px;
-  background: var(--surface-bg, rgba(255, 255, 255, 0.85));
-  border: 1px solid var(--surface-border, #dbe3f1);
+  background: var(--app-bg-secondary, #000000);
+  border: 1px solid var(--app-border-color, #dbe3f1);
   border-radius: 14px;
   border-left: 20px solid var(--home-color);
   border-right: 20px solid var(--away-color);
@@ -21,7 +21,7 @@
 
 .player-item {
   font-size: 0.9rem;
-  color: #333;
+  color: var(--app-info-font-color, #ffffff);
   margin: 4px 0;
   padding: 4px;
   /* background-color: #f9f9f9; */
@@ -53,12 +53,13 @@
     flex-direction: column;
     align-items: center;
     margin-top: 5px;
+    color: var(--app-info-font-color, #ffffff)
 }
 
 .competition {
     font-size: 0.9rem;
     font-weight: bold;
-    color: #334155;
+    color: var(--app-info-font-color, #ffffff);
     margin: 10px 0;
     align-items: center;
     justify-content: center;
@@ -68,19 +69,19 @@
 .vs {
     font-size: 2rem;
     font-weight: bold;
-    color: #334155;
+    color: var(--app-info-font-color, #ffffff);
     margin: 10px 0;
 }
 
 .venue {
     font-size: 0.8rem;
-    color: #475569;
+    color: var(--app-info-font-color, #ffffff);
     margin-top: 4px;
 }
 /* shirt */
 .team-shirt {
-    width: 64px;
-    height: 64px;
+    width: 100px;
+    height: 100px;
     margin-bottom: 8px; /* Add spacing between the jersey and the name */
     margin-right: 8px;
 }

@@ -3,6 +3,7 @@ import './HomeScreen.css';
 import MatchDataManager from '../services/MatchDataManager';
 import { useNavigate } from 'react-router-dom';
 import type { MatchData } from '../types/MatchDataInterfaces';
+import { APP_CONFIG, CHUNK_SIZE, SLEEP_INTERVAL, THEME_CSS_VARIABLES } from '../config'
 
 const HomeScreen = () => {
     const [matches, setMatches] = useState<MatchData[]>([]);
@@ -10,6 +11,18 @@ const HomeScreen = () => {
     const navigate = useNavigate(); // Added useNavigate hook
 
     const matchDataManager = new MatchDataManager();
+
+
+    useEffect(() => {
+        const root = document.documentElement
+    
+        Object.entries(THEME_CSS_VARIABLES).forEach(([variable, value]) => {
+          root.style.setProperty(variable, value)
+        })
+    
+        document.title = APP_CONFIG.brand.title
+    }, [])
+
 
     useEffect(() => {
         console.log('Loading state:', loading); // Debugging loading state

@@ -1,16 +1,16 @@
 .annotation-display {
     height: 600px;
     width: 300px;
-    background: var(--annotation-panel-bg, #f3f4f6);
-    border: 1px solid var(--annotation-panel-border, #d1d5db);
-    border-radius: 12px;
+    background: var(--app-bg-secondary, #000000);
+    border: 1px solid var(--app-border-color, #000000);
+    border-radius: var(--app-border-radius, 12px);
     padding: 14px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 10px;
-    font-size: 14px;
-    color: var(--annotation-text, #1f2937);
+    font-size: var(--app-info-font-size, 14px);
+    color: var(--app-info-font-color, #000000);
     box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
 }
 
@@ -23,9 +23,9 @@
 
 .annotation-display-header h3 {
     margin: 0;
-    font-size: 16px;
+    font-size: var(--app-heading-font-size, 16px);
     font-weight: 700;
-    color: var(--annotation-heading, #111827);
+    color: var(--app-heading-font-color, #111827);
 }
 
 .annotation-current-frame {
@@ -38,16 +38,16 @@
 }
 
 .annotation-empty-state {
-    border: 1px dashed var(--annotation-empty-border, #cbd5e1);
-    border-radius: 10px;
+    border: 1px dashed var(--app-border-color, #000000);
+    border-radius: var(--app-border-radius, 12px);
     padding: 18px 12px;
     text-align: center;
     color: var(--annotation-empty-text, #64748b);
-    background: var(--annotation-empty-bg, #f8fafc);
+    background: #ffffff
 }
 
 .annotation-box {
-    border-radius: 12px;
+    border-radius: var(--app-border-radius, 12px);;
     padding: 12px;
     display: flex;
     flex-direction: column;
@@ -57,14 +57,15 @@
 }
 
 .annotation-box--active {
-    background: linear-gradient(150deg, #2563eb, #1d4ed8);
+    /* background: linear-gradient(150deg, #2563eb, #1d4ed8); */
+    background: var(--app-bg-accent, #ffffff);
     color: #ffffff;
-    box-shadow: 0 6px 14px rgba(37, 99, 235, 0.35);
+    box-shadow: 0 6px 14px var(--app-bg-accent-light, #000000);
     border: 1px solid transparent;
 }
 
 .annotation-box--inactive {
-    background: #f8fafc;
+    background: #ffffff;
     color: #64748b;
     border: 1px solid #e2e8f0;
     box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);

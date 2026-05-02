@@ -163,15 +163,20 @@ class SkillCornerDataIngestor:
         return players_df
         
 
-    def _get_gold_tracking_data(self, silver_tracking_data, silver_meta_data):
+    def _get_gold_tracking_data(self, silver_tracking_data, silver_meta_data, silver_event_data=None):
         silver_tracking_data = silver_tracking_data.merge(
             silver_meta_data, left_on=["player_id"], right_on=["id"]
         )
+        
+        silver_event_data = silver_event_data[:50] if silver_event_data is not None else None
+        event_idx = 0
+        n_events = len(silver_event_data) if silver_event_data is not None else 0
+        
         frames = {}
         for frame_number, group in silver_tracking_data.groupby("frame"):
+            
+            # Adding tracking data
             frames[frame_number] = {
-                #'is_detected': group['is_detected'].iloc[0],
-                #'timestamp': group['timestamp'].iloc[0],
                 'period': group['period'].iloc[0],
                 'players': {
                     'x': group['x'].tolist(),
@@ -192,27 +197,47 @@ class SkillCornerDataIngestor:
                     'ball_x': group['ball_x'].iloc[0],
                     'ball_y': group['ball_y'].iloc[0],
                     'ball_z': group['ball_z'].iloc[0],
-                    #'is_detected_ball': group['is_detected_ball'].iloc[0],
-                }
+                },
+                'events': []
             }
+            
+            # # Adding event data
+            while event_idx < n_events and silver_event_data.iloc[event_idx]['frame_start'] <= frame_number:
+                event = silver_event_data.iloc[event_idx]
+                if event['frame_start'] <= frame_number <= event['frame_end']:
+                    frames[frame_number]['events'].append(event.to_dict())
+                if event['frame_end'] < frame_number:
+                    event_idx += 1
+                else:
+                    break
             
         return frames
 
-    
-    def _load_event_data(self, match_id) -> pd.DataFrame:
-        """Load event data for a specific match."""
-
+    def _get_bronze_event_data(self, match_id) -> pd.DataFrame:
         event_data_github_url = f"https://raw.githubusercontent.com/SkillCorner/opendata/refs/heads/master/data/matches/{match_id}/{match_id}_dynamic_events.csv"
         raw_data = pd.read_csv(event_data_github_url)
 
         return raw_data
+    
+    def _get_silver_event_data(self, bronze_event_data):
+        columns_to_keep = [
+            'event_id', 'index', 'frame_start', 'frame_end', 
+            'attacking_side', 'event_type_id', 'event_type', 
+            # 'event_subtype_id', 'event_subtype', 
+            'player_id', 'player_name', 'team_id', 
+            'x_start', 'y_start', 'x_end', 'y_end'
+        ]
+        silver_event_data = bronze_event_data[columns_to_keep]
+        return silver_event_data        
     
     def load_data(self, match_id) -> Dict[str, pd.DataFrame]:
         bronze_tracking_data = self._get_bronze_tracking_data(match_id)
         bronze_meta_data = self._get_bronze_meta_data(match_id)
         silver_tracking_data = self._get_silver_tracking_data(bronze_tracking_data)
         silver_meta_data = self._get_silver_meta_data(bronze_meta_data)
-        gold_tracking_data = self._get_gold_tracking_data(silver_tracking_data, silver_meta_data)
+        bronze_event_data = self._get_bronze_event_data(match_id)
+        silver_event_data = self._get_silver_event_data(bronze_event_data)
+        gold_tracking_data = self._get_gold_tracking_data(silver_tracking_data, silver_meta_data, silver_event_data)
         
         final_data = {
             'match': bronze_meta_data,

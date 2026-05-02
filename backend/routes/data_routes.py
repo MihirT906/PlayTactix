@@ -16,8 +16,8 @@ async def download_match_data(match_id: int):
         with open("../data/gold_tracking_data.json", "r") as f:
             gold_tracking_data = json.load(f)
 
-        if gold_tracking_data.get("match", {}).get("id") == match_id:
-            return {"message": f"Data for match {match_id} already exists in gold_tracking_data.json"}
+        # if gold_tracking_data.get("match", {}).get("id") == match_id:
+        #     return {"message": f"Data for match {match_id} already exists in gold_tracking_data.json"}
 
         sc_data_ingestor = SkillCornerDataIngestor()
         sc_data_ingestor.load_data(match_id)

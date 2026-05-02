@@ -33,6 +33,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
     name: 'Player Focus',
     icon: Plotly.Icons.tooltip_basic,
     click: () => {
+        // console.log('event', frameData?.events)
         setFocusEnabled(prev => !prev)
       },
   }), [])

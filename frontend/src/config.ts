@@ -21,6 +21,8 @@ export const APP_CONFIG = {
 		plotBackgroundColor: '#ffffff',
 		modeBarButtonsToAdd: ['drawline', 'drawrect', 'eraseshape'] as const,
 		modeBarButtonsToRemove: ['zoom', 'pan', 'select', 'lasso', 'zoomin', 'zoomout', 'autoScale2d'] as const,
+		ballMarkerSize: 7,
+		ballMarkerColor: '#FFFFFF',
 	},
 	theme: {
 		cssVariables: {

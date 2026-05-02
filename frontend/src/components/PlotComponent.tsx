@@ -118,8 +118,8 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
             y: frameData?.players.y,
             mode: 'markers+text',
             type: 'scatter',
-            text: frameData?.players.number.map((num) => num.toString()),
-            textposition: 'center',
+            // text: frameData?.players.number.map((num) => num.toString()),
+            // textposition: 'center',
             textfont: {
               family: 'Arial Black, Arial, sans-serif',
               size: 8,
@@ -144,6 +144,10 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
                   return plotConfig.markerColor; // Default color if team ID doesn't match
                 }
               }),
+              line: {
+                color: '#000000',
+                width: 1,
+              },
               opacity: SELECTED_POINTS_OPACITY,
             },
             selectedpoints: firstPoint !== null || focusPoints.length > 0 ? [firstPoint, ...focusPoints] : undefined, // Highlight points that are either the first point selected or have focus lines connected to them
@@ -152,6 +156,20 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
             },
             unselected: {
               marker: { opacity: firstPoint !== null || focusPoints.length > 0 ? UNSELECTED_POINTS_OPACITY : SELECTED_POINTS_OPACITY },
+            },
+          } as any,
+          {
+            x: [frameData?.ball.ball_x],
+            y: [frameData?.ball.ball_y],
+            mode: 'markers+text',
+            type: 'scatter',
+            marker: {
+              size: plotConfig.ballMarkerSize,
+              color: plotConfig.ballMarkerColor,
+              line: {
+                color: '#000000',
+                width: 1,
+              },
             },
           } as any,
         ]}
@@ -164,7 +182,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
           margin: { l: 20, r: 20, t: 20, b: 20 },
           paper_bgcolor: '#4cbb17',
           plot_bgcolor: '#4cbb17',
-          // autosize: true,
+          showlegend: false,
           dragmode: dragMode as any,
           shapes: [...lines, ...shapes], // Contains player focus lines
           images: [

@@ -27,7 +27,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
   const [shapes, setShapes] = useState<any[]>([])
   const [dragMode, setDragMode] = useState<string>('select')
   const [playerMasks, setPlayerMasks] = useState<{[key: string]: boolean[]}>({}) // Object to hold mask points for each player, keyed by player ID
-
+  const [offBallRunLines, setOffBallRunLines] = useState<{x: (number | null)[], y: (number | null)[]}>({ x: [], y: [] }) // Lines to indicate off-ball runs
   const image_src = backgroundImage; // Set the background image source
 
   const player_focus_button = useMemo(() => ({ // Button to toggle 'Player Focus' mode
@@ -38,6 +38,35 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
         setFocusEnabled(prev => !prev)
       },
   }), [])
+    
+  const offBallRunTrace = useMemo(() => {
+    
+    const events = frameData?.events?.filter(
+      e => e.event_type === 'off_ball_run'
+    ) || [];
+
+    console.log('Computing off-ball run trace for frame:', currentFrame, 'with events:', events.length)
+    const x: (number | null)[] = [];
+    const y: (number | null)[] = [];
+
+    for (const e of events) {
+      x.push(e.x_start, e.x_end, null);
+      y.push(e.y_start, e.y_end, null);
+    }
+
+    return {
+      x,
+      y,
+      mode: 'lines',
+      type: 'scatter',
+      line: {
+        color: '#0bf7e6',
+        width: 2,
+        dash: 'dashdot',
+      },
+      uid: `offball-engagement-${currentFrame}`, // Unique identifier for on-ball engagement points to prevent merging with other points
+    };
+  }, [frameData]);
 
   const updateLines = () => { // Creates lines to add to Plotly.layout using the player focus lines stored in annotationStore
     setLines([]) // Clear existing lines before adding new ones
@@ -66,26 +95,33 @@ const computeMasks = () => {
   const possessionPlayerId = frameData?.events?.find(e => e.event_type === 'player_possession')?.player_id;
   const passingOptionsSet = new Set(frameData?.events?.filter(e => e.event_type === 'passing_option').map(e => e.player_id) || []);
   const engagementSet = new Set(frameData?.events?.filter(e => e.event_type === 'on_ball_engagement').map(e => e.player_id) || []);
-  console.log("passing options set:", passingOptionsSet)
+  
+  setOffBallRunLines({ x: [], y: [] }) // Clear existing off-ball run lines before adding new ones
+
   setPlayerMasks({
     possession: playerIds.map(id => id === possessionPlayerId),
     passing_options: playerIds.map(id => passingOptionsSet.has(id)),
     on_ball_engagement: playerIds.map(id => engagementSet.has(id)),
     regular: playerIds.map(id => id !== possessionPlayerId && !passingOptionsSet.has(id) && !engagementSet.has(id)),
   });
+
+  const OffBallRunEvents = frameData?.events?.filter(e => e.event_type === 'off_ball_run') || [];
+  const offBallX: (number | null)[] = []
+  const offBallY: (number | null)[] = []
+  for (const event of OffBallRunEvents) {
+    offBallX.push(event.x_start, event.x_end, null) // Push null to create a break in the line between different events
+    offBallY.push(event.y_start, event.y_end, null)
+  }
+  setOffBallRunLines({ x: offBallX, y: offBallY })
 };
 
   const updateShapes = () => {
     const drawShapes = annotationStore.getDrawAnnotations(currentFrame)
-    // console.log(frameData?.events.filter(e => e.event_type === 'passing_option')?.map(e => e.player_id) || [])
     setShapes(Array.from(drawShapes)) // Update shapes based on the draw annotations in the store
   }
 
   useEffect(() => { // Lines have to be recreated every frame as player positions move
     computeMasks()
-    // if (playerMasks.passing_options) {
-    //   console.log('Updated player masks:', playerMasks.passing_options) // Debugging log to check the computed masks
-    // }
     updateLines()
     updateShapes()
     setDragMode('select')
@@ -197,7 +233,6 @@ const computeMasks = () => {
                   return plotConfig.markerColor; // Default color if team ID doesn't match
                 }
               }),
-              // color: '#08b42d',
               line: {
                 color: '#eded0b',
                 width: 2,
@@ -220,14 +255,27 @@ const computeMasks = () => {
                   return plotConfig.markerColor; // Default color if team ID doesn't match
                 }
               }),
-              // color: '#bb3030',
               line: {
                 color: '#f746aa',
                 width: 2,
               },
             }
           } as any,
+          offBallRunTrace,
           // Plotting off-ball runs
+          // {
+          //   // x: [-3,6, null, 10,15],
+          //   // y: [-5,10, null, 20,25],
+          //   x: offBallRunLines.x || [],
+          //   y: offBallRunLines.y || [],
+          //   mode: 'lines',
+          //   type: 'scatter',
+          //   line: {
+          //     color: '#0bf7e6',
+          //     width: 2,
+          //     dash: 'dashdot',
+          //   },
+          // },
           // {
           //   x: frameData?.players.x,
           //   y: frameData?.players.y,

@@ -209,7 +209,8 @@ class SkillCornerDataIngestor:
             while event_idx < n_events and events[event_idx]['frame_start'] <= frame_number:
                 active_events.append(events[event_idx])
                 event_idx += 1
-                active_events = [e for e in active_events if e['frame_start'] <= frame_number <= e['frame_end']]
+            
+            active_events = [e for e in active_events if e['frame_start'] <= frame_number <= e['frame_end']]
             
             frames[frame_number]['events'] = active_events
             

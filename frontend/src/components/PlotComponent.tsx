@@ -26,6 +26,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
   const [lines, setLines] = useState<any[]>([])
   const [shapes, setShapes] = useState<any[]>([])
   const [dragMode, setDragMode] = useState<string>('select')
+  const [playerMasks, setPlayerMasks] = useState<{[key: string]: boolean[]}>({}) // Object to hold mask points for each player, keyed by player ID
 
   const image_src = backgroundImage; // Set the background image source
 
@@ -60,12 +61,31 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
     }
   }
 
+const computeMasks = () => {
+  const playerIds = frameData?.players?.player_id || [];
+  const possessionPlayerId = frameData?.events?.find(e => e.event_type === 'player_possession')?.player_id;
+  const passingOptionsSet = new Set(frameData?.events?.filter(e => e.event_type === 'passing_option').map(e => e.player_id) || []);
+  const engagementSet = new Set(frameData?.events?.filter(e => e.event_type === 'on_ball_engagement').map(e => e.player_id) || []);
+  console.log("passing options set:", passingOptionsSet)
+  setPlayerMasks({
+    possession: playerIds.map(id => id === possessionPlayerId),
+    passing_options: playerIds.map(id => passingOptionsSet.has(id)),
+    on_ball_engagement: playerIds.map(id => engagementSet.has(id)),
+    regular: playerIds.map(id => id !== possessionPlayerId && !passingOptionsSet.has(id) && !engagementSet.has(id)),
+  });
+};
+
   const updateShapes = () => {
     const drawShapes = annotationStore.getDrawAnnotations(currentFrame)
+    // console.log(frameData?.events.filter(e => e.event_type === 'passing_option')?.map(e => e.player_id) || [])
     setShapes(Array.from(drawShapes)) // Update shapes based on the draw annotations in the store
   }
 
   useEffect(() => { // Lines have to be recreated every frame as player positions move
+    computeMasks()
+    // if (playerMasks.passing_options) {
+    //   console.log('Updated player masks:', playerMasks.passing_options) // Debugging log to check the computed masks
+    // }
     updateLines()
     updateShapes()
     setDragMode('select')
@@ -110,33 +130,21 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
     annotationStore.describeAnnotationStore() // For debugging - logs the current state of the annotation store after every relayout event
   }
 
+  const filterByMask = <T,>(arr: T[], mask: boolean[]) =>
+    arr.filter((_, idx) => mask[idx]);
+
   return (
     <div className="plot-container">
       <Plot className='PlotComponent'
         data={[
+          // Plotting regular player points
           {
-            x: frameData?.players.x,
-            y: frameData?.players.y,
+            x: filterByMask(frameData?.players.x || [], playerMasks.regular),
+            y: filterByMask(frameData?.players.y || [], playerMasks.regular),
             mode: 'markers+text',
-            type: 'scatter',
-            // text: frameData?.players.number.map((num) => num.toString()),
-            // textposition: 'center',
-            textfont: {
-              family: 'Arial Black, Arial, sans-serif',
-              size: 8,
-              color: frameData?.players.team_id.map((id) => {
-                if (id === matchData?.home_team.id) {
-                  return matchData?.home_team_kit.number_color;
-                } else if (id === matchData?.away_team.id) {
-                  return matchData?.away_team_kit.number_color;
-                } else {
-                  return '#000000'; // Default color if team ID doesn't match
-                }
-              })
-            },
             marker: {
               size: plotConfig.markerSize,
-              color: frameData?.players.team_id.map((id) => {
+              color: filterByMask(frameData?.players.team_id || [], playerMasks.regular).map((id) => {
                 if (id === matchData?.home_team.id) {
                   return matchData?.home_team_kit.jersey_color;
                 } else if (id === matchData?.away_team.id) {
@@ -149,16 +157,122 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
                 color: '#000000',
                 width: 1,
               },
-              opacity: SELECTED_POINTS_OPACITY,
-            },
-            selectedpoints: firstPoint !== null || focusPoints.length > 0 ? [firstPoint, ...focusPoints] : undefined, // Highlight points that are either the first point selected or have focus lines connected to them
-            selected: {
-              marker: { opacity: SELECTED_POINTS_OPACITY },
-            },
-            unselected: {
-              marker: { opacity: firstPoint !== null || focusPoints.length > 0 ? UNSELECTED_POINTS_OPACITY : SELECTED_POINTS_OPACITY },
+            }
+          } as any,
+          // Plotting players in possession
+          {
+            x: filterByMask(frameData?.players.x || [], playerMasks.possession),
+            y: filterByMask(frameData?.players.y || [], playerMasks.possession),
+            mode: 'markers+text',
+            marker: {
+              size: plotConfig.markerSize * 1.2,
+              color: filterByMask(frameData?.players.team_id || [], playerMasks.possession).map((id) => {
+                if (id === matchData?.home_team.id) {
+                  return matchData?.home_team_kit.jersey_color;
+                } else if (id === matchData?.away_team.id) {
+                  return matchData?.away_team_kit.jersey_color;
+                } else {
+                  return plotConfig.markerColor; // Default color if team ID doesn't match
+                }
+              }),
+              line: {
+                color: '#e60c0c',
+                width: 2,
+              },
             },
           } as any,
+          // Plotting passing options
+          {
+            x: filterByMask(frameData?.players.x || [], playerMasks.passing_options),
+            y: filterByMask(frameData?.players.y || [], playerMasks.passing_options),
+            mode: 'markers+text',
+            marker: {
+              size: plotConfig.markerSize,
+              color: filterByMask(frameData?.players.team_id || [], playerMasks.passing_options).map((id) => {
+                if (id === matchData?.home_team.id) {
+                  return matchData?.home_team_kit.jersey_color;
+                } else if (id === matchData?.away_team.id) {
+                  return matchData?.away_team_kit.jersey_color;
+                } else {
+                  return plotConfig.markerColor; // Default color if team ID doesn't match
+                }
+              }),
+              // color: '#08b42d',
+              line: {
+                color: '#eded0b',
+                width: 2,
+              },
+            }
+          } as any,
+          // Plotting on-ball engagements
+          {
+            x: filterByMask(frameData?.players.x || [], playerMasks.on_ball_engagement),
+            y: filterByMask(frameData?.players.y || [], playerMasks.on_ball_engagement),
+            mode: 'markers+text',
+            marker: {
+              size: plotConfig.markerSize,
+              color: filterByMask(frameData?.players.team_id || [], playerMasks.on_ball_engagement).map((id) => {
+                if (id === matchData?.home_team.id) {
+                  return matchData?.home_team_kit.jersey_color;
+                } else if (id === matchData?.away_team.id) {
+                  return matchData?.away_team_kit.jersey_color;
+                } else {
+                  return plotConfig.markerColor; // Default color if team ID doesn't match
+                }
+              }),
+              // color: '#bb3030',
+              line: {
+                color: '#f746aa',
+                width: 2,
+              },
+            }
+          } as any,
+          // Plotting off-ball runs
+          // {
+          //   x: frameData?.players.x,
+          //   y: frameData?.players.y,
+          //   mode: 'markers+text',
+          //   type: 'scatter',
+          //   // text: frameData?.players.number.map((num) => num.toString()),
+          //   // textposition: 'center',
+          //   textfont: {
+          //     family: 'Arial Black, Arial, sans-serif',
+          //     size: 8,
+          //     color: frameData?.players.team_id.map((id) => {
+          //       if (id === matchData?.home_team.id) {
+          //         return matchData?.home_team_kit.number_color;
+          //       } else if (id === matchData?.away_team.id) {
+          //         return matchData?.away_team_kit.number_color;
+          //       } else {
+          //         return '#000000'; // Default color if team ID doesn't match
+          //       }
+          //     })
+          //   },
+          //   marker: {
+          //     size: plotConfig.markerSize,
+          //     color: frameData?.players.team_id.map((id) => {
+          //       if (id === matchData?.home_team.id) {
+          //         return matchData?.home_team_kit.jersey_color;
+          //       } else if (id === matchData?.away_team.id) {
+          //         return matchData?.away_team_kit.jersey_color;
+          //       } else {
+          //         return plotConfig.markerColor; // Default color if team ID doesn't match
+          //       }
+          //     }),
+          //     line: {
+          //       color: '#000000',
+          //       width: 1,
+          //     },
+          //     opacity: SELECTED_POINTS_OPACITY,
+          //   },
+          //   selectedpoints: firstPoint !== null || focusPoints.length > 0 ? [firstPoint, ...focusPoints] : undefined, // Highlight points that are either the first point selected or have focus lines connected to them
+          //   selected: {
+          //     marker: { opacity: SELECTED_POINTS_OPACITY },
+          //   },
+          //   unselected: {
+          //     marker: { opacity: firstPoint !== null || focusPoints.length > 0 ? UNSELECTED_POINTS_OPACITY : SELECTED_POINTS_OPACITY },
+          //   },
+          // } as any,
           {
             x: [frameData?.ball.ball_x],
             y: [frameData?.ball.ball_y],

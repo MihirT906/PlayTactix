@@ -168,10 +168,14 @@ class SkillCornerDataIngestor:
             silver_meta_data, left_on=["player_id"], right_on=["id"]
         )
         
-        silver_event_data = silver_event_data[:50] if silver_event_data is not None else None
-        event_idx = 0
-        n_events = len(silver_event_data) if silver_event_data is not None else 0
+        if silver_event_data is not None:
+            events = silver_event_data.to_dict("records")
+        else:
+            events = []
         
+        event_idx = 0
+        n_events = len(events)
+        active_events = []
         frames = {}
         for frame_number, group in silver_tracking_data.groupby("frame"):
             
@@ -202,14 +206,12 @@ class SkillCornerDataIngestor:
             }
             
             # # Adding event data
-            while event_idx < n_events and silver_event_data.iloc[event_idx]['frame_start'] <= frame_number:
-                event = silver_event_data.iloc[event_idx]
-                if event['frame_start'] <= frame_number <= event['frame_end']:
-                    frames[frame_number]['events'].append(event.to_dict())
-                if event['frame_end'] < frame_number:
-                    event_idx += 1
-                else:
-                    break
+            while event_idx < n_events and events[event_idx]['frame_start'] <= frame_number:
+                active_events.append(events[event_idx])
+                event_idx += 1
+                active_events = [e for e in active_events if e['frame_start'] <= frame_number <= e['frame_end']]
+            
+            frames[frame_number]['events'] = active_events
             
         return frames
 
@@ -227,7 +229,25 @@ class SkillCornerDataIngestor:
             'player_id', 'player_name', 'team_id', 
             'x_start', 'y_start', 'x_end', 'y_end'
         ]
+        
         silver_event_data = bronze_event_data[columns_to_keep]
+        
+        # int_cols = ['event_id', 'index', 'frame_start', 'frame_end','event_type_id', 'player_id', 'team_id']
+        # float_cols = ['x_start', 'y_start', 'x_end', 'y_end']
+        # str_cols = ['attacking_side', 'event_type', 'player_name']
+        
+        # for c in int_cols:
+        #     if c in silver_event_data.columns:
+        #         silver_event_data[c] = silver_event_data[c].apply(lambda x: int(x) if pd.notna(x) else None)
+
+        # for c in float_cols:
+        #     if c in silver_event_data.columns:
+        #         silver_event_data[c] = silver_event_data[c].apply(lambda x: float(x) if pd.notna(x) else None)
+        
+        # for c in str_cols:
+        #     if c in silver_event_data.columns:
+        #         silver_event_data[c] = silver_event_data[c].apply(lambda x: str(x) if pd.notna(x) else None)
+        
         return silver_event_data        
     
     def load_data(self, match_id) -> Dict[str, pd.DataFrame]:

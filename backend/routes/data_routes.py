@@ -10,6 +10,10 @@ def set_data_ingestor(ingestor: SkillCornerDataIngestor):
     global data_ingestor
     data_ingestor = ingestor
     
+@router.get("/hello")
+async def hello():
+    return {"message": "Hello, World!"}
+
 @router.get("/match/{match_id}")
 async def download_match_data(match_id: int):
     try:

@@ -3,7 +3,7 @@ export const APP_CONFIG = {
 		title: 'PlayTactix',
 	},
 	timing: {
-		chunkSize: 100,
+		chunkSize: 1000,
 		sleepIntervalMs: 100,
 	},
 	selection: {

@@ -27,7 +27,6 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
   const [shapes, setShapes] = useState<any[]>([])
   const [dragMode, setDragMode] = useState<string>('select')
   const [playerMasks, setPlayerMasks] = useState<{[key: string]: boolean[]}>({}) // Object to hold mask points for each player, keyed by player ID
-  const [offBallRunLines, setOffBallRunLines] = useState<{x: (number | null)[], y: (number | null)[]}>({ x: [], y: [] }) // Lines to indicate off-ball runs
   const image_src = backgroundImage; // Set the background image source
 
   const player_focus_button = useMemo(() => ({ // Button to toggle 'Player Focus' mode
@@ -50,8 +49,8 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
     const y: (number | null)[] = [];
 
     for (const e of events) {
-      x.push(e.x_start, e.x_end, null);
-      y.push(e.y_start, e.y_end, null);
+      x.push(e.attacking_side == 'left_to_right' ? e.x_start : -e.x_start, e.attacking_side == 'left_to_right' ? e.x_end : -e.x_end, null);
+      y.push(e.attacking_side == 'left_to_right' ? e.y_start : -e.y_start, e.attacking_side == 'left_to_right' ? e.y_end : -e.y_end, null);
     }
 
     return {
@@ -95,8 +94,6 @@ const computeMasks = () => {
   const possessionPlayerId = frameData?.events?.find(e => e.event_type === 'player_possession')?.player_id;
   const passingOptionsSet = new Set(frameData?.events?.filter(e => e.event_type === 'passing_option').map(e => e.player_id) || []);
   const engagementSet = new Set(frameData?.events?.filter(e => e.event_type === 'on_ball_engagement').map(e => e.player_id) || []);
-  
-  setOffBallRunLines({ x: [], y: [] }) // Clear existing off-ball run lines before adding new ones
 
   setPlayerMasks({
     possession: playerIds.map(id => id === possessionPlayerId),
@@ -104,15 +101,6 @@ const computeMasks = () => {
     on_ball_engagement: playerIds.map(id => engagementSet.has(id)),
     regular: playerIds.map(id => id !== possessionPlayerId && !passingOptionsSet.has(id) && !engagementSet.has(id)),
   });
-
-  const OffBallRunEvents = frameData?.events?.filter(e => e.event_type === 'off_ball_run') || [];
-  const offBallX: (number | null)[] = []
-  const offBallY: (number | null)[] = []
-  for (const event of OffBallRunEvents) {
-    offBallX.push(event.x_start, event.x_end, null) // Push null to create a break in the line between different events
-    offBallY.push(event.y_start, event.y_end, null)
-  }
-  setOffBallRunLines({ x: offBallX, y: offBallY })
 };
 
   const updateShapes = () => {

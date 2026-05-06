@@ -1,36 +1,12 @@
 import { CHUNK_SIZE } from "../config"
 import type { FrameData } from '../types/FrameDataInterfaces'
 
-// export interface FrameData {
-//   period: number
-//   players: {
-//     x: Array<number>
-//     y: Array<number>
-//     player_id: Array<number>
-//     id: Array<number>
-//     short_name: Array<string>
-//     number: Array<number>
-//     team_id: Array<number>
-//     total_time: Array<number>
-//     player_role_name: Array<string>
-//     player_role_acronym: Array<string>
-//     is_gk: Array<boolean>
-//     direction_player_1st_half: Array<string>
-//     direction_player_2nd_half: Array<string>
-//   }
-//   ball: {
-//     ball_x: number
-//     ball_y: number
-//     ball_z: number
-//   }
-// }
-
 
 export default class DataManager {
   // private cache: Map<number, { frame_num: number; player_id: number, x: number; y: number }[]> = new Map()
   // private cacheLimit = 20 // Maximum number of frames to cache
   private buffer: Map<number, FrameData> = new Map()
-  private bufferLimit = 100
+  private bufferLimit = 5000
   private metaData: any = null
 
   constructor() {

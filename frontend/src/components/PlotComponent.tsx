@@ -63,8 +63,8 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
       mode: 'lines',
       type: 'scatter',
       line: {
-        color: '#0bf7e6',
-        width: 2,
+        color: APP_CONFIG.events.offBallRun.color,
+        width: APP_CONFIG.events.offBallRun.width,
         dash: 'dashdot',
       },
     };
@@ -142,9 +142,9 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
     const EMPTY_MASK = frameData?.players?.x?.map(() => true) || [];
     return [
       build(playerMasks?.regular || EMPTY_MASK, '#000000'),
-      build(playerMasks?.possession || EMPTY_MASK, '#e60c0c', 1.2),
-      build(playerMasks?.passing_options || EMPTY_MASK, '#eded0b'),
-      build(playerMasks?.on_ball_engagement || EMPTY_MASK, '#f746aa',),
+      build(playerMasks?.possession || EMPTY_MASK, APP_CONFIG.events.playerPossession.color, APP_CONFIG.events.playerPossession.width),
+      build(playerMasks?.passing_options || EMPTY_MASK, APP_CONFIG.events.passingOption.color, APP_CONFIG.events.passingOption.width),
+      build(playerMasks?.on_ball_engagement || EMPTY_MASK, APP_CONFIG.events.onBallEngagement.color, APP_CONFIG.events.onBallEngagement.width),
     ];
   }, [frameData])
 

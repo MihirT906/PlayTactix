@@ -10,6 +10,7 @@ import { Link } from 'react-router-dom';
 import type { MatchData } from './types/MatchDataInterfaces';
 import type { FrameData } from './types/FrameDataInterfaces'
 import MatchDetailsDisplay from './components/MatchDetailsDisplay'
+import Settings from './components/Settings'
 
 function App({dataManager, annotationStore}: {dataManager: DataManager, annotationStore: AnnotationStore}) {
   const [isPlaying, setIsPlaying] = useState(false) // Start with paused state
@@ -57,7 +58,6 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
       const data = await dataManager.fetchMatchMetaData()
       if (data) {
         setMatchData(data)
-        console.log('Match metadata:', data)
       } else {
         console.warn('No match metadata available')
       }
@@ -99,6 +99,9 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
       <MatchDetailsDisplay matchData={matchData!} />
 
       <div className="app-container">
+        <div className="left-panel">
+          <Settings matchData={matchData!}/>
+        </div>
         <div className="main-content">
           <Controls
             isPlaying={isPlaying}

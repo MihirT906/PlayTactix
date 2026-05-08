@@ -4,7 +4,7 @@
   flex-direction: column;
   align-items: center;
   gap: 16px;
-  margin-bottom: 20px;
+    margin: 12px 0 20px; /* add top margin to separate from header */
   padding: 12px 12px;
   background: var(--app-bg-secondary, #000000);
   border: 1px solid var(--app-border-color, #dbe3f1);

@@ -21,7 +21,7 @@ interface PlotComponentProps {
 
 const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, frameData, annotationStore, onAnnotationUpdate }) => {
   const plotConfig = APP_CONFIG.plot
-  const { homeTeamColor, awayTeamColor, eventStyles } = useStyleConfig()
+  const { homeTeamColor, awayTeamColor, eventStyles, teamVisibility, eventVisibility } = useStyleConfig()
   const [focusPoints, setFocusPoints] = useState<number[]>([]) // Points that are highlighted on click
   const [firstPoint, setFirstPoint] = useState<number | null>(null) // First point selected when drawing a line between two players
   const [focusEnabled, setFocusEnabled] = useState(false) // 'Player Focus' mode toggled to draw lines
@@ -33,6 +33,19 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
   // Utility function to filter arrays based on a boolean mask
   const filterByMask = <T,>(arr: T[], mask: boolean[]) =>
     arr.filter((_, idx) => mask[idx]);
+
+  const getVisibleTeamMask = (teamIds: number[]) =>
+    teamIds.map((teamId) => {
+      if (teamId === matchData?.home_team.id) {
+        return teamVisibility.home;
+      }
+
+      if (teamId === matchData?.away_team.id) {
+        return teamVisibility.away;
+      }
+
+      return true;
+    });
 
   // Button configuration for 'Player Focus' mode
   const player_focus_button = useMemo(() => ({ // Button to toggle 'Player Focus' mode
@@ -46,6 +59,10 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
   
   // Trace for off-ball runs
   const offBallRunTrace = useMemo(() => {
+    if (!eventVisibility.offBallRun) {
+      return null;
+    }
+
     const events = frameData?.events?.filter(
       e => e.event_type === 'off_ball_run'
     ) || [];
@@ -70,7 +87,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
         dash: 'dashdot',
       },
     };
-  }, [eventStyles.offBallRun.color, eventStyles.offBallRun.width, frameData]);
+  }, [eventStyles.offBallRun.color, eventStyles.offBallRun.width, eventVisibility.offBallRun, frameData]);
 
   // Player masks to determine which players are in possession, passing options, or on-ball engagement based on the events in the current frame
   const playerMasks = useMemo(() => {
@@ -91,24 +108,40 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
         .map(e => e.player_id) || []
     );
 
+    const possessionMask = playerIds.map(id => id === possessionPlayerId);
+    const passingOptionsMask = playerIds.map(id => passingOptionsSet.has(id));
+    const engagementMask = playerIds.map(id => engagementSet.has(id));
+
+    const visiblePossessionMask = eventVisibility.playerPossession
+      ? possessionMask
+      : playerIds.map(() => false);
+    const visiblePassingOptionsMask = eventVisibility.passingOption
+      ? passingOptionsMask
+      : playerIds.map(() => false);
+    const visibleEngagementMask = eventVisibility.onBallEngagement
+      ? engagementMask
+      : playerIds.map(() => false);
+
     return {
-      possession: playerIds.map(id => id === possessionPlayerId),
-      passing_options: playerIds.map(id => passingOptionsSet.has(id)),
-      on_ball_engagement: playerIds.map(id => engagementSet.has(id)),
+      possession: visiblePossessionMask,
+      passing_options: visiblePassingOptionsMask,
+      on_ball_engagement: visibleEngagementMask,
       regular: playerIds.map(
-        id =>
-          id !== possessionPlayerId &&
-          !passingOptionsSet.has(id) &&
-          !engagementSet.has(id)
+        (_, index) =>
+          !visiblePossessionMask[index] &&
+          !visiblePassingOptionsMask[index] &&
+          !visibleEngagementMask[index]
       ),
     };
-  }, [frameData]);
+  }, [eventVisibility.onBallEngagement, eventVisibility.passingOption, eventVisibility.playerPossession, frameData]);
 
   // Creating traces of diff styling for players based on their involvement in the current frame's events (possession, passing options, on-ball engagement)
   const playerTraces = useMemo(() => {
     if (!frameData) return [];
 
     const players = frameData.players;
+    const visibleTeamMask = getVisibleTeamMask(players.team_id);
+    const applyVisibilityMask = (mask: boolean[]) => mask.map((isVisible, index) => isVisible && visibleTeamMask[index]);
 
     const build = (mask: boolean[], lineColor: string, lineWidth = 1, sizeMultiplier = 1) => ({
       x: filterByMask(players.x, mask),
@@ -143,12 +176,12 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
 
     const EMPTY_MASK = frameData?.players?.x?.map(() => true) || [];
     return [
-      build(playerMasks?.regular || EMPTY_MASK, '#000000'),
-      build(playerMasks?.possession || EMPTY_MASK, eventStyles.playerPossession.color, eventStyles.playerPossession.width),
-      build(playerMasks?.passing_options || EMPTY_MASK, eventStyles.passingOption.color, eventStyles.passingOption.width),
-      build(playerMasks?.on_ball_engagement || EMPTY_MASK, eventStyles.onBallEngagement.color, eventStyles.onBallEngagement.width),
+      build(applyVisibilityMask(playerMasks?.regular || EMPTY_MASK), '#000000'),
+      build(applyVisibilityMask(playerMasks?.possession || EMPTY_MASK.map(() => false)), eventStyles.playerPossession.color, eventStyles.playerPossession.width),
+      build(applyVisibilityMask(playerMasks?.passing_options || EMPTY_MASK.map(() => false)), eventStyles.passingOption.color, eventStyles.passingOption.width),
+      build(applyVisibilityMask(playerMasks?.on_ball_engagement || EMPTY_MASK.map(() => false)), eventStyles.onBallEngagement.color, eventStyles.onBallEngagement.width),
     ];
-  }, [awayTeamColor, eventStyles.onBallEngagement.color, eventStyles.onBallEngagement.width, eventStyles.passingOption.color, eventStyles.passingOption.width, eventStyles.playerPossession.color, eventStyles.playerPossession.width, frameData, homeTeamColor, matchData])
+  }, [awayTeamColor, eventStyles.onBallEngagement.color, eventStyles.onBallEngagement.width, eventStyles.passingOption.color, eventStyles.passingOption.width, eventStyles.playerPossession.color, eventStyles.playerPossession.width, eventVisibility.onBallEngagement, eventVisibility.passingOption, eventVisibility.playerPossession, frameData, homeTeamColor, matchData, playerMasks, teamVisibility.away, teamVisibility.home])
 
   // Creates lines to add to Plotly.layout using the player focus lines stored in annotationStore
   const updateLines = () => { 
@@ -231,7 +264,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
       <Plot className='PlotComponent'
         data={[
           ...playerTraces,
-          offBallRunTrace,
+          ...(offBallRunTrace ? [offBallRunTrace] : []),
           {
             x: [frameData?.ball.ball_x],
             y: [frameData?.ball.ball_y],

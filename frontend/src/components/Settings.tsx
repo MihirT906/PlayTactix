@@ -1,4 +1,4 @@
-import React, { useId, useRef, useState } from "react";
+import React, { useId, useRef } from "react";
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import "./Settings.css";
 import type { MatchData } from '../types/MatchDataInterfaces';
@@ -7,14 +7,14 @@ import { useStyleConfig } from '../context/StyleConfigContext';
 type SettingsRowProps = {
     label: string;
     color: string;
+    visible: boolean;
     onChange: (c: string) => void;
     onToggleVisibility?: (visible: boolean) => void;
 };
 
-const SettingsRow: React.FC<SettingsRowProps> = ({ label, color, onChange, onToggleVisibility }) => {
+const SettingsRow: React.FC<SettingsRowProps> = ({ label, color, visible, onChange, onToggleVisibility }) => {
     const id = useId();
     const pickerRef = useRef<HTMLInputElement | null>(null);
-    const [visible, setVisible] = useState(true);
 
     const openPicker = () => pickerRef.current?.click();
 
@@ -26,11 +26,7 @@ const SettingsRow: React.FC<SettingsRowProps> = ({ label, color, onChange, onTog
                 <button
                     type="button"
                     className="settings-visibility-button"
-                    onClick={() => {
-                        const next = !visible;
-                        setVisible(next);
-                        if (onToggleVisibility) onToggleVisibility(next);
-                    }}
+                    onClick={() => onToggleVisibility?.(!visible)}
                     aria-pressed={!visible}
                     aria-label={visible ? 'Hide elements' : 'Show elements'}
                 >
@@ -63,20 +59,24 @@ const Settings: React.FC<{ matchData: MatchData | null }> = ({ matchData }) => {
         homeTeamColor,
         awayTeamColor,
         eventStyles,
+        teamVisibility,
+        eventVisibility,
         setHomeTeamColor,
         setAwayTeamColor,
         setEventStyleColor,
+        setTeamVisibility,
+        setEventVisibility,
     } = useStyleConfig();
 
     return (
         <div className="settings-display">
             <div className="settings-box settings-box--flat">
-                <SettingsRow label={`${matchData?.home_team?.name ?? 'Home Team'} Color`} color={homeTeamColor} onChange={setHomeTeamColor} />
-                <SettingsRow label={`${matchData?.away_team?.name ?? 'Away Team'} Color`} color={awayTeamColor} onChange={setAwayTeamColor} />
-                <SettingsRow label={'Player Possession'} color={eventStyles.playerPossession.color} onChange={(color) => setEventStyleColor('playerPossession', color)}/>
-                <SettingsRow label={'Passing Options'} color={eventStyles.passingOption.color} onChange={(color) => setEventStyleColor('passingOption', color)}/>
-                <SettingsRow label={'On Ball Engagement'} color={eventStyles.onBallEngagement.color} onChange={(color) => setEventStyleColor('onBallEngagement', color)}/>
-                <SettingsRow label={'Off Ball Runs'} color={eventStyles.offBallRun.color} onChange={(color) => setEventStyleColor('offBallRun', color)}/>
+                <SettingsRow label={`${matchData?.home_team?.name ?? 'Home Team'} Color`} color={homeTeamColor} visible={teamVisibility.home} onChange={setHomeTeamColor} onToggleVisibility={(visible) => setTeamVisibility('home', visible)} />
+                <SettingsRow label={`${matchData?.away_team?.name ?? 'Away Team'} Color`} color={awayTeamColor} visible={teamVisibility.away} onChange={setAwayTeamColor} onToggleVisibility={(visible) => setTeamVisibility('away', visible)} />
+                <SettingsRow label={'Player Possession'} color={eventStyles.playerPossession.color} visible={eventVisibility.playerPossession} onChange={(color) => setEventStyleColor('playerPossession', color)} onToggleVisibility={(visible) => setEventVisibility('playerPossession', visible)}/>
+                <SettingsRow label={'Passing Options'} color={eventStyles.passingOption.color} visible={eventVisibility.passingOption} onChange={(color) => setEventStyleColor('passingOption', color)} onToggleVisibility={(visible) => setEventVisibility('passingOption', visible)}/>
+                <SettingsRow label={'On Ball Engagement'} color={eventStyles.onBallEngagement.color} visible={eventVisibility.onBallEngagement} onChange={(color) => setEventStyleColor('onBallEngagement', color)} onToggleVisibility={(visible) => setEventVisibility('onBallEngagement', visible)}/>
+                <SettingsRow label={'Off Ball Runs'} color={eventStyles.offBallRun.color} visible={eventVisibility.offBallRun} onChange={(color) => setEventStyleColor('offBallRun', color)} onToggleVisibility={(visible) => setEventVisibility('offBallRun', visible)}/>
 
             </div>
         </div>

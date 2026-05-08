@@ -3,10 +3,11 @@ import Plot from 'react-plotly.js'
 import Plotly from 'plotly.js-dist-min'
 import AnnotationStore from '../services/AnnotationStore-optimized'
 import type { FrameData } from '../types/FrameDataInterfaces'
-import { APP_CONFIG, SELECTED_POINTS_OPACITY, UNSELECTED_POINTS_OPACITY, THEME_CSS_VARIABLES } from '../config'
+import { APP_CONFIG, SELECTED_POINTS_OPACITY, UNSELECTED_POINTS_OPACITY } from '../config'
 // Import the background image
 import backgroundImage from '../../../data/background_image.png';
 import type { MatchData } from '../types/MatchDataInterfaces'
+import { useStyleConfig } from '../context/StyleConfigContext'
 
 // const annotationStore = new AnnotationStore()
 
@@ -20,6 +21,7 @@ interface PlotComponentProps {
 
 const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, frameData, annotationStore, onAnnotationUpdate }) => {
   const plotConfig = APP_CONFIG.plot
+  const { homeTeamColor, awayTeamColor, eventStyles } = useStyleConfig()
   const [focusPoints, setFocusPoints] = useState<number[]>([]) // Points that are highlighted on click
   const [firstPoint, setFirstPoint] = useState<number | null>(null) // First point selected when drawing a line between two players
   const [focusEnabled, setFocusEnabled] = useState(false) // 'Player Focus' mode toggled to draw lines
@@ -63,12 +65,12 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
       mode: 'lines',
       type: 'scatter',
       line: {
-        color: APP_CONFIG.events.offBallRun.color,
-        width: APP_CONFIG.events.offBallRun.width,
+        color: eventStyles.offBallRun.color,
+        width: eventStyles.offBallRun.width,
         dash: 'dashdot',
       },
     };
-  }, [frameData]);
+  }, [eventStyles.offBallRun.color, eventStyles.offBallRun.width, frameData]);
 
   // Player masks to determine which players are in possession, passing options, or on-ball engagement based on the events in the current frame
   const playerMasks = useMemo(() => {
@@ -117,9 +119,9 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
         size: plotConfig.markerSize * sizeMultiplier,
         color: filterByMask(players.team_id, mask).map((id) => {
           if (id === matchData?.home_team.id) {
-            return matchData?.home_team_kit.jersey_color;
+            return homeTeamColor;
           } else if (id === matchData?.away_team.id) {
-            return matchData?.away_team_kit.jersey_color;
+            return awayTeamColor;
           } else {
             return plotConfig.markerColor; // Default color if team ID doesn't match
           }
@@ -142,11 +144,11 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
     const EMPTY_MASK = frameData?.players?.x?.map(() => true) || [];
     return [
       build(playerMasks?.regular || EMPTY_MASK, '#000000'),
-      build(playerMasks?.possession || EMPTY_MASK, APP_CONFIG.events.playerPossession.color, APP_CONFIG.events.playerPossession.width),
-      build(playerMasks?.passing_options || EMPTY_MASK, APP_CONFIG.events.passingOption.color, APP_CONFIG.events.passingOption.width),
-      build(playerMasks?.on_ball_engagement || EMPTY_MASK, APP_CONFIG.events.onBallEngagement.color, APP_CONFIG.events.onBallEngagement.width),
+      build(playerMasks?.possession || EMPTY_MASK, eventStyles.playerPossession.color, eventStyles.playerPossession.width),
+      build(playerMasks?.passing_options || EMPTY_MASK, eventStyles.passingOption.color, eventStyles.passingOption.width),
+      build(playerMasks?.on_ball_engagement || EMPTY_MASK, eventStyles.onBallEngagement.color, eventStyles.onBallEngagement.width),
     ];
-  }, [frameData])
+  }, [awayTeamColor, eventStyles.onBallEngagement.color, eventStyles.onBallEngagement.width, eventStyles.passingOption.color, eventStyles.passingOption.width, eventStyles.playerPossession.color, eventStyles.playerPossession.width, frameData, homeTeamColor, matchData])
 
   // Creates lines to add to Plotly.layout using the player focus lines stored in annotationStore
   const updateLines = () => { 

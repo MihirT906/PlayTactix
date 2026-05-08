@@ -11,6 +11,7 @@ import type { MatchData } from './types/MatchDataInterfaces';
 import type { FrameData } from './types/FrameDataInterfaces'
 import MatchDetailsDisplay from './components/MatchDetailsDisplay'
 import Settings from './components/Settings'
+import { StyleConfigProvider } from './context/StyleConfigContext'
 
 function App({dataManager, annotationStore}: {dataManager: DataManager, annotationStore: AnnotationStore}) {
   const [isPlaying, setIsPlaying] = useState(false) // Start with paused state
@@ -85,40 +86,42 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
   }
 
   return (
-    <div className="app-shell">
-      <aside className="sidebar">
-        <Link to="/" className="home-icon">
-          <span>🏠</span>
-        </Link>
-      </aside>
-      <header className="app-header">
-        <h1 className="app-title">{APP_CONFIG.brand.title}</h1>
-        {/* <div className="frame-status">Frame {currentFrame} / 50</div> */}
-      </header>
-      
-      <MatchDetailsDisplay matchData={matchData!} />
+    <StyleConfigProvider matchData={matchData}>
+      <div className="app-shell">
+        <aside className="sidebar">
+          <Link to="/" className="home-icon">
+            <span>🏠</span>
+          </Link>
+        </aside>
+        <header className="app-header">
+          <h1 className="app-title">{APP_CONFIG.brand.title}</h1>
+          {/* <div className="frame-status">Frame {currentFrame} / 50</div> */}
+        </header>
+        
+        <MatchDetailsDisplay matchData={matchData!} />
 
-      <div className="app-container">
-        <div className="left-panel">
-          <Settings matchData={matchData!}/>
-        </div>
-        <div className="main-content">
-          <Controls
-            isPlaying={isPlaying}
-            onPlayPause={handlePlayPause}
-            currentFrame={currentFrame}
-            frameRange={{ start: 10, end: 500 }} // Pass frame range
-            onFrameChange={handleFrameChange}
-            chunkRange={chunkRange} // Pass chunkRange to Controls
-            annotationStore={annotationStore}
-          />
-          <PlotComponent currentFrame={currentFrame} matchData = {matchData} frameData={currentFrameData} annotationStore={annotationStore} onAnnotationUpdate={() => setAnnotationUpdateEvent(!annotationUpdateEvent)} />
-        </div>
-        <div className="right-panel">
-          <AnnotationDisplay annotationStore={annotationStore} currentFrame={currentFrame} annotationUpdateEvent={annotationUpdateEvent} />
+        <div className="app-container">
+          <div className="left-panel">
+            <Settings matchData={matchData!}/>
+          </div>
+          <div className="main-content">
+            <Controls
+              isPlaying={isPlaying}
+              onPlayPause={handlePlayPause}
+              currentFrame={currentFrame}
+              frameRange={{ start: 10, end: 500 }} // Pass frame range
+              onFrameChange={handleFrameChange}
+              chunkRange={chunkRange} // Pass chunkRange to Controls
+              annotationStore={annotationStore}
+            />
+            <PlotComponent currentFrame={currentFrame} matchData = {matchData} frameData={currentFrameData} annotationStore={annotationStore} onAnnotationUpdate={() => setAnnotationUpdateEvent(!annotationUpdateEvent)} />
+          </div>
+          <div className="right-panel">
+            <AnnotationDisplay annotationStore={annotationStore} currentFrame={currentFrame} annotationUpdateEvent={annotationUpdateEvent} />
+          </div>
         </div>
       </div>
-    </div>
+    </StyleConfigProvider>
   )
 }
 

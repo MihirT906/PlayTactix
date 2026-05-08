@@ -1,9 +1,11 @@
 import type { MatchData } from '../types/MatchDataInterfaces';
 import './MatchDetailsDisplay.css'
-import { useEffect, useState } from 'react';
-import { APP_CONFIG, CHUNK_SIZE, SLEEP_INTERVAL, THEME_CSS_VARIABLES } from '../config'
+import { useEffect } from 'react';
+import { APP_CONFIG, THEME_CSS_VARIABLES } from '../config'
+import { useStyleConfig } from '../context/StyleConfigContext';
 
 const MatchDetailsDisplay = ({ matchData }: { matchData: MatchData }) => {
+	const { homeTeamColor, awayTeamColor } = useStyleConfig();
 
     useEffect(() => {
         const root = document.documentElement
@@ -18,8 +20,8 @@ const MatchDetailsDisplay = ({ matchData }: { matchData: MatchData }) => {
     return (
         <div className="match-info"
             style={{
-                "--home-color": matchData?.home_team_kit?.jersey_color ?? "#3b82f6",
-                "--away-color": matchData?.away_team_kit?.jersey_color ?? "#ef4444",
+                "--home-color": homeTeamColor,
+                "--away-color": awayTeamColor,
 
                 boxShadow: `
                             inset 0 0 0 0 transparent,

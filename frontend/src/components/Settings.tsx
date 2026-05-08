@@ -1,8 +1,8 @@
-import React, { useId, useRef, useState, useEffect } from "react";
+import React, { useId, useRef, useState } from "react";
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import "./Settings.css";
 import type { MatchData } from '../types/MatchDataInterfaces';
-import { APP_CONFIG, SELECTED_POINTS_OPACITY, UNSELECTED_POINTS_OPACITY, THEME_CSS_VARIABLES } from '../config'
+import { useStyleConfig } from '../context/StyleConfigContext';
 
 type SettingsRowProps = {
     label: string;
@@ -59,26 +59,24 @@ const SettingsRow: React.FC<SettingsRowProps> = ({ label, color, onChange, onTog
 };
 
 const Settings: React.FC<{ matchData: MatchData | null }> = ({ matchData }) => {
-    const [homeColor, setHomeColor] = useState<string>("#F27805");
-    const [awayColor, setAwayColor] = useState<string>("#2563EB");
-
-    useEffect(() => {
-        if (!matchData) return;
-        const h = (matchData as any).home_team_kit?.jersey_color;
-        const a = (matchData as any).away_team_kit?.jersey_color;
-        if (typeof h === 'string' && h.length) setHomeColor(h.toUpperCase());
-        if (typeof a === 'string' && a.length) setAwayColor(a.toUpperCase());
-    }, [matchData]);
+    const {
+        homeTeamColor,
+        awayTeamColor,
+        eventStyles,
+        setHomeTeamColor,
+        setAwayTeamColor,
+        setEventStyleColor,
+    } = useStyleConfig();
 
     return (
         <div className="settings-display">
             <div className="settings-box settings-box--flat">
-                <SettingsRow label={`${matchData?.home_team?.name ?? 'Home Team'} Color`} color={homeColor} onChange={setHomeColor} />
-                <SettingsRow label={`${matchData?.away_team?.name ?? 'Away Team'} Color`} color={awayColor} onChange={setAwayColor} />
-                <SettingsRow label={'Player Possession'} color={APP_CONFIG.events.playerPossession.color} onChange={()=>{}}/>
-                <SettingsRow label={'Passing Options'} color={APP_CONFIG.events.passingOption.color} onChange={()=>{}}/>
-                <SettingsRow label={'On Ball Engagement'} color={APP_CONFIG.events.onBallEngagement.color} onChange={()=>{}}/>
-                <SettingsRow label={'Off Ball Runs'} color={APP_CONFIG.events.offBallRun.color} onChange={()=>{}}/>
+                <SettingsRow label={`${matchData?.home_team?.name ?? 'Home Team'} Color`} color={homeTeamColor} onChange={setHomeTeamColor} />
+                <SettingsRow label={`${matchData?.away_team?.name ?? 'Away Team'} Color`} color={awayTeamColor} onChange={setAwayTeamColor} />
+                <SettingsRow label={'Player Possession'} color={eventStyles.playerPossession.color} onChange={(color) => setEventStyleColor('playerPossession', color)}/>
+                <SettingsRow label={'Passing Options'} color={eventStyles.passingOption.color} onChange={(color) => setEventStyleColor('passingOption', color)}/>
+                <SettingsRow label={'On Ball Engagement'} color={eventStyles.onBallEngagement.color} onChange={(color) => setEventStyleColor('onBallEngagement', color)}/>
+                <SettingsRow label={'Off Ball Runs'} color={eventStyles.offBallRun.color} onChange={(color) => setEventStyleColor('offBallRun', color)}/>
 
             </div>
         </div>

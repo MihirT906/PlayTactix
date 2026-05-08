@@ -71,8 +71,8 @@ const Settings: React.FC<{ matchData: MatchData | null }> = ({ matchData }) => {
     return (
         <div className="settings-display">
             <div className="settings-box settings-box--flat">
-                <SettingsRow label={`${matchData?.home_team?.name ?? 'Home Team'} Color`} color={homeTeamColor} visible={teamVisibility.home} onChange={setHomeTeamColor} onToggleVisibility={(visible) => setTeamVisibility('home', visible)} />
-                <SettingsRow label={`${matchData?.away_team?.name ?? 'Away Team'} Color`} color={awayTeamColor} visible={teamVisibility.away} onChange={setAwayTeamColor} onToggleVisibility={(visible) => setTeamVisibility('away', visible)} />
+                <SettingsRow label={`Home Team (${matchData?.home_team?.acronym ?? 'Home Team'})`} color={homeTeamColor} visible={teamVisibility.home} onChange={setHomeTeamColor} onToggleVisibility={(visible) => setTeamVisibility('home', visible)} />
+                <SettingsRow label={`Away Team (${matchData?.away_team?.acronym ?? 'Away Team'})`} color={awayTeamColor} visible={teamVisibility.away} onChange={setAwayTeamColor} onToggleVisibility={(visible) => setTeamVisibility('away', visible)} />
                 <SettingsRow label={'Player Possession'} color={eventStyles.playerPossession.color} visible={eventVisibility.playerPossession} onChange={(color) => setEventStyleColor('playerPossession', color)} onToggleVisibility={(visible) => setEventVisibility('playerPossession', visible)}/>
                 <SettingsRow label={'Passing Options'} color={eventStyles.passingOption.color} visible={eventVisibility.passingOption} onChange={(color) => setEventStyleColor('passingOption', color)} onToggleVisibility={(visible) => setEventVisibility('passingOption', visible)}/>
                 <SettingsRow label={'On Ball Engagement'} color={eventStyles.onBallEngagement.color} visible={eventVisibility.onBallEngagement} onChange={(color) => setEventStyleColor('onBallEngagement', color)} onToggleVisibility={(visible) => setEventVisibility('onBallEngagement', visible)}/>

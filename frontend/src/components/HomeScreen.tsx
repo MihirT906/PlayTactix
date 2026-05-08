@@ -3,7 +3,7 @@ import './HomeScreen.css';
 import MatchDataManager from '../services/MatchDataManager';
 import { useNavigate } from 'react-router-dom';
 import type { MatchData } from '../types/MatchDataInterfaces';
-import { APP_CONFIG, CHUNK_SIZE, SLEEP_INTERVAL, THEME_CSS_VARIABLES } from '../config'
+import { APP_CONFIG, THEME_CSS_VARIABLES } from '../config'
 
 const HomeScreen = () => {
     const [matches, setMatches] = useState<MatchData[]>([]);
@@ -102,12 +102,7 @@ const HomeScreen = () => {
                         disabled={loading} // Disable buttons when loading
                         style={{
                             "--home-color": match.home_team_kit?.jersey_color ?? "#3b82f6",
-                            "--away-color": match.away_team_kit?.jersey_color ?? "#ef4444",
-
-                            boxShadow: `
-                                inset 0 0 0 0 transparent,
-                                0 4px 12px rgba(0,0,0,0.08)
-                            `
+                            "--away-color": match.away_team_kit?.jersey_color ?? "#ef4444"
                         } as React.CSSProperties}
                     >
                         <div className="match-header">

@@ -4,13 +4,16 @@
   flex-direction: column;
   align-items: center;
   gap: 16px;
-    margin: 12px 0 20px; /* add top margin to separate from header */
+  margin: 12px 0 20px; /* add top margin to separate from header */
   padding: 12px 12px;
-  background: var(--app-bg-secondary, #000000);
-  border: 1px solid var(--app-border-color, #dbe3f1);
-  border-radius: 14px;
+  background: var(--glass-surface);
+  border: 1px solid var(--glass-border);
+  border-radius: 18px;
   border-left: 20px solid var(--home-color);
   border-right: 20px solid var(--away-color);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
 }
 
 .players-list {
@@ -41,19 +44,22 @@
     flex-direction: column; /* Stack the jersey and name vertically */
     align-items: center;
     justify-content: center;
-    background-color: rgba(255, 255, 255, 0.8); /* Ensure text visibility */
+    background: transparent;
     padding: 10px;
-    border-radius: 5px;
+    border-radius: 12px;
     font-size: 1.3rem;
-    color: #0f172a;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    color: var(--match-info-text, #f8fafc);
+    text-align: center;
+    text-shadow: 0 1px 2px rgba(15, 23, 42, 0.25);
 }
+
 .details {
     display: flex;
     flex-direction: column;
     align-items: center;
     margin-top: 5px;
-    color: var(--app-info-font-color, #ffffff)
+    color: var(--app-info-font-color, #ffffff);
+    text-align: center;
 }
 
 .competition {
@@ -77,6 +83,7 @@
     font-size: 0.8rem;
     color: var(--app-info-font-color, #ffffff);
     margin-top: 4px;
+  text-align: center;
 }
 /* shirt */
 .team-shirt {

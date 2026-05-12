@@ -26,19 +26,19 @@ export const APP_CONFIG = {
 	},
 	events: {
 		playerPossession: {
-			color: '#e60c0c',
+			color: '#FFD60A',
 			width: 2,
 		},
 		passingOption: {
-			color: '#eded0b',
+			color: '#32D7FF',
 			width: 2,
 		},
 		onBallEngagement: {
-			color: '#f746aa',
+			color: '#FF4D9D',
 			width: 2,
 		},
 		offBallRun: {
-			color: '#0bf7e6',
+			color: '#FF6B3D',
 			width: 2,
 		},
 	},

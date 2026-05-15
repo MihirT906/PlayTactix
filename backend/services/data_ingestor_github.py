@@ -266,23 +266,60 @@ class SkillCornerDataIngestor:
         
         silver_event_data = bronze_event_data[columns_to_keep]
         
-        # int_cols = ['event_id', 'index', 'frame_start', 'frame_end','event_type_id', 'player_id', 'team_id']
-        # float_cols = ['x_start', 'y_start', 'x_end', 'y_end']
-        # str_cols = ['attacking_side', 'event_type', 'player_name']
+        return silver_event_data 
+    
+    def _get_key_moments(self, bronze_event_data):
         
-        # for c in int_cols:
-        #     if c in silver_event_data.columns:
-        #         silver_event_data[c] = silver_event_data[c].apply(lambda x: int(x) if pd.notna(x) else None)
+        def _get_lead_to_goals(events_data):
+            
+            def _sequence_func(df):
+                df = df[(df['lead_to_goal'] == True) & (df['event_type'] == 'player_possession')]
+                return (df['end_type'] == 'shot').cumsum().shift(1, fill_value=0) + 1
+        
+            events_data["Sequence_ID"] = _sequence_func(events_data)
+            grouped_data = events_data.groupby("Sequence_ID").agg({'frame_start': 'min', 'frame_end': 'max', 'lead_to_goal': 'first', 'player_name': 'last', 'time_end': 'last'}).reset_index()
+            
+            if "frame_start" in grouped_data.columns:
+                start_buffer = 30  # Buffer of 30 frames before the start of the sequence
+                grouped_data["frame_start"] = (
+                    grouped_data["frame_start"] - start_buffer
+                ).clip(lower=0)
+            
+            if "frame_end" in grouped_data.columns:
+                end_buffer = 30  # Buffer of 30 frames after the end of the sequence
+                grouped_data["frame_end"] = grouped_data["frame_end"] + end_buffer
+            
+            return grouped_data.to_dict("records")
+    
+        events_data = bronze_event_data.copy()
+        
+        def _get_lead_to_shots(events_data):
+            
+            def _sequence_func(df):
+                df = df[(df['lead_to_shot'] == True) & (df['event_type'] == 'player_possession')]
+                return (df['end_type'] == 'shot').cumsum().shift(1, fill_value=0) + 1
+        
+            events_data["Sequence_ID"] = _sequence_func(events_data)
+            grouped_data = events_data.groupby("Sequence_ID").agg({'frame_start': 'min', 'frame_end': 'max', 'lead_to_shot': 'first', 'player_name': 'last', 'time_end': 'last'}).reset_index()
+            
+            if "frame_start" in grouped_data.columns:
+                start_buffer = 30  # Buffer of 30 frames before the start of the sequence
+                grouped_data["frame_start"] = (
+                    grouped_data["frame_start"] - start_buffer
+                ).clip(lower=0)
+            
+            if "frame_end" in grouped_data.columns:
+                end_buffer = 30  # Buffer of 30 frames after the end of the sequence
+                grouped_data["frame_end"] = grouped_data["frame_end"] + end_buffer
+            
+            return grouped_data.to_dict("records")
+    
+        events_data = bronze_event_data.copy()
+        
+        return {'goals': _get_lead_to_goals(events_data), 'shots': _get_lead_to_shots(events_data)}
 
-        # for c in float_cols:
-        #     if c in silver_event_data.columns:
-        #         silver_event_data[c] = silver_event_data[c].apply(lambda x: float(x) if pd.notna(x) else None)
-        
-        # for c in str_cols:
-        #     if c in silver_event_data.columns:
-        #         silver_event_data[c] = silver_event_data[c].apply(lambda x: str(x) if pd.notna(x) else None)
-        
-        return silver_event_data        
+            
+
     
     def load_data(self, match_id) -> Dict[str, pd.DataFrame]:
         bronze_tracking_data = self._get_bronze_tracking_data(match_id)
@@ -291,12 +328,15 @@ class SkillCornerDataIngestor:
         silver_meta_data = self._get_silver_meta_data(bronze_meta_data)
         bronze_event_data = self._get_bronze_event_data(match_id)
         silver_event_data = self._get_silver_event_data(bronze_event_data)
-        gold_tracking_data = self._get_gold_tracking_data(bronze_tracking_data, silver_tracking_data, silver_meta_data, silver_event_data)
+        gold_tracking_data = self._get_gold_tracking_data(silver_tracking_data, silver_meta_data, silver_event_data)
+        key_moments = self._get_key_moments(bronze_event_data)
         
         final_data = {
             'match': bronze_meta_data,
-            'frames': gold_tracking_data
+            'frames': gold_tracking_data,
+            'key_moments': key_moments
         }
+        
         with open(f"../data/gold_tracking_data.json", "w") as f:
             json.dump(final_data, f)
             

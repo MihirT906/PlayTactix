@@ -8,6 +8,7 @@ import { Link } from 'react-router-dom';
 import { FaHome } from 'react-icons/fa';
 import type { MatchData } from './types/MatchDataInterfaces';
 import type { FrameData } from './types/FrameDataInterfaces'
+import type { KeyMomentsData } from './types/KeyMomentsDataInterfaces'
 import MatchDetailsDisplay from './components/MatchDetailsDisplay'
 import Settings from './components/Settings'
 import { StyleConfigProvider } from './context/StyleConfigContext'
@@ -20,6 +21,7 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
   const [isPlaying, setIsPlaying] = useState(false) // Start with paused state
   const [chunkRange, setChunkRange] = useState({ start: 0, end: 100 })
   const [matchData, setMatchData] = useState<MatchData | null>(null)
+  const [keyMomentsData, setKeyMomentsData] = useState<KeyMomentsData | null>(null)
   const [episodeRange, setEpisodeRange] = useState({ start: 10, end: 1000 })
   const [currentFrame, setCurrentFrame] = useState(episodeRange.start)
   const [currentFrameData, setCurrentFrameData] = useState<FrameData | null>(null)
@@ -70,6 +72,19 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
     }
 
     fetchMatchData()
+  }, [])
+
+  useEffect(() => {
+    const fetchKeyMomentsData = async () => {
+      const data = await dataManager.fetchKeyMoments()
+      if (data) {
+        setKeyMomentsData(data)
+      } else {
+        console.warn('No key moments data available')
+      }
+    }
+
+    fetchKeyMomentsData()
   }, [])
 
   useEffect(() => {
@@ -147,7 +162,7 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
                 onAnnotationUpdate={() => setAnnotationUpdateEvent(!annotationUpdateEvent)}
               />
             ) : (
-              <KeyMomentFinderComponent episodeRange={episodeRange} onAddCustomEpisodeRange={addCustomEpisodeRange} />
+              <KeyMomentFinderComponent episodeRange={episodeRange} onAddCustomEpisodeRange={addCustomEpisodeRange} keyMomentsData={keyMomentsData} />
             )}
           </div>
           <div className="right-panel">

@@ -43,6 +43,17 @@ export default class DataManager {
     return null
   }
 
+  async fetchKeyMoments(){
+    try {
+      const response = await fetch(`http://localhost:8000/data/match_key_moments`)
+      const data = await response.json()
+      return data
+    } catch (error) {
+      console.error('Error fetching key moments:', error)
+    }
+    return null
+  }
+
   async getFrameData(frame: number) {
     console.log(`getFrameData called for frame: ${frame}`);
     if (this.buffer.has(frame)) {

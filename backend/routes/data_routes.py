@@ -17,8 +17,8 @@ async def hello():
 @router.get("/match/{match_id}")
 async def download_match_data(match_id: int):
     try:
-        with open("../data/gold_tracking_data.json", "r") as f:
-            gold_tracking_data = json.load(f)
+        # with open("../data/gold_tracking_data.json", "r") as f:
+        #     gold_tracking_data = json.load(f)
 
         # if gold_tracking_data.get("match", {}).get("id") == match_id:
         #     return {"message": f"Data for match {match_id} already exists in gold_tracking_data.json"}
@@ -53,6 +53,19 @@ async def get_match_meta_data():
         match_meta_data = gold_tracking_data.get('match', {})
 
         return match_meta_data
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/match_key_moments")
+async def get_match_key_moments():
+    try:
+        with open(f"../data/gold_tracking_data.json", "r") as f:
+            gold_tracking_data = json.load(f)
+        
+        key_moments = gold_tracking_data.get('key_moments', {})
+
+        return key_moments
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

@@ -63,11 +63,14 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
       return null;
     }
 
+    if (frameData?.events.length === 0) {
+      return null; // No events to process, return null to avoid rendering an empty trace
+    }
+
     const events = frameData?.events?.filter(
       e => e.event_type === 'off_ball_run'
     ) || [];
-
-    console.log('Computing off-ball run trace for frame:', currentFrame, 'with events:', events.length)
+    
     const x: (number | null)[] = [];
     const y: (number | null)[] = [];
 
@@ -140,6 +143,9 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
     if (!frameData) return [];
 
     const players = frameData.players;
+    if (players.player_id.length === 0) 
+      return []; // Return empty array if there are no players in the frame data
+
     const visibleTeamMask = getVisibleTeamMask(players.team_id);
     const applyVisibilityMask = (mask: boolean[]) => mask.map((isVisible, index) => isVisible && visibleTeamMask[index]);
 

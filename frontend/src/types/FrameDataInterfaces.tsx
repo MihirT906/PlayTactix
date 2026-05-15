@@ -1,30 +1,30 @@
 
 interface FrameData {
-    period: number;
+    period: number | null;
     players: Players;
     ball: {
-        ball_x: number;
-        ball_y: number;
-        ball_z: number;
+        ball_x: number | null;
+        ball_y: number | null;
+        ball_z: number | null;
     }
-    events: Event[];
+    events: Event[] | [];
 
 }
 
 interface Players {
-    x: number[];
-    y: number[];
-    player_id: number[];
-    id: number[];
-    short_name: string[];
-    number: number[];
-    team_id: number[];
-    total_time: number[];
-    player_role_name: string[];
-    player_role_acronym: string[];
-    is_gk: boolean[];
-    direction_player_1st_half: string[];
-    direction_player_2nd_half: string[];
+    x: number[] | [];
+    y: number[] | [];
+    player_id: number[] | [];
+    id: number[] | [];
+    short_name: string[] | [];
+    number: number[] | [];
+    team_id: number[] | [];
+    total_time: number[] | [];
+    player_role_name: string[] | [];
+    player_role_acronym: string[] | [];
+    is_gk: boolean[] | [];
+    direction_player_1st_half: string[] | [];
+    direction_player_2nd_half: string[] | [];
 }
 
 interface Event {

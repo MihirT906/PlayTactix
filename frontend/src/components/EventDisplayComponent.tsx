@@ -174,7 +174,7 @@ function EventDisplayComponent({
               title={`Event ${event.event_id}`}
             >
               <span className="event-display__label">
-                {event.player_name}
+                {`${event.player_name} (POS)`}
               </span>
             </div>
           )

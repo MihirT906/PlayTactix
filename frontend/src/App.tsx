@@ -3,14 +3,12 @@ import './App.css'
 import DataManager from './services/DataManager'
 import AnnotationStore from './services/AnnotationStore-optimized'
 import { APP_CONFIG, CHUNK_SIZE, SLEEP_INTERVAL, THEME_CSS_VARIABLES } from './config'
-import AnnotationDisplay from './components/AnnotationDisplay'
 import { Link } from 'react-router-dom';
 import { FaHome } from 'react-icons/fa';
 import type { MatchData } from './types/MatchDataInterfaces';
 import type { FrameData, Event } from './types/FrameDataInterfaces'
 import type { KeyMomentsData } from './types/KeyMomentsDataInterfaces'
 import MatchDetailsDisplay from './components/MatchDetailsDisplay'
-import Settings from './components/Settings'
 import { StyleConfigProvider } from './context/StyleConfigContext'
 import PlotLayoutComponent from './components/PlotLayoutComponent'
 import KeyMomentFinderComponent from './components/KeyMomentFinderComponent'
@@ -80,19 +78,22 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
   }, [])
 
   useEffect(() => {
+    const syncEventData = () => {
+      try {
+        const eventData = dataManager.getEventData(episodeRange.start, episodeRange.end)
+        setEventsData(eventData)
+      } catch (error) {
+        console.error('Error fetching event data:', error)
+      }
+    }
+
     const fetchEventsData = async () => {
-      dataManager.subscribe((buffer) => {
-        try {
-          const eventData = dataManager.getEventData(30, 100)
-          setEventsData(eventData)
-        } catch (error) {
-          console.error('Error fetching event data:', error);
-        }
-      })
+      await dataManager.fetchChunk(episodeRange.start, episodeRange.end)
+      syncEventData()
     }
 
     fetchEventsData()
-  }, []) // Add dataManager as a dependency to trigger when buffer changes
+  }, [dataManager, episodeRange.end, episodeRange.start])
 
   useEffect(() => {
     const fetchKeyMomentsData = async () => {
@@ -169,7 +170,7 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
               </button>
             </div>
             {mainContentView === 'plot' ? (
-              <div>
+              <div style={{ width: '100%' }}>
                 <PlotLayoutComponent
                   isPlaying={isPlaying}
                   onPlayPause={handlePlayPause}
@@ -182,7 +183,13 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
                   annotationStore={annotationStore}
                   onAnnotationUpdate={() => setAnnotationUpdateEvent(!annotationUpdateEvent)}
                 />
-                <EventDisplayComponent eventsData={eventsData} />
+                <EventDisplayComponent
+                  eventsData={eventsData}
+                  scaleStart={episodeRange.start}
+                  scaleEnd={episodeRange.end}
+                  currentFrame={currentFrame}
+                  matchData={matchData}
+                />
               </div>
               
             ) : (

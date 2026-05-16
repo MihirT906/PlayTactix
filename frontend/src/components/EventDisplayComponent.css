@@ -1,0 +1,118 @@
+.event-display {
+  width: 100%;
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-sizing: border-box;
+}
+
+.event-display__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  color: #f8fafc;
+}
+
+.event-display__header h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.event-display__header span {
+  font-size: 0.9rem;
+  color: rgba(248, 250, 252, 0.72);
+}
+
+.event-display__tick-row {
+  position: relative;
+  height: 30px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.event-display__tick {
+  position: absolute;
+  transform: translateX(-50%);
+  font-size: 0.78rem;
+  color: rgba(248, 250, 252, 0.72);
+  white-space: nowrap;
+}
+
+.event-display__track {
+  position: relative;
+  width: 100%;
+  min-height: 64px;
+  background: repeating-linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0.03) 0,
+    rgba(255, 255, 255, 0.03) 1px,
+    transparent 1px,
+    transparent 10%
+  );
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.event-display__current-marker {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.event-display__current-marker--ticks {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.event-display__current-marker--ticks::after {
+  content: '';
+  width: 2px;
+  height: 30px;
+  background: rgba(255, 214, 10, 0.9);
+}
+
+.event-display__current-marker--track {
+  bottom: 0;
+  width: 2px;
+  background: rgba(255, 214, 10, 0.9);
+  z-index: 1;
+}
+
+.event-display__current-label {
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(255, 214, 10, 0.18);
+  color: #fff4bf;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.event-display__box {
+  position: absolute;
+  height: 40px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #f59e0b, #f97316);
+  color: #111827;
+  font-weight: 700;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  z-index: 2;
+}
+
+.event-display__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

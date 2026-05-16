@@ -26,9 +26,12 @@ const Controls: React.FC<ControlsProps> = ({ isPlaying, onPlayPause, currentFram
 
   return (
     <div className="controls-container">
-      <button className="play-pause-button" onClick={onPlayPause}>
-        {isPlaying ? <FaPause /> : <FaPlay />}
-      </button>
+      <div className="controls-toolbar">
+        <button className="play-pause-button" onClick={onPlayPause}>
+          {isPlaying ? <FaPause /> : <FaPlay />}
+        </button>
+        <span className="frame-label">Frame: {currentFrame}</span>
+      </div>
       <input
         className="frame-slider"
         type="range"
@@ -39,10 +42,9 @@ const Controls: React.FC<ControlsProps> = ({ isPlaying, onPlayPause, currentFram
         onMouseUp={handleSliderDragEnd}
         style={{
           '--progress': `${((currentFrame - episodeRange.start) / (episodeRange.end - episodeRange.start)) * 100}%`,
-          '--cache-progress': `${((chunkRange.end) / (episodeRange.end - episodeRange.start)) * 100}%`,
+          '--cache-progress': `${((chunkRange.end - episodeRange.start) / (episodeRange.end - episodeRange.start)) * 100}%`,
         } as React.CSSProperties}
       />
-      <span className="frame-label">Frame: {currentFrame}</span>
     </div>
   )
 }

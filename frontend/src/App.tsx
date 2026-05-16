@@ -52,8 +52,10 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
         setCurrentFrameData(null)
       }
       setIsFetching(false) // Set fetching flag to false
-      const start = Math.floor((currentFrame - 1) / CHUNK_SIZE) * CHUNK_SIZE + 1;
-      const end = start + CHUNK_SIZE - 1;
+      // const start = Math.floor((currentFrame - 1) / CHUNK_SIZE) * CHUNK_SIZE + 1;
+      // const end = start + CHUNK_SIZE - 1;
+      const start = currentFrame;
+      const end = start + CHUNK_SIZE;
       console.log('Chunk range for current frame:', { start, end })
       setChunkRange({ start, end })
     }

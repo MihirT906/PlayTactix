@@ -1,29 +1,24 @@
 import { CHUNK_SIZE } from "../config"
 import type { FrameData, Event } from '../types/FrameDataInterfaces'
 
-type BufferListener = (buffer: Map<number, FrameData>) => void
+type FrameRequestResult = {
+  frameData: FrameData | null
+  didLoadChunk: boolean
+  newChunkRange: { start: number; end: number } | null
+}
 
 export default class DataManager {
   private buffer: Map<number, FrameData> = new Map()
   private bufferLimit = 5000
-  private listeners: BufferListener[] = []
 
   constructor() {
     console.log('DataManager initialized with empty buffer')
   }
 
-  subscribe(listener: BufferListener) {
-    this.listeners.push(listener)
-  }
-
-  private notify() {
-    this.listeners.forEach(listener => listener(this.buffer))
-  }
-
   async fetchChunk(start: number, end: number): Promise<void> {
     console.log('fetchChunk called with range:', start, end)
     if (this.isChunkCached(start, end)) return // uncomment this and fix caching
-    console.log('Chunk not cached, fetching from server...')
+    // console.log('Chunk not cached, fetching from server...')
     try {
       const response = await fetch(`http://localhost:8000/data/frames?start=${start}&end=${end}`)
       const data = await response.json()
@@ -33,8 +28,6 @@ export default class DataManager {
       
       // Evict old chunks if cache exceeds the limit
       this.evictOldChunks()
-      this.notify()
-      console.log('this.buffer:', this.buffer)
     } catch (error) {
       console.error('Error fetching chunk data:', error)
     }
@@ -62,23 +55,30 @@ export default class DataManager {
     return null
   }
 
-  async getFrameData(frame: number) {
+  async getFrameData(frame: number): Promise<FrameRequestResult> {
     console.log(`getFrameData called for frame: ${frame}`);
     if (this.buffer.has(frame)) {
       console.log(`Frame ${frame} found in buffer`);
-      return this.buffer.get(frame)!;
+      return { 
+        frameData: this.buffer.get(frame)!, 
+        didLoadChunk: false, 
+        newChunkRange: null
+      };
     } else {
       // const start = Math.floor((frame - 1) / CHUNK_SIZE) * CHUNK_SIZE + 1;
       const start = frame;
       const end = start + CHUNK_SIZE;
-
       let retries = 0;
       while (retries < 3) {
         try {
           await this.fetchChunk(start, end);
           if (this.buffer.has(frame)) {
             console.log(`Frame ${frame} successfully fetched after ${retries + 1} attempt(s)`);
-            return this.buffer.get(frame)!;
+            return { 
+              frameData: this.buffer.get(frame)!, 
+              didLoadChunk: true, 
+              newChunkRange: {start, end}
+            };
           }
         } catch (error) {
           console.error(`Attempt ${retries + 1} failed to fetch chunk:`, error);
@@ -87,7 +87,11 @@ export default class DataManager {
       }
 
       console.warn(`Frame ${frame} not found in buffer after 3 retries`);
-      return null;
+      return {
+        frameData: null,
+        didLoadChunk: false,
+        newChunkRange: null
+      };
     }
   }
 

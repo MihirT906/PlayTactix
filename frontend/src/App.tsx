@@ -3,7 +3,7 @@ import './App.css'
 import DataManager from './services/DataManager'
 import AnnotationStore from './services/AnnotationStore-optimized'
 import { APP_CONFIG, CHUNK_SIZE, SLEEP_INTERVAL, THEME_CSS_VARIABLES } from './config'
-import { Link } from 'react-router-dom';
+import { data, Link } from 'react-router-dom';
 import { FaHome } from 'react-icons/fa';
 import type { MatchData } from './types/MatchDataInterfaces';
 import type { FrameData, Event } from './types/FrameDataInterfaces'
@@ -18,7 +18,7 @@ type MainContentView = 'plot' | 'keyMoments'
 
 function App({dataManager, annotationStore}: {dataManager: DataManager, annotationStore: AnnotationStore}) {
   const [isPlaying, setIsPlaying] = useState(false) // Start with paused state
-  const [chunkRange, setChunkRange] = useState({ start: 0, end: 100 })
+  const [chunkRange, setChunkRange] = useState({ start: 0, end: 0 })
   const [matchData, setMatchData] = useState<MatchData | null>(null)
   const [keyMomentsData, setKeyMomentsData] = useState<KeyMomentsData | null>(null)
   const [eventsData, setEventsData] = useState<Map<number, Event[]>>(new Map()) // State to hold events data
@@ -43,21 +43,22 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
   useEffect(() => {
     const fetchFrameData = async () => {
       setIsFetching(true) // Set fetching flag to true
-      const frameData = await dataManager.getFrameData(currentFrame)
-      if (frameData) {
-        console.log(`Data for frame ${currentFrame}:`, frameData)
-        setCurrentFrameData(frameData)
+      const result = await dataManager.getFrameData(currentFrame)
+      if (result.frameData) {
+        // console.log(`Data for frame ${currentFrame}:`, result.frameData)
+        setCurrentFrameData(result.frameData)
       } else {
         console.warn(`No data available for frame ${currentFrame}`)
         setCurrentFrameData(null)
       }
+
+      if (result.didLoadChunk) {
+        setChunkRange(result.newChunkRange || { start: 0, end: 0 })
+        console.log('Updating chunk range in App component:', result.newChunkRange)
+        setEventsData(dataManager.getEventData(result.newChunkRange?.start || 0, result.newChunkRange?.end || 0))
+      }
+
       setIsFetching(false) // Set fetching flag to false
-      // const start = Math.floor((currentFrame - 1) / CHUNK_SIZE) * CHUNK_SIZE + 1;
-      // const end = start + CHUNK_SIZE - 1;
-      const start = currentFrame;
-      const end = start + CHUNK_SIZE;
-      console.log('Chunk range for current frame:', { start, end })
-      setChunkRange({ start, end })
     }
 
     fetchFrameData()
@@ -76,24 +77,6 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
 
     fetchMatchData()
   }, [])
-
-  useEffect(() => {
-    const syncEventData = () => {
-      try {
-        const eventData = dataManager.getEventData(episodeRange.start, episodeRange.end)
-        setEventsData(eventData)
-      } catch (error) {
-        console.error('Error fetching event data:', error)
-      }
-    }
-
-    const fetchEventsData = async () => {
-      await dataManager.fetchChunk(episodeRange.start, episodeRange.end)
-      syncEventData()
-    }
-
-    fetchEventsData()
-  }, [dataManager, episodeRange.end, episodeRange.start])
 
   useEffect(() => {
     const fetchKeyMomentsData = async () => {

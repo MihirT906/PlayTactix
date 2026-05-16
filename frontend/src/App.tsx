@@ -7,13 +7,14 @@ import AnnotationDisplay from './components/AnnotationDisplay'
 import { Link } from 'react-router-dom';
 import { FaHome } from 'react-icons/fa';
 import type { MatchData } from './types/MatchDataInterfaces';
-import type { FrameData } from './types/FrameDataInterfaces'
+import type { FrameData, Event } from './types/FrameDataInterfaces'
 import type { KeyMomentsData } from './types/KeyMomentsDataInterfaces'
 import MatchDetailsDisplay from './components/MatchDetailsDisplay'
 import Settings from './components/Settings'
 import { StyleConfigProvider } from './context/StyleConfigContext'
 import PlotLayoutComponent from './components/PlotLayoutComponent'
 import KeyMomentFinderComponent from './components/KeyMomentFinderComponent'
+import EventDisplayComponent from './components/EventDisplayComponent'
 
 type MainContentView = 'plot' | 'keyMoments'
 
@@ -22,6 +23,7 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
   const [chunkRange, setChunkRange] = useState({ start: 0, end: 100 })
   const [matchData, setMatchData] = useState<MatchData | null>(null)
   const [keyMomentsData, setKeyMomentsData] = useState<KeyMomentsData | null>(null)
+  const [eventsData, setEventsData] = useState<Map<number, Event[]>>(new Map()) // State to hold events data
   const [episodeRange, setEpisodeRange] = useState({ start: 10, end: 1000 })
   const [currentFrame, setCurrentFrame] = useState(episodeRange.start)
   const [currentFrameData, setCurrentFrameData] = useState<FrameData | null>(null)
@@ -61,6 +63,7 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
     }
 
     fetchFrameData()
+    console.log("Events data in app", eventsData)
   }, [currentFrame])
 
   useEffect(() => {
@@ -75,6 +78,21 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
 
     fetchMatchData()
   }, [])
+
+  useEffect(() => {
+    const fetchEventsData = async () => {
+      dataManager.subscribe((buffer) => {
+        try {
+          const eventData = dataManager.getEventData(30, 100)
+          setEventsData(eventData)
+        } catch (error) {
+          console.error('Error fetching event data:', error);
+        }
+      })
+    }
+
+    fetchEventsData()
+  }, []) // Add dataManager as a dependency to trigger when buffer changes
 
   useEffect(() => {
     const fetchKeyMomentsData = async () => {
@@ -128,9 +146,9 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
         <MatchDetailsDisplay matchData={matchData!} />
 
         <div className="app-container">
-          <div className="left-panel">
+          {/* <div className="left-panel">
             <Settings matchData={matchData!}/>
-          </div>
+          </div> */}
           <div className="main-content">
             <div className="main-content-toggle" role="tablist" aria-label="Main content view switcher">
               <button
@@ -151,25 +169,29 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
               </button>
             </div>
             {mainContentView === 'plot' ? (
-              <PlotLayoutComponent
-                isPlaying={isPlaying}
-                onPlayPause={handlePlayPause}
-                currentFrame={currentFrame}
-                onFrameChange={handleFrameChange}
-                episodeRange={episodeRange}
-                chunkRange={chunkRange}
-                matchData={matchData}
-                frameData={currentFrameData}
-                annotationStore={annotationStore}
-                onAnnotationUpdate={() => setAnnotationUpdateEvent(!annotationUpdateEvent)}
-              />
+              <div>
+                <PlotLayoutComponent
+                  isPlaying={isPlaying}
+                  onPlayPause={handlePlayPause}
+                  currentFrame={currentFrame}
+                  onFrameChange={handleFrameChange}
+                  episodeRange={episodeRange}
+                  chunkRange={chunkRange}
+                  matchData={matchData}
+                  frameData={currentFrameData}
+                  annotationStore={annotationStore}
+                  onAnnotationUpdate={() => setAnnotationUpdateEvent(!annotationUpdateEvent)}
+                />
+                <EventDisplayComponent eventsData={eventsData} />
+              </div>
+              
             ) : (
               <KeyMomentFinderComponent episodeRange={episodeRange} onAddCustomEpisodeRange={addCustomEpisodeRange} keyMomentsData={keyMomentsData} />
             )}
           </div>
-          <div className="right-panel">
+          {/* <div className="right-panel">
             <AnnotationDisplay annotationStore={annotationStore} currentFrame={currentFrame} annotationUpdateEvent={annotationUpdateEvent} />
-          </div>
+          </div> */}
         </div>
       </div>
     </StyleConfigProvider>

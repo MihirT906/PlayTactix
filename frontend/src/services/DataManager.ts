@@ -1,16 +1,23 @@
 import { CHUNK_SIZE } from "../config"
-import type { FrameData } from '../types/FrameDataInterfaces'
+import type { FrameData, Event } from '../types/FrameDataInterfaces'
 
+type BufferListener = (buffer: Map<number, FrameData>) => void
 
 export default class DataManager {
-  // private cache: Map<number, { frame_num: number; player_id: number, x: number; y: number }[]> = new Map()
-  // private cacheLimit = 20 // Maximum number of frames to cache
   private buffer: Map<number, FrameData> = new Map()
   private bufferLimit = 5000
-  private metaData: any = null
+  private listeners: BufferListener[] = []
 
   constructor() {
     console.log('DataManager initialized with empty buffer')
+  }
+
+  subscribe(listener: BufferListener) {
+    this.listeners.push(listener)
+  }
+
+  private notify() {
+    this.listeners.forEach(listener => listener(this.buffer))
   }
 
   async fetchChunk(start: number, end: number): Promise<void> {
@@ -26,6 +33,7 @@ export default class DataManager {
       
       // Evict old chunks if cache exceeds the limit
       this.evictOldChunks()
+      this.notify()
       console.log('this.buffer:', this.buffer)
     } catch (error) {
       console.error('Error fetching chunk data:', error)
@@ -81,6 +89,19 @@ export default class DataManager {
       console.warn(`Frame ${frame} not found in buffer after 3 retries`);
       return null;
     }
+  }
+
+  getEventData(start: number, end: number): Map<number, Event[]> {
+    // get chunk data from buffer, if not present return error message
+    const eventData = new Map<number, Event[]>()
+    for (let i = start; i <= end; i++) {
+      if (this.buffer.has(i)) {
+        eventData.set(i, this.buffer.get(i)?.events!)
+      } else {
+        console.warn(`Frame ${i} not found in buffer`)
+      }
+    }
+    return eventData
   }
 
   private isChunkCached(start: number, end: number): boolean {

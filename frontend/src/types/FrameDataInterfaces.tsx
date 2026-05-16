@@ -46,4 +46,4 @@ interface Event {
     y_end: number;
 }
 
-export type { FrameData }
+export type { FrameData, Event }

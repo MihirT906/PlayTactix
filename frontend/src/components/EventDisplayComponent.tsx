@@ -23,7 +23,7 @@ function EventDisplayComponent({
   currentFrame,
   matchData,
 }: EventDisplayProps) {
-  const { homeTeamColor, awayTeamColor } = useStyleConfig()
+  const { homeTeamColor, awayTeamColor, eventStyles } = useStyleConfig()
 
   const possessionEvents = useMemo<TimelineEvent[]>(() => {
     const uniqueEvents = new Map<string, Event>()
@@ -111,6 +111,11 @@ function EventDisplayComponent({
     return brightness > 150 ? '#111827' : '#F8FAFC'
   }
 
+  const getEventBackgroundColor = (eventType: string) => {
+    const style = eventStyles["playerPossession"]
+    return style ? style.color : '#F59E0B'
+  }
+
   return (
     <section className="event-display">
       <div className="event-display__header">
@@ -139,7 +144,7 @@ function EventDisplayComponent({
 
       <div
         className="event-display__track"
-        style={{ height: `${laneCount * 56}px` }}
+        style={{ height: `${laneCount * 50}px` }}
       >
         <div
           className="event-display__current-marker event-display__current-marker--track"
@@ -152,6 +157,7 @@ function EventDisplayComponent({
           const width = Math.max(((visibleEnd - visibleStart) / totalFrames) * 100, 2)
           const backgroundColor = getEventColor(event.team_id)
           const color = getEventTextColor(backgroundColor)
+          const borderColor = getEventBackgroundColor(event.event_type)
 
           return (
             <div
@@ -162,12 +168,13 @@ function EventDisplayComponent({
                 color,
                 left: `${left}%`,
                 width: `${width}%`,
-                top: `${event.lane * 56 + 8}px`,
+                top: `${event.lane * 50}px`,
+                // border: `1px solid ${borderColor}`,
               }}
-              title={`Event ${event.event_id} | ${event.player_name}`}
+              title={`Event ${event.event_id}`}
             >
               <span className="event-display__label">
-                {event.event_id} | {event.player_name}
+                {event.player_name}
               </span>
             </div>
           )

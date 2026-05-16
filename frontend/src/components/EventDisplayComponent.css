@@ -45,7 +45,7 @@
 .event-display__track {
   position: relative;
   width: 100%;
-  min-height: 64px;
+  min-height: 50px;
   background: repeating-linear-gradient(
     to right,
     rgba(255, 255, 255, 0.03) 0,
@@ -110,9 +110,11 @@
   white-space: nowrap;
   text-overflow: ellipsis;
   z-index: 2;
+  opacity: 0.5;
 }
 
 .event-display__label {
   overflow: hidden;
   text-overflow: ellipsis;
+  font-size: x-small;
 }

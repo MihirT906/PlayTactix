@@ -22,7 +22,7 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
   const [matchData, setMatchData] = useState<MatchData | null>(null)
   const [keyMomentsData, setKeyMomentsData] = useState<KeyMomentsData | null>(null)
   const [eventsData, setEventsData] = useState<Map<number, Event[]>>(new Map()) // State to hold events data
-  const [episodeRange, setEpisodeRange] = useState({ start: 10, end: 1000 })
+  const [episodeRange, setEpisodeRange] = useState({ start: 10, end: 200 })
   const [currentFrame, setCurrentFrame] = useState(episodeRange.start)
   const [currentFrameData, setCurrentFrameData] = useState<FrameData | null>(null)
   const [isFetching, setIsFetching] = useState(false) // Track if data is being fetched
@@ -55,7 +55,7 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
       if (result.didLoadChunk) {
         setChunkRange(result.newChunkRange || { start: 0, end: 0 })
         console.log('Updating chunk range in App component:', result.newChunkRange)
-        setEventsData(dataManager.getEventData(result.newChunkRange?.start || 0, result.newChunkRange?.end || 0))
+        setEventsData(dataManager.getEventData(episodeRange.start || 0, episodeRange.end || 0))
       }
 
       setIsFetching(false) // Set fetching flag to false

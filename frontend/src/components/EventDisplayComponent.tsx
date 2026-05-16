@@ -5,7 +5,7 @@ import { useStyleConfig } from '../context/StyleConfigContext'
 import './EventDisplayComponent.css'
 
 type EventDisplayProps = {
-  eventsData: Map<number, Event[]>
+  eventsData: Map<number, Event[]> | null
   scaleStart: number
   scaleEnd: number
   currentFrame: number
@@ -28,16 +28,18 @@ function EventDisplayComponent({
   const possessionEvents = useMemo<TimelineEvent[]>(() => {
     const uniqueEvents = new Map<string, Event>()
 
-    for (const frameEvents of eventsData.values()) {
-      for (const event of frameEvents) {
-        if (event.event_type !== 'player_possession') {
-          continue
-        }
+    if (eventsData) {
+      for (const frameEvents of eventsData.values()) {
+        for (const event of frameEvents) {
+          if (event.event_type !== 'player_possession') {
+            continue
+          }
 
         if (!uniqueEvents.has(event.event_id)) {
           uniqueEvents.set(event.event_id, event)
         }
       }
+    }
     }
 
     const sortedEvents = Array.from(uniqueEvents.values())
@@ -113,9 +115,6 @@ function EventDisplayComponent({
     <section className="event-display">
       <div className="event-display__header">
         <h3>Player Possession Timeline</h3>
-        <span>
-          Frames {scaleStart} to {scaleEnd}
-        </span>
       </div>
 
       <div className="event-display__tick-row" aria-hidden="true">

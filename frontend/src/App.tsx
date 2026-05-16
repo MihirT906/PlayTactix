@@ -163,15 +163,9 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
                   chunkRange={chunkRange}
                   matchData={matchData}
                   frameData={currentFrameData}
+                  eventsData={eventsData}
                   annotationStore={annotationStore}
                   onAnnotationUpdate={() => setAnnotationUpdateEvent(!annotationUpdateEvent)}
-                />
-                <EventDisplayComponent
-                  eventsData={eventsData}
-                  scaleStart={episodeRange.start}
-                  scaleEnd={episodeRange.end}
-                  currentFrame={currentFrame}
-                  matchData={matchData}
                 />
               </div>
               

@@ -1,8 +1,9 @@
 import Controls from './Controls'
 import PlotComponent from './PlotComponent'
 import type { MatchData } from '../types/MatchDataInterfaces'
-import type { FrameData } from '../types/FrameDataInterfaces'
+import type { FrameData, Event } from '../types/FrameDataInterfaces'
 import type AnnotationStore from '../services/AnnotationStore-optimized'
+import EventDisplayComponent from './EventDisplayComponent'
 
 type PlotLayoutComponentProps = {
   isPlaying: boolean
@@ -13,6 +14,7 @@ type PlotLayoutComponentProps = {
   chunkRange: { start: number; end: number }
   matchData: MatchData | null
   frameData: FrameData | null
+  eventsData: Map<number, Event[]> | null
   annotationStore: AnnotationStore
   onAnnotationUpdate: () => void
 }
@@ -26,6 +28,7 @@ function PlotLayoutComponent({
   chunkRange,
   matchData,
   frameData,
+  eventsData,
   annotationStore,
   onAnnotationUpdate,
 }: PlotLayoutComponentProps) {
@@ -46,6 +49,13 @@ function PlotLayoutComponent({
         frameData={frameData}
         annotationStore={annotationStore}
         onAnnotationUpdate={onAnnotationUpdate}
+      />
+      <EventDisplayComponent
+        eventsData={eventsData}
+        scaleStart={episodeRange.start}
+        scaleEnd={episodeRange.end}
+        currentFrame={currentFrame}
+        matchData={matchData}
       />
     </>
   )

@@ -16,9 +16,14 @@ type TimelineEvent = Event & {
   lane: number
 }
 
+type ChartPoint = {
+  x: number
+  y: number
+}
+
 const LANE_HEIGHT = 50
-const EVENT_BOX_HEIGHT = 40
 const XLOSS_LINE_THICKNESS = 2
+const CHART_VERTICAL_PADDING = 6
 
 function EventDisplayComponent({
   eventsData,
@@ -125,6 +130,67 @@ function EventDisplayComponent({
     return Math.min(Math.max(event.player_targeted_xthreat, 0), 1)
   }
 
+  const trackHeight = laneCount * LANE_HEIGHT
+
+  const xlossLinePoints = useMemo(() => {
+    const boundaries = new Set<number>([scaleStart, scaleEnd])
+
+    for (const event of possessionEvents) {
+      boundaries.add(Math.max(event.frame_start, scaleStart))
+      boundaries.add(Math.min(event.frame_end, scaleEnd))
+    }
+
+    const sortedBoundaries = Array.from(boundaries)
+      .filter((frame) => frame >= scaleStart && frame <= scaleEnd)
+      .sort((left, right) => left - right)
+
+    if (sortedBoundaries.length === 1) {
+      sortedBoundaries.push(scaleEnd)
+    }
+
+    const getValueAtFrame = (frame: number) => {
+      let activeValue = 0
+
+      for (const event of possessionEvents) {
+        if (event.frame_start <= frame && event.frame_end >= frame) {
+          activeValue = Math.max(activeValue, getClampedXlossValue(event) ?? 0)
+        }
+      }
+
+      return activeValue
+    }
+
+    const availableHeight = Math.max(trackHeight - (CHART_VERTICAL_PADDING * 2), 1)
+    const toX = (frame: number) => ((frame - scaleStart) / totalFrames) * 100
+    const toY = (value: number) => trackHeight - CHART_VERTICAL_PADDING - (value * availableHeight)
+
+    const points: ChartPoint[] = []
+    let previousValue = getValueAtFrame(scaleStart)
+    points.push({ x: toX(scaleStart), y: toY(previousValue) })
+
+    for (let index = 1; index < sortedBoundaries.length; index += 1) {
+      const boundary = sortedBoundaries[index]
+      points.push({ x: toX(boundary), y: toY(previousValue) })
+
+      if (boundary === scaleEnd) {
+        continue
+      }
+
+      const nextBoundary = sortedBoundaries[index + 1] ?? scaleEnd
+      const sampleFrame = boundary + ((nextBoundary - boundary) / 2)
+      const nextValue = getValueAtFrame(sampleFrame)
+
+      if (nextValue !== previousValue) {
+        points.push({ x: toX(boundary), y: toY(nextValue) })
+        previousValue = nextValue
+      }
+    }
+
+    return points
+      .map((point) => `${point.x},${point.y}`)
+      .join(' ')
+  }, [possessionEvents, scaleEnd, scaleStart, totalFrames, trackHeight])
+
   return (
     <section className="event-display">
       <div className="event-display__header">
@@ -153,35 +219,20 @@ function EventDisplayComponent({
 
       <div
         className="event-display__track"
-        style={{ height: `${laneCount * LANE_HEIGHT}px` }}
+        style={{ height: `${trackHeight}px` }}
       >
-        {possessionEvents.map((event) => {
-          const xlossValue = getClampedXlossValue(event)
-
-          if (xlossValue === null) {
-            return null
-          }
-
-          const visibleStart = Math.max(event.frame_start, scaleStart)
-          const visibleEnd = Math.min(event.frame_end, scaleEnd)
-          const left = ((visibleStart - scaleStart) / totalFrames) * 100
-          const width = Math.max(((visibleEnd - visibleStart) / totalFrames) * 100, 2)
-          const lineOffset = (1 - xlossValue) * EVENT_BOX_HEIGHT
-          const top = (event.lane * LANE_HEIGHT) + Math.max(lineOffset - (XLOSS_LINE_THICKNESS / 2), 0)
-
-          return (
-            <div
-              key={`${event.event_id}-xloss`}
-              className="event-display__xloss-line"
-              style={{
-                left: `${left}%`,
-                width: `${width}%`,
-                top: `${top}px`,
-              }}
-              title={`xThreat: ${xlossValue.toFixed(2)}`}
-            />
-          )
-        })}
+        <svg
+          className="event-display__xloss-chart"
+          viewBox={`0 0 100 ${trackHeight}`}
+          preserveAspectRatio="none"
+          aria-hidden="true"
+        >
+          <polyline
+            className="event-display__xloss-line"
+            points={xlossLinePoints}
+            style={{ strokeWidth: XLOSS_LINE_THICKNESS }}
+          />
+        </svg>
         <div
           className="event-display__current-marker event-display__current-marker--track"
           style={{ left: `${currentFramePercent}%` }}
@@ -208,7 +259,7 @@ function EventDisplayComponent({
               title={`Event ${event.event_id}`}
             >
               <span className="event-display__label">
-                {`${event.player_name} (POS)`}
+                {`${event.player_name} (${event.player_position})`}
               </span>
             </div>
           )

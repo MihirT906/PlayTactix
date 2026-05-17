@@ -30,8 +30,49 @@
 .event-display__tick-row {
   position: relative;
   height: 30px;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.event-display__section {
+  margin-top: 12px;
+}
+
+.event-display__section-header {
+  margin-bottom: 8px;
+  color: #f8fafc;
+}
+
+.event-display__section-header h3 {
+  margin: 0;
+  font-size: small;
+}
+
+.event-display__section-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.event-display__section-arrow {
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid rgba(248, 250, 252, 0.8);
+  border-bottom: 2px solid rgba(248, 250, 252, 0.8);
+  transform: rotate(-45deg);
+  transition: transform 160ms ease;
+  flex: 0 0 auto;
+}
+
+.event-display__section-arrow--expanded {
+  transform: rotate(45deg);
 }
 
 .event-display__tick {

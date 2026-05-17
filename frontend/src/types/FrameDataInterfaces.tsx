@@ -40,12 +40,24 @@ interface Event {
     player_id: number;
     player_name: string;
     player_position: string;
-    player_targeted_xthreat: number;
     team_id: number;
     x_start: number;
     y_start: number;
     x_end: number;
     y_end: number;
+    lead_to_shot: boolean;
+    lead_to_goal: boolean;
+    distance_covered: number;
+    speed_avg: number;
+    separation_gain: number;
+    pass_distance_received: number;
+    player_targeted_xpass_completion: number;
+    player_targeted_xthreat: number;
+    xthreat: number;
+    xpass_completion: number;
+    n_opponents_overtaken: number;
+    xloss_player_possession_max: number;
+    xshot_player_possession_max: number;
 }
 
 export type { FrameData, Event }

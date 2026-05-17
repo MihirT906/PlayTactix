@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import type { Event } from '../types/FrameDataInterfaces'
 import type { MatchData } from '../types/MatchDataInterfaces'
 import { useStyleConfig } from '../context/StyleConfigContext'
@@ -12,6 +12,15 @@ type EventDisplayProps = {
   matchData: MatchData | null
 }
 
+type EventDisplayConfig = {
+  title: string
+  eventType: string
+  metricLabel: string
+  metricRange: [number, number]
+  getMetricValue: (event: Event) => number | null
+  getEventLabel?: (event: Event) => string
+}
+
 type TimelineEvent = Event & {
   lane: number
 }
@@ -21,34 +30,90 @@ type ChartPoint = {
   y: number
 }
 
+type LaneChart = {
+  lane: number
+  points: string
+}
+
+type EventDisplayTrackProps = {
+  config: EventDisplayConfig
+  eventsData: Map<number, Event[]> | null
+  scaleStart: number
+  scaleEnd: number
+  totalFrames: number
+  currentFramePercent: number
+  matchData: MatchData | null
+  homeTeamColor: string
+  awayTeamColor: string
+  isExpanded: boolean
+  onToggle: () => void
+}
+
 const LANE_HEIGHT = 50
 const XLOSS_LINE_THICKNESS = 2
 const CHART_VERTICAL_PADDING = 6
 
-function EventDisplayComponent({
+const EVENT_DISPLAY_CONFIGS: EventDisplayConfig[] = [
+  {
+    title: 'Player Possession Timeline',
+    eventType: 'player_possession',
+    metricLabel: 'n_opponents_overtaken',
+    metricRange: [0, 10],
+    getMetricValue: (event) => (event.n_opponents_overtaken === -1 ? null : event.n_opponents_overtaken),
+    getEventLabel: (event) => `${event.player_name} (${event.player_position})`,
+  },
+  {
+    title: 'Passing Options Timeline',
+    eventType: 'passing_option',
+    metricLabel: 'xThreat',
+    metricRange: [0, 1],
+    getMetricValue: (event) => (event.xthreat === -1 ? null : event.xthreat),
+    getEventLabel: (event) => `${event.player_name} (${event.player_position})`,
+  },
+  {
+    title: 'On Ball Engagement Timeline',
+    eventType: 'on_ball_engagement',
+    metricLabel: 'xloss_player_possession_max',
+    metricRange: [0, 1],
+    getMetricValue: (event) => (event.xloss_player_possession_max === -1 ? null : event.xloss_player_possession_max),
+    getEventLabel: (event) => `${event.player_name} (${event.player_position})`,
+  },
+]
+
+function EventDisplayTrack({
+  config,
   eventsData,
   scaleStart,
   scaleEnd,
-  currentFrame,
+  totalFrames,
+  currentFramePercent,
   matchData,
-}: EventDisplayProps) {
-  const { homeTeamColor, awayTeamColor } = useStyleConfig()
+  homeTeamColor,
+  awayTeamColor,
+  isExpanded,
+  onToggle,
+}: EventDisplayTrackProps) {
+  const [rangeStart, rangeEnd] = config.metricRange
+  const metricMin = Math.min(rangeStart, rangeEnd)
+  const metricMax = Math.max(rangeStart, rangeEnd)
+  const chartMin = Math.min(metricMin, 0)
+  const chartMax = Math.max(metricMax, 0)
 
-  const possessionEvents = useMemo<TimelineEvent[]>(() => {
+  const timelineEvents = useMemo<TimelineEvent[]>(() => {
     const uniqueEvents = new Map<string, Event>()
 
     if (eventsData) {
       for (const frameEvents of eventsData.values()) {
         for (const event of frameEvents) {
-          if (event.event_type !== 'player_possession') {
+          if (event.event_type !== config.eventType) {
             continue
           }
 
-        if (!uniqueEvents.has(event.event_id)) {
-          uniqueEvents.set(event.event_id, event)
+          if (!uniqueEvents.has(event.event_id)) {
+            uniqueEvents.set(event.event_id, event)
+          }
         }
       }
-    }
     }
 
     const sortedEvents = Array.from(uniqueEvents.values())
@@ -78,20 +143,11 @@ function EventDisplayComponent({
         lane: laneIndex,
       }
     })
-  }, [eventsData, scaleEnd, scaleStart])
+  }, [config.eventType, eventsData, scaleEnd, scaleStart])
 
-  const totalFrames = Math.max(scaleEnd - scaleStart, 1)
-  const laneCount = possessionEvents.length > 0
-    ? Math.max(...possessionEvents.map((event) => event.lane)) + 1
+  const laneCount = timelineEvents.length > 0
+    ? Math.max(...timelineEvents.map((event) => event.lane)) + 1
     : 1
-
-  const tickInterval = 100
-  const firstTick = Math.ceil(scaleStart / tickInterval) * tickInterval
-  const ticks = Array.from(
-    { length: Math.max(Math.floor((scaleEnd - firstTick) / tickInterval) + 1, 0) },
-    (_, index) => firstTick + index * tickInterval,
-  )
-  const currentFramePercent = ((Math.min(Math.max(currentFrame, scaleStart), scaleEnd) - scaleStart) / totalFrames) * 100
 
   const getEventColor = (teamId: number) => {
     if (teamId === matchData?.home_team.id) {
@@ -120,151 +176,251 @@ function EventDisplayComponent({
     return brightness > 150 ? '#111827' : '#F8FAFC'
   }
 
-  const hasXlossValue = (event: Event) => event.player_targeted_xthreat !== -1
+  const getClampedMetricValue = (event: Event) => {
+    const metricValue = config.getMetricValue(event)
 
-  const getClampedXlossValue = (event: Event) => {
-    if (!hasXlossValue(event)) {
+    if (metricValue === null) {
       return null
     }
 
-    return Math.min(Math.max(event.player_targeted_xthreat, 0), 1)
+    return Math.min(Math.max(metricValue, metricMin), metricMax)
+  }
+
+  const getEventLabel = (event: Event) => {
+    if (config.getEventLabel) {
+      return config.getEventLabel(event)
+    }
+
+    return event.player_name
   }
 
   const trackHeight = laneCount * LANE_HEIGHT
 
-  const xlossLinePoints = useMemo(() => {
-    const boundaries = new Set<number>([scaleStart, scaleEnd])
+  const laneCharts = useMemo<LaneChart[]>(() => {
+    const metricSpan = Math.max(chartMax - chartMin, 1)
+    const laneHeight = Math.max(LANE_HEIGHT - (CHART_VERTICAL_PADDING * 2), 1)
+    const toX = (frame: number) => ((frame - scaleStart) / totalFrames) * 100
+    const toY = (value: number, lane: number) => {
+      const normalizedValue = (value - chartMin) / metricSpan
+      const laneTop = lane * LANE_HEIGHT
 
-    for (const event of possessionEvents) {
-      boundaries.add(Math.max(event.frame_start, scaleStart))
-      boundaries.add(Math.min(event.frame_end, scaleEnd))
+      return laneTop + LANE_HEIGHT - CHART_VERTICAL_PADDING - (normalizedValue * laneHeight)
     }
 
-    const sortedBoundaries = Array.from(boundaries)
-      .filter((frame) => frame >= scaleStart && frame <= scaleEnd)
-      .sort((left, right) => left - right)
+    const laneEvents = new Map<number, TimelineEvent[]>()
 
-    if (sortedBoundaries.length === 1) {
-      sortedBoundaries.push(scaleEnd)
+    for (const event of timelineEvents) {
+      const eventsForLane = laneEvents.get(event.lane) ?? []
+      eventsForLane.push(event)
+      laneEvents.set(event.lane, eventsForLane)
     }
 
-    const getValueAtFrame = (frame: number) => {
-      let activeValue = 0
+    return Array.from({ length: laneCount }, (_, lane) => {
+      const eventsForLane = laneEvents.get(lane) ?? []
+      const boundaries = new Set<number>([scaleStart, scaleEnd])
 
-      for (const event of possessionEvents) {
-        if (event.frame_start <= frame && event.frame_end >= frame) {
-          activeValue = Math.max(activeValue, getClampedXlossValue(event) ?? 0)
+      for (const event of eventsForLane) {
+        boundaries.add(Math.max(event.frame_start, scaleStart))
+        boundaries.add(Math.min(event.frame_end, scaleEnd))
+      }
+
+      const sortedBoundaries = Array.from(boundaries)
+        .filter((frame) => frame >= scaleStart && frame <= scaleEnd)
+        .sort((left, right) => left - right)
+
+      if (sortedBoundaries.length === 1) {
+        sortedBoundaries.push(scaleEnd)
+      }
+
+      const getValueAtFrame = (frame: number) => {
+        for (const event of eventsForLane) {
+          if (event.frame_start <= frame && event.frame_end >= frame) {
+            return getClampedMetricValue(event) ?? 0
+          }
+        }
+
+        return 0
+      }
+
+      const points: ChartPoint[] = []
+      let previousValue = getValueAtFrame(scaleStart)
+      points.push({ x: toX(scaleStart), y: toY(previousValue, lane) })
+
+      for (let index = 1; index < sortedBoundaries.length; index += 1) {
+        const boundary = sortedBoundaries[index]
+        points.push({ x: toX(boundary), y: toY(previousValue, lane) })
+
+        if (boundary === scaleEnd) {
+          continue
+        }
+
+        const nextBoundary = sortedBoundaries[index + 1] ?? scaleEnd
+        const sampleFrame = boundary + ((nextBoundary - boundary) / 2)
+        const nextValue = getValueAtFrame(sampleFrame)
+
+        if (nextValue !== previousValue) {
+          points.push({ x: toX(boundary), y: toY(nextValue, lane) })
+          previousValue = nextValue
         }
       }
 
-      return activeValue
-    }
-
-    const availableHeight = Math.max(trackHeight - (CHART_VERTICAL_PADDING * 2), 1)
-    const toX = (frame: number) => ((frame - scaleStart) / totalFrames) * 100
-    const toY = (value: number) => trackHeight - CHART_VERTICAL_PADDING - (value * availableHeight)
-
-    const points: ChartPoint[] = []
-    let previousValue = getValueAtFrame(scaleStart)
-    points.push({ x: toX(scaleStart), y: toY(previousValue) })
-
-    for (let index = 1; index < sortedBoundaries.length; index += 1) {
-      const boundary = sortedBoundaries[index]
-      points.push({ x: toX(boundary), y: toY(previousValue) })
-
-      if (boundary === scaleEnd) {
-        continue
+      return {
+        lane,
+        points: points.map((point) => `${point.x},${point.y}`).join(' '),
       }
+    })
+  }, [chartMax, chartMin, laneCount, metricMax, metricMin, scaleEnd, scaleStart, timelineEvents, totalFrames])
 
-      const nextBoundary = sortedBoundaries[index + 1] ?? scaleEnd
-      const sampleFrame = boundary + ((nextBoundary - boundary) / 2)
-      const nextValue = getValueAtFrame(sampleFrame)
+  return (
+    <div className="event-display__section">
+      <div className="event-display__section-header">
+        <button
+          type="button"
+          className="event-display__section-toggle"
+          onClick={onToggle}
+          aria-expanded={isExpanded}
+        >
+          <span
+            className={`event-display__section-arrow${isExpanded ? ' event-display__section-arrow--expanded' : ''}`}
+            aria-hidden="true"
+          />
+          <h3>{config.title}</h3>
+        </button>
+      </div>
 
-      if (nextValue !== previousValue) {
-        points.push({ x: toX(boundary), y: toY(nextValue) })
-        previousValue = nextValue
-      }
-    }
+      {isExpanded && (
+        <div
+          className="event-display__track"
+          style={{ height: `${trackHeight}px` }}
+        >
+          <svg
+            className="event-display__xloss-chart"
+            viewBox={`0 0 100 ${trackHeight}`}
+            preserveAspectRatio="none"
+            aria-hidden="true"
+          >
+            {laneCharts.map((laneChart) => (
+              <polyline
+                key={laneChart.lane}
+                className="event-display__xloss-line"
+                points={laneChart.points}
+                style={{ strokeWidth: XLOSS_LINE_THICKNESS }}
+              />
+            ))}
+          </svg>
+          <div
+            className="event-display__current-marker event-display__current-marker--track"
+            style={{ left: `${currentFramePercent}%` }}
+          />
+          {timelineEvents.map((event) => {
+            const visibleStart = Math.max(event.frame_start, scaleStart)
+            const visibleEnd = Math.min(event.frame_end, scaleEnd)
+            const left = ((visibleStart - scaleStart) / totalFrames) * 100
+            const width = Math.max(((visibleEnd - visibleStart) / totalFrames) * 100, 2)
+            const backgroundColor = getEventColor(event.team_id)
+            const color = getEventTextColor(backgroundColor)
+            const eventLabel = getEventLabel(event)
+            const metricValue = getClampedMetricValue(event)
+            const metricText = metricValue === null ? 'N/A' : metricValue.toFixed(2)
 
-    return points
-      .map((point) => `${point.x},${point.y}`)
-      .join(' ')
-  }, [possessionEvents, scaleEnd, scaleStart, totalFrames, trackHeight])
+            return (
+              <div
+                key={event.event_id}
+                className="event-display__box"
+                style={{
+                  background: backgroundColor,
+                  color,
+                  left: `${left}%`,
+                  width: `${width}%`,
+                  top: `${event.lane * LANE_HEIGHT}px`,
+                }}
+                title={`${eventLabel} | ${config.metricLabel}: ${metricText}`}
+              >
+                <span className="event-display__label">
+                  {eventLabel}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function EventDisplayComponent({
+  eventsData,
+  scaleStart,
+  scaleEnd,
+  currentFrame,
+  matchData,
+}: EventDisplayProps) {
+  const { homeTeamColor, awayTeamColor } = useStyleConfig()
+  const [expandedEventTypes, setExpandedEventTypes] = useState<string[]>([])
+
+  const totalFrames = Math.max(scaleEnd - scaleStart, 1)
+
+  const tickInterval = 100
+  const firstTick = Math.ceil(scaleStart / tickInterval) * tickInterval
+  const ticks = Array.from(
+    { length: Math.max(Math.floor((scaleEnd - firstTick) / tickInterval) + 1, 0) },
+    (_, index) => firstTick + index * tickInterval,
+  )
+  const currentFramePercent = ((Math.min(Math.max(currentFrame, scaleStart), scaleEnd) - scaleStart) / totalFrames) * 100
+  const hasExpandedTracks = expandedEventTypes.length > 0
+
+  const toggleEventType = (eventType: string) => {
+    setExpandedEventTypes((current) => (
+      current.includes(eventType)
+        ? current.filter((value) => value !== eventType)
+        : [...current, eventType]
+    ))
+  }
 
   return (
     <section className="event-display">
       <div className="event-display__header">
-        <h3>Player Possession Timeline</h3>
+        <h3>Event Timelines</h3>
       </div>
 
-      <div className="event-display__tick-row" aria-hidden="true">
-        {ticks.map((tick) => (
-          <div
-            key={tick}
-            className="event-display__tick"
-            style={{
-              left: `${((tick - scaleStart) / totalFrames) * 100}%`,
-            }}
-          >
-            {tick}
-          </div>
-        ))}
-        <div
-          className="event-display__current-marker event-display__current-marker--ticks"
-          style={{ left: `${currentFramePercent}%` }}
-        >
-          <span className="event-display__current-label">{currentFrame}</span>
-        </div>
-      </div>
-
-      <div
-        className="event-display__track"
-        style={{ height: `${trackHeight}px` }}
-      >
-        <svg
-          className="event-display__xloss-chart"
-          viewBox={`0 0 100 ${trackHeight}`}
-          preserveAspectRatio="none"
-          aria-hidden="true"
-        >
-          <polyline
-            className="event-display__xloss-line"
-            points={xlossLinePoints}
-            style={{ strokeWidth: XLOSS_LINE_THICKNESS }}
-          />
-        </svg>
-        <div
-          className="event-display__current-marker event-display__current-marker--track"
-          style={{ left: `${currentFramePercent}%` }}
-        />
-        {possessionEvents.map((event) => {
-          const visibleStart = Math.max(event.frame_start, scaleStart)
-          const visibleEnd = Math.min(event.frame_end, scaleEnd)
-          const left = ((visibleStart - scaleStart) / totalFrames) * 100
-          const width = Math.max(((visibleEnd - visibleStart) / totalFrames) * 100, 2)
-          const backgroundColor = getEventColor(event.team_id)
-          const color = getEventTextColor(backgroundColor)
-
-          return (
+      {hasExpandedTracks && (
+        <div className="event-display__tick-row" aria-hidden="true">
+          {ticks.map((tick) => (
             <div
-              key={event.event_id}
-              className="event-display__box"
+              key={tick}
+              className="event-display__tick"
               style={{
-                background: backgroundColor,
-                color,
-                left: `${left}%`,
-                width: `${width}%`,
-                top: `${event.lane * LANE_HEIGHT}px`,
+                left: `${((tick - scaleStart) / totalFrames) * 100}%`,
               }}
-              title={`Event ${event.event_id}`}
             >
-              <span className="event-display__label">
-                {`${event.player_name} (${event.player_position})`}
-              </span>
+              {tick}
             </div>
-          )
-        })}
-      </div>
+          ))}
+          <div
+            className="event-display__current-marker event-display__current-marker--ticks"
+            style={{ left: `${currentFramePercent}%` }}
+          >
+            <span className="event-display__current-label">{currentFrame}</span>
+          </div>
+        </div>
+      )}
+
+      {EVENT_DISPLAY_CONFIGS.map((config) => (
+        <EventDisplayTrack
+          key={config.title}
+          config={config}
+          eventsData={eventsData}
+          scaleStart={scaleStart}
+          scaleEnd={scaleEnd}
+          totalFrames={totalFrames}
+          currentFramePercent={currentFramePercent}
+          matchData={matchData}
+          homeTeamColor={homeTeamColor}
+          awayTeamColor={awayTeamColor}
+          isExpanded={expandedEventTypes.includes(config.eventType)}
+          onToggle={() => toggleEventType(config.eventType)}
+        />
+      ))}
     </section>
   )
 }

@@ -94,6 +94,15 @@
   font-weight: 700;
 }
 
+.event-display__xloss-line {
+  position: absolute;
+  height: 2px;
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.9);
+  z-index: 0;
+  pointer-events: none;
+}
+
 .event-display__box {
   position: absolute;
   height: 40px;

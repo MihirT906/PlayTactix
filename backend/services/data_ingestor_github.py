@@ -257,14 +257,19 @@ class SkillCornerDataIngestor:
     
     def _get_silver_event_data(self, bronze_event_data):
         columns_to_keep = [
-            'event_id', 'index', 'frame_start', 'frame_end', 
-            'attacking_side', 'event_type_id', 'event_type', 
-            # 'event_subtype_id', 'event_subtype', 
-            'player_id', 'player_name', 'team_id', 
+            'event_id', 'index', 'frame_start', 'frame_end', 'attacking_side', 
+            'event_type_id', 'event_type', 'event_subtype_id', 'event_subtype', 
+            'player_id', 'player_name', 
+            'player_position', 'player_targeted_xthreat',
+            'team_id', 
             'x_start', 'y_start', 'x_end', 'y_end'
         ]
         
         silver_event_data = bronze_event_data[columns_to_keep]
+        silver_event_data['event_subtype_id'] = silver_event_data['event_subtype_id'].fillna(0).astype(int)
+        silver_event_data['event_subtype'] = silver_event_data['event_subtype'].fillna('Unknown') 
+        silver_event_data['player_position'] = silver_event_data['player_position'].fillna('Unknown')
+        silver_event_data['player_targeted_xthreat'] = silver_event_data['player_targeted_xthreat'].fillna(-1).astype(float)
         
         return silver_event_data 
     

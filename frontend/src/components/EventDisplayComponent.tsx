@@ -16,6 +16,10 @@ type TimelineEvent = Event & {
   lane: number
 }
 
+const LANE_HEIGHT = 50
+const EVENT_BOX_HEIGHT = 40
+const XLOSS_LINE_THICKNESS = 2
+
 function EventDisplayComponent({
   eventsData,
   scaleStart,
@@ -23,7 +27,7 @@ function EventDisplayComponent({
   currentFrame,
   matchData,
 }: EventDisplayProps) {
-  const { homeTeamColor, awayTeamColor, eventStyles } = useStyleConfig()
+  const { homeTeamColor, awayTeamColor } = useStyleConfig()
 
   const possessionEvents = useMemo<TimelineEvent[]>(() => {
     const uniqueEvents = new Map<string, Event>()
@@ -111,9 +115,14 @@ function EventDisplayComponent({
     return brightness > 150 ? '#111827' : '#F8FAFC'
   }
 
-  const getEventBackgroundColor = (eventType: string) => {
-    const style = eventStyles["playerPossession"]
-    return style ? style.color : '#F59E0B'
+  const hasXlossValue = (event: Event) => event.player_targeted_xthreat !== -1
+
+  const getClampedXlossValue = (event: Event) => {
+    if (!hasXlossValue(event)) {
+      return null
+    }
+
+    return Math.min(Math.max(event.player_targeted_xthreat, 0), 1)
   }
 
   return (
@@ -144,8 +153,35 @@ function EventDisplayComponent({
 
       <div
         className="event-display__track"
-        style={{ height: `${laneCount * 50}px` }}
+        style={{ height: `${laneCount * LANE_HEIGHT}px` }}
       >
+        {possessionEvents.map((event) => {
+          const xlossValue = getClampedXlossValue(event)
+
+          if (xlossValue === null) {
+            return null
+          }
+
+          const visibleStart = Math.max(event.frame_start, scaleStart)
+          const visibleEnd = Math.min(event.frame_end, scaleEnd)
+          const left = ((visibleStart - scaleStart) / totalFrames) * 100
+          const width = Math.max(((visibleEnd - visibleStart) / totalFrames) * 100, 2)
+          const lineOffset = (1 - xlossValue) * EVENT_BOX_HEIGHT
+          const top = (event.lane * LANE_HEIGHT) + Math.max(lineOffset - (XLOSS_LINE_THICKNESS / 2), 0)
+
+          return (
+            <div
+              key={`${event.event_id}-xloss`}
+              className="event-display__xloss-line"
+              style={{
+                left: `${left}%`,
+                width: `${width}%`,
+                top: `${top}px`,
+              }}
+              title={`xThreat: ${xlossValue.toFixed(2)}`}
+            />
+          )
+        })}
         <div
           className="event-display__current-marker event-display__current-marker--track"
           style={{ left: `${currentFramePercent}%` }}
@@ -157,7 +193,6 @@ function EventDisplayComponent({
           const width = Math.max(((visibleEnd - visibleStart) / totalFrames) * 100, 2)
           const backgroundColor = getEventColor(event.team_id)
           const color = getEventTextColor(backgroundColor)
-          const borderColor = getEventBackgroundColor(event.event_type)
 
           return (
             <div
@@ -168,8 +203,7 @@ function EventDisplayComponent({
                 color,
                 left: `${left}%`,
                 width: `${width}%`,
-                top: `${event.lane * 50}px`,
-                // border: `1px solid ${borderColor}`,
+                top: `${event.lane * LANE_HEIGHT}px`,
               }}
               title={`Event ${event.event_id}`}
             >

@@ -35,10 +35,12 @@ interface Event {
     attacking_side: string;
     event_type_id: number;
     event_type: string;
-    // event_subtype_id: number | null;
-    // event_subtype: string | null;
+    event_subtype_id: number;
+    event_subtype: string;
     player_id: number;
     player_name: string;
+    player_position: string;
+    player_targeted_xthreat: number;
     team_id: number;
     x_start: number;
     y_start: number;

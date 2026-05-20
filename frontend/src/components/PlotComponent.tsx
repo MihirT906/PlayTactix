@@ -21,7 +21,7 @@ interface PlotComponentProps {
 
 const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, frameData, annotationStore, onAnnotationUpdate }) => {
   const plotConfig = APP_CONFIG.plot
-  const { homeTeamColor, awayTeamColor, eventStyles, teamVisibility, eventVisibility } = useStyleConfig()
+  const { homeTeamColor, awayTeamColor, eventStyles, teamVisibility, eventVisibility, overlayVisibility } = useStyleConfig()
   const [focusPoints, setFocusPoints] = useState<number[]>([]) // Points that are highlighted on click
   const [firstPoint, setFirstPoint] = useState<number | null>(null) // First point selected when drawing a line between two players
   const [focusEnabled, setFocusEnabled] = useState(false) // 'Player Focus' mode toggled to draw lines
@@ -29,6 +29,10 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
   const [shapes, setShapes] = useState<any[]>([]) // User annotation shapes
   const [dragMode, setDragMode] = useState<string>('select')
   const image_src = backgroundImage; // Set the background image source
+  const overlay = useMemo(
+    () => Object.entries(overlayVisibility).find(([, visible]) => visible)?.[0] ?? null,
+    [overlayVisibility]
+  )
 
   // Utility function to filter arrays based on a boolean mask
   const filterByMask = <T,>(arr: T[], mask: boolean[]) =>
@@ -189,6 +193,56 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
     ];
   }, [awayTeamColor, eventStyles.onBallEngagement.color, eventStyles.onBallEngagement.width, eventStyles.passingOption.color, eventStyles.passingOption.width, eventStyles.playerPossession.color, eventStyles.playerPossession.width, eventVisibility.onBallEngagement, eventVisibility.passingOption, eventVisibility.playerPossession, frameData, homeTeamColor, matchData, playerMasks, teamVisibility.away, teamVisibility.home])
 
+  const passingNetworkTraces = useMemo(() => {
+    if (!frameData || overlay !== 'passing_network') return [];
+
+    const players = frameData.players;
+    const playerIndexById = new Map(
+      players.player_id.map((playerId, index) => [playerId, index])
+    );
+
+    return frameData.events.flatMap((event) => {
+      if (event.event_type !== 'passing_option') return [];
+
+      const sourcePlayerId = event.player_in_possession_id;
+      const targetPlayerId = event.player_id;
+
+      if (!sourcePlayerId || !targetPlayerId) return [];
+
+      const sourceIndex = playerIndexById.get(sourcePlayerId);
+      const targetIndex = playerIndexById.get(targetPlayerId);
+
+      if (sourceIndex == null || targetIndex == null) return [];
+
+      const rawOpacity = event.xthreat;
+      console.log('in passing network, raw xThreat value:', rawOpacity)
+      if (rawOpacity === -1) return [];
+
+      const normalized = Math.min(rawOpacity / 0.1, 1);
+      const opacity = 0.15 + 0.85 * Math.pow(normalized, 0.4);
+      // console.log('in passing network, raw xThreat value:', opacity)
+
+      return [{
+        x: [players.x[sourceIndex], players.x[targetIndex]],
+        y: [players.y[sourceIndex], players.y[targetIndex]],
+        type: 'scatter',
+        mode: 'lines',
+        hoverinfo: 'text',
+        text: `xPass: ${rawOpacity.toFixed(2)}`,
+        opacity,
+        line: {
+          color: eventStyles.passingOption.color,
+          width: plotConfig.markerSize,
+        },
+      }];
+    });
+  }, [
+    eventStyles.passingOption.color,
+    frameData,
+    overlay,
+    plotConfig.markerSize
+  ]);
+
   // Creates lines to add to Plotly.layout using the player focus lines stored in annotationStore
   const updateLines = () => { 
     setLines([])
@@ -269,6 +323,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
     <div className="plot-container">
       <Plot className='PlotComponent'
         data={[
+          ...passingNetworkTraces,
           ...playerTraces,
           ...(offBallRunTrace ? [offBallRunTrace] : []),
           {
@@ -293,8 +348,8 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
           width: 700,
           height: 500,
           margin: { l: 20, r: 20, t: 20, b: 20 },
-          paper_bgcolor: '#4cbb17',
-          plot_bgcolor: '#4cbb17',
+          paper_bgcolor: 'rgba(0, 0, 0, 0.3)',
+          plot_bgcolor: 'rgba(0, 0, 0, 0.3)',
           showlegend: false,
           dragmode: dragMode as any,
           shapes: [...lines, ...shapes], // Contains player focus lines

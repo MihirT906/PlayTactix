@@ -65,7 +65,7 @@ const EVENT_DISPLAY_CONFIGS: EventDisplayConfig[] = [
   {
     title: 'Passing Options Timeline',
     eventType: 'passing_option',
-    metricLabel: 'xThreat',
+    metricLabel: 'xpass_completion',
     metricRange: [0, 1],
     getMetricValue: (event) => (event.xthreat === -1 ? null : event.xthreat),
     getEventLabel: (event) => `${event.player_name} (${event.player_position})`,

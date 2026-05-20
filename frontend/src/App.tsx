@@ -12,7 +12,8 @@ import MatchDetailsDisplay from './components/MatchDetailsDisplay'
 import { StyleConfigProvider } from './context/StyleConfigContext'
 import PlotLayoutComponent from './components/PlotLayoutComponent'
 import KeyMomentFinderComponent from './components/KeyMomentFinderComponent'
-import EventDisplayComponent from './components/EventDisplayComponent'
+import Settings from './components/Settings'
+import AnnotationDisplay from './components/AnnotationDisplay'
 
 type MainContentView = 'plot' | 'keyMoments'
 
@@ -130,9 +131,9 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
         <MatchDetailsDisplay matchData={matchData!} />
 
         <div className="app-container">
-          {/* <div className="left-panel">
+          <div className="left-panel">
             <Settings matchData={matchData!}/>
-          </div> */}
+          </div>
           <div className="main-content">
             <div className="main-content-toggle" role="tablist" aria-label="Main content view switcher">
               <button
@@ -173,9 +174,9 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
               <KeyMomentFinderComponent episodeRange={episodeRange} onAddCustomEpisodeRange={addCustomEpisodeRange} keyMomentsData={keyMomentsData} />
             )}
           </div>
-          {/* <div className="right-panel">
+          <div className="right-panel">
             <AnnotationDisplay annotationStore={annotationStore} currentFrame={currentFrame} annotationUpdateEvent={annotationUpdateEvent} />
-          </div> */}
+          </div>
         </div>
       </div>
     </StyleConfigProvider>

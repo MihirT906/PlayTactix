@@ -259,7 +259,7 @@ class SkillCornerDataIngestor:
         columns_to_keep = [
             'event_id', 'index', 'frame_start', 'frame_end', 'attacking_side', 
             'event_type_id', 'event_type', 'event_subtype_id', 'event_subtype', 
-            'player_id', 'player_name', 'player_position',
+            'player_id', 'player_name', 'player_position', 'player_in_possession_id',
             'team_id', 
             'x_start', 'y_start', 'x_end', 'y_end',
             'lead_to_shot', 'lead_to_goal', 'distance_covered', 'speed_avg', 'separation_gain', 'pass_distance_received', 'player_targeted_xpass_completion', 'player_targeted_xthreat', 'xthreat', 'xpass_completion', 'n_opponents_overtaken', 'xloss_player_possession_max', 'xshot_player_possession_max'
@@ -269,6 +269,7 @@ class SkillCornerDataIngestor:
         silver_event_data['event_subtype_id'] = silver_event_data['event_subtype_id'].fillna(0).astype(int)
         silver_event_data['event_subtype'] = silver_event_data['event_subtype'].fillna('Unknown') 
         silver_event_data['player_position'] = silver_event_data['player_position'].fillna('Unknown')
+        silver_event_data['player_in_possession_id'] = silver_event_data['player_in_possession_id'].fillna(-1).astype(int)
         silver_event_data['player_targeted_xthreat'] = silver_event_data['player_targeted_xthreat'].fillna(-1).astype(float)
         silver_event_data['lead_to_shot'] = silver_event_data['lead_to_shot'].fillna(False).astype(bool)
         silver_event_data['lead_to_goal'] = silver_event_data['lead_to_goal'].fillna(False).astype(bool)

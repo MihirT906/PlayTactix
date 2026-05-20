@@ -40,6 +40,7 @@ interface Event {
     player_id: number;
     player_name: string;
     player_position: string;
+    player_in_possession_id: number;
     team_id: number;
     x_start: number;
     y_start: number;

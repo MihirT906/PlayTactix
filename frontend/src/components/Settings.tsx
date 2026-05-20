@@ -6,7 +6,7 @@ import { useStyleConfig } from '../context/StyleConfigContext';
 
 type SettingsRowProps = {
     label: string;
-    color: string;
+    color: string | null;
     visible: boolean;
     onChange: (c: string) => void;
     onToggleVisibility?: (visible: boolean) => void;
@@ -32,20 +32,22 @@ const SettingsRow: React.FC<SettingsRowProps> = ({ label, color, visible, onChan
                 >
                     {visible ? <FaEye /> : <FaEyeSlash />}
                 </button>
-                <button
-                    type="button"
-                    className="settings-color-circle"
-                    style={{ backgroundColor: color }}
-                    onClick={openPicker}
-                    aria-label={`Selected color ${color}. Click to change`}>
-                </button>
+                {color && (
+                    <button
+                        type="button"
+                        className="settings-color-circle"
+                        style={{ backgroundColor: color }}
+                        onClick={openPicker}
+                        aria-label={`Selected color ${color}. Click to change`}>
+                    </button>
+                )}
 
                 <input
                     ref={pickerRef}
                     id={`${id}-color`}
                     className="settings-color-input-hidden"
                     type="color"
-                    value={color}
+                    value={color || '#000000'}
                     onChange={(event) => onChange(event.target.value.toUpperCase())}
                     aria-label={`Choose color for ${label}`}
                 />
@@ -61,11 +63,13 @@ const Settings: React.FC<{ matchData: MatchData | null }> = ({ matchData }) => {
         eventStyles,
         teamVisibility,
         eventVisibility,
+        overlayVisibility,
         setHomeTeamColor,
         setAwayTeamColor,
         setEventStyleColor,
         setTeamVisibility,
         setEventVisibility,
+        setOverlayVisibility,
     } = useStyleConfig();
 
     return (
@@ -77,6 +81,10 @@ const Settings: React.FC<{ matchData: MatchData | null }> = ({ matchData }) => {
                 <SettingsRow label={'Passing Options'} color={eventStyles.passingOption.color} visible={eventVisibility.passingOption} onChange={(color) => setEventStyleColor('passingOption', color)} onToggleVisibility={(visible) => setEventVisibility('passingOption', visible)}/>
                 <SettingsRow label={'On Ball Engagement'} color={eventStyles.onBallEngagement.color} visible={eventVisibility.onBallEngagement} onChange={(color) => setEventStyleColor('onBallEngagement', color)} onToggleVisibility={(visible) => setEventVisibility('onBallEngagement', visible)}/>
                 <SettingsRow label={'Off Ball Runs'} color={eventStyles.offBallRun.color} visible={eventVisibility.offBallRun} onChange={(color) => setEventStyleColor('offBallRun', color)} onToggleVisibility={(visible) => setEventVisibility('offBallRun', visible)}/>
+
+            </div>
+            <div className="settings-box settings-box--flat">
+                <SettingsRow label={'Passing Network'} color={null} visible={overlayVisibility.passing_network} onChange={setHomeTeamColor} onToggleVisibility={(visible) => setOverlayVisibility('passing_network', visible)} />
 
             </div>
         </div>

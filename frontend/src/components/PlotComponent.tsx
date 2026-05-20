@@ -8,6 +8,8 @@ import { APP_CONFIG, SELECTED_POINTS_OPACITY, UNSELECTED_POINTS_OPACITY } from '
 import backgroundImage from '../../../data/background_image.png';
 import type { MatchData } from '../types/MatchDataInterfaces'
 import { useStyleConfig } from '../context/StyleConfigContext'
+import { buildPassingNetworkOverlay } from '../plot/overlays/passingNetworkOverlay'
+
 
 // const annotationStore = new AnnotationStore()
 
@@ -193,49 +195,14 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
     ];
   }, [awayTeamColor, eventStyles.onBallEngagement.color, eventStyles.onBallEngagement.width, eventStyles.passingOption.color, eventStyles.passingOption.width, eventStyles.playerPossession.color, eventStyles.playerPossession.width, eventVisibility.onBallEngagement, eventVisibility.passingOption, eventVisibility.playerPossession, frameData, homeTeamColor, matchData, playerMasks, teamVisibility.away, teamVisibility.home])
 
-  const passingNetworkTraces = useMemo(() => {
-    if (!frameData || overlay !== 'passing_network') return [];
+  const overlayTraces = useMemo(() => {
+    if (!overlay) return [];
 
-    const players = frameData.players;
-    const playerIndexById = new Map(
-      players.player_id.map((playerId, index) => [playerId, index])
-    );
+    if (overlay === 'passing_network') {
+      return buildPassingNetworkOverlay(frameData) || [];
+    }
 
-    return frameData.events.flatMap((event) => {
-      if (event.event_type !== 'passing_option') return [];
-
-      const sourcePlayerId = event.player_in_possession_id;
-      const targetPlayerId = event.player_id;
-
-      if (!sourcePlayerId || !targetPlayerId) return [];
-
-      const sourceIndex = playerIndexById.get(sourcePlayerId);
-      const targetIndex = playerIndexById.get(targetPlayerId);
-
-      if (sourceIndex == null || targetIndex == null) return [];
-
-      const rawOpacity = event.xthreat;
-      console.log('in passing network, raw xThreat value:', rawOpacity)
-      if (rawOpacity === -1) return [];
-
-      const normalized = Math.min(rawOpacity / 0.1, 1);
-      const opacity = 0.15 + 0.85 * Math.pow(normalized, 0.4);
-      // console.log('in passing network, raw xThreat value:', opacity)
-
-      return [{
-        x: [players.x[sourceIndex], players.x[targetIndex]],
-        y: [players.y[sourceIndex], players.y[targetIndex]],
-        type: 'scatter',
-        mode: 'lines',
-        hoverinfo: 'text',
-        text: `xPass: ${rawOpacity.toFixed(2)}`,
-        opacity,
-        line: {
-          color: eventStyles.passingOption.color,
-          width: plotConfig.markerSize,
-        },
-      }];
-    });
+    return [];
   }, [
     eventStyles.passingOption.color,
     frameData,
@@ -323,7 +290,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
     <div className="plot-container">
       <Plot className='PlotComponent'
         data={[
-          ...passingNetworkTraces,
+          ...overlayTraces,
           ...playerTraces,
           ...(offBallRunTrace ? [offBallRunTrace] : []),
           {

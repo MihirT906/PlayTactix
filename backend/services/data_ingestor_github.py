@@ -346,19 +346,32 @@ class SkillCornerDataIngestor:
         silver_meta_data = self._get_silver_meta_data(bronze_meta_data)
         bronze_event_data = self._get_bronze_event_data(match_id)
         silver_event_data = self._get_silver_event_data(bronze_event_data)
-        gold_tracking_data = self._get_gold_tracking_data(silver_tracking_data, silver_meta_data, silver_event_data)
+        # gold_tracking_data = self._get_gold_tracking_data(silver_tracking_data, silver_meta_data, silver_event_data)
         key_moments = self._get_key_moments(bronze_event_data)
         
-        final_data = {
-            'match': bronze_meta_data,
-            'frames': gold_tracking_data,
-            'key_moments': key_moments
-        }
+        # final_data = {
+        #     'match': bronze_meta_data,
+        #     'frames': gold_tracking_data,
+        #     'key_moments': key_moments
+        # }
         
-        with open(f"../data/gold_tracking_data.json", "w") as f:
-            json.dump(final_data, f)
+        
+        # with open(f"../data/gold_tracking_data.json", "w") as f:
+        #     json.dump(final_data, f)
+        
+        silver_tracking_data.to_parquet(
+            "../data/silver_tracking_data.parquet",
+            engine="pyarrow",
+            index=False,
+        )
+        
+        silver_meta_data.to_parquet(
+            "../data/silver_meta_data.parquet",
+            engine="pyarrow",
+            index=False,
+        )
             
-        return gold_tracking_data
+        return silver_tracking_data
     
     def get_frame_data(self, frame_number: int, match_id: str = 1886347):
         df_dict = self.load_data(match_id)

@@ -23,7 +23,7 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
   const [matchData, setMatchData] = useState<MatchData | null>(null)
   const [keyMomentsData, setKeyMomentsData] = useState<KeyMomentsData | null>(null)
   const [eventsData, setEventsData] = useState<Map<number, Event[]>>(new Map()) // State to hold events data
-  const [episodeRange, setEpisodeRange] = useState({ start: 18000, end: 18250 })
+  const [episodeRange, setEpisodeRange] = useState({ start: 10, end: 1000 })
   const [currentFrame, setCurrentFrame] = useState(episodeRange.start)
   const [currentFrameData, setCurrentFrameData] = useState<FrameData | null>(null)
   const [isFetching, setIsFetching] = useState(false) // Track if data is being fetched

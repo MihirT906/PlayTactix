@@ -10,6 +10,7 @@ type FrameRequestResult = {
 export default class DataManager {
   private buffer: Map<number, FrameData> = new Map()
   private bufferLimit = 5000
+  private missingFrames: Set<number> = new Set() // Track missing frames to avoid repeated fetch attempts
 
   constructor() {
     console.log('DataManager initialized with empty buffer')
@@ -21,9 +22,18 @@ export default class DataManager {
     // console.log('Chunk not cached, fetching from server...')
     try {
       const response = await fetch(`http://localhost:8000/data/frames?start=${start}&end=${end}`)
-      const data = await response.json()
+      const ret = await response.json()
+      const data = ret['frames']
+      const missingFrames = ret['missing_frames']
+      
       Object.entries(data).forEach(([frame, frameData]) => {
-        this.buffer.set(Number(frame), frameData as FrameData)
+        const frameNumber = Number(frame)
+        this.buffer.set(frameNumber, frameData as FrameData)
+        this.missingFrames.delete(frameNumber)
+      })
+
+      missingFrames.forEach((frame: number) => {
+        this.missingFrames.add(frame)
       })
       
       // Evict old chunks if cache exceeds the limit
@@ -57,6 +67,7 @@ export default class DataManager {
 
   async getFrameData(frame: number): Promise<FrameRequestResult> {
     console.log(`getFrameData called for frame: ${frame}`);
+    
     if (this.buffer.has(frame)) {
       console.log(`Frame ${frame} found in buffer`);
       return { 
@@ -64,35 +75,45 @@ export default class DataManager {
         didLoadChunk: false, 
         newChunkRange: null
       };
-    } else {
-      // const start = Math.floor((frame - 1) / CHUNK_SIZE) * CHUNK_SIZE + 1;
-      const start = frame;
-      const end = start + CHUNK_SIZE;
-      let retries = 0;
-      while (retries < 3) {
-        try {
-          await this.fetchChunk(start, end);
-          if (this.buffer.has(frame)) {
-            console.log(`Frame ${frame} successfully fetched after ${retries + 1} attempt(s)`);
-            return { 
-              frameData: this.buffer.get(frame)!, 
-              didLoadChunk: true, 
-              newChunkRange: {start, end}
-            };
-          }
-        } catch (error) {
-          console.error(`Attempt ${retries + 1} failed to fetch chunk:`, error);
-        }
-        retries++;
-      }
+    }
 
-      console.warn(`Frame ${frame} not found in buffer after 3 retries`);
+    if (this.missingFrames.has(frame)) {
+      console.warn(`Frame ${frame} is known to be missing, skipping fetch attempt`);
       return {
         frameData: null,
         didLoadChunk: false,
         newChunkRange: null
       };
     }
+
+    const start = frame;
+    const end = start + CHUNK_SIZE;
+    let retries = 0;
+    
+    while (retries < 3) {
+      try {
+        await this.fetchChunk(start, end);
+          
+        if (this.buffer.has(frame)) {
+          console.log(`Frame ${frame} successfully fetched after ${retries + 1} attempt(s)`);
+          return { 
+            frameData: this.buffer.get(frame)!, 
+            didLoadChunk: true, 
+            newChunkRange: {start, end}
+          };
+        }
+      } catch (error) {
+        console.error(`Attempt ${retries + 1} failed to fetch chunk:`, error);
+      }
+      retries++;
+    } 
+
+    console.warn(`Frame ${frame} not found in buffer after 3 retries`);
+    return {
+      frameData: null,
+      didLoadChunk: false,
+      newChunkRange: null
+    };
   }
 
   getEventData(start: number, end: number): Map<number, Event[]> {

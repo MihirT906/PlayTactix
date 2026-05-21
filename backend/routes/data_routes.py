@@ -1,6 +1,7 @@
 import json
 from fastapi import APIRouter, HTTPException, Query
 from services.data_ingestor_github import SkillCornerDataIngestor
+from services.frame_data_service import FrameDataService
 
 router = APIRouter(prefix="/data", tags=["frames"])
 
@@ -33,13 +34,16 @@ async def download_match_data(match_id: int):
 @router.get("/frames")
 async def get_frame_data(start: int = Query(1), end: int = Query(50)):
     try:
-        with open(f"../data/gold_tracking_data.json", "r") as f:
-            gold_tracking_data = json.load(f)
+        # with open(f"../data/gold_tracking_data.json", "r") as f:
+        #     gold_tracking_data = json.load(f)
         
-        frames = gold_tracking_data['frames']
-        filtered_frames = {frame_num: frames[str(frame_num)] for frame_num in range(start, end + 1) if str(frame_num) in frames}
+        # frames = gold_tracking_data['frames']
+        # filtered_frames = {frame_num: frames[str(frame_num)] for frame_num in range(start, end + 1) if str(frame_num) in frames}
 
-        return filtered_frames
+        # return filtered_frames
+        frame_data_service = FrameDataService()
+        ret = frame_data_service.get_frames(match_id=1886347, start=start, end=end)
+        return ret
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

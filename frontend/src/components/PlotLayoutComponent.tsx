@@ -50,13 +50,13 @@ function PlotLayoutComponent({
         annotationStore={annotationStore}
         onAnnotationUpdate={onAnnotationUpdate}
       />
-      <EventDisplayComponent
+      {/* <EventDisplayComponent
         eventsData={eventsData}
         scaleStart={episodeRange.start}
         scaleEnd={episodeRange.end}
         currentFrame={currentFrame}
         matchData={matchData}
-      />
+      /> */}
     </>
   )
 }

@@ -1,23 +1,15 @@
 import pandas as pd
-# from .data_ingestor_github import SkillCornerDataIngestor
 
 class FrameDataService:
     def __init__(self):
-        # self.data_ingestor = SkillCornerDataIngestor()
         pass
 
     def get_frames(self, match_id: int, start: int, end: int) -> dict:
         
         try:
-            # bronze_tracking_data = self.data_ingestor._get_bronze_tracking_data(match_id=match_id)
-            # silver_tracking_data = self.data_ingestor._get_silver_tracking_data(bronze_tracking_data)
-            # tracking_df = silver_tracking_data.copy()
             tracking_df = pd.read_parquet("../data/silver_tracking_data.parquet")
-            
-            # bronze_meta_data = self.data_ingestor._get_bronze_meta_data(match_id=match_id)
-            # silver_meta_data = self.data_ingestor._get_silver_meta_data(bronze_meta_data)
-            # meta_df = silver_meta_data.copy()
             meta_df = pd.read_parquet("../data/silver_meta_data.parquet")
+            events_df = pd.read_parquet("../data/silver_event_data.parquet")
             
             final_df = tracking_df.merge(meta_df, left_on=["player_id"], right_on=["id"])
             
@@ -31,16 +23,15 @@ class FrameDataService:
             # if frame_series.empty:
             #     return {"error": "No valid frame values found."}
 
-            min_frame = max(start, int(frame_series.min()))
-            max_frame = min(end, int(frame_series.max()))
-            
-            print("min_frame:", min_frame)
-            print("max_frame:", max_frame)
             silver_groups = {
                 int(frame_number): group
                 for frame_number, group in final_df.groupby("frame")
             }
             
+            
+            event_idx = 0
+            n_events = len(events_df)
+            active_events = []
             missing_frames = []
             frames = {}
             for frame_number in range(start, end + 1):
@@ -100,6 +91,17 @@ class FrameDataService:
                         'events': []
                     }
             
+                    # Adding event data
+                    while event_idx < n_events and events_df.iloc[event_idx]["frame_start"] <= frame_number:
+                        active_events.append(events_df.iloc[event_idx].to_dict())
+                        event_idx += 1
+
+                    active_events = [
+                        event for event in active_events
+                        if event["frame_start"] <= frame_number <= event["frame_end"]
+                    ]
+
+                    frames[frame_number]["events"] = list(active_events)
             
             return {
                 "requested_start": start,

@@ -161,93 +161,93 @@ class SkillCornerDataIngestor:
         players_df = players_df[columns_to_keep]
         return players_df
         
-    def _get_gold_tracking_data(self, silver_tracking_data, silver_meta_data, silver_event_data=None):
-        silver_tracking_data = silver_tracking_data.merge(
-            silver_meta_data, left_on=["player_id"], right_on=["id"]
-        )
+    # def _get_gold_tracking_data(self, silver_tracking_data, silver_meta_data, silver_event_data=None):
+    #     silver_tracking_data = silver_tracking_data.merge(
+    #         silver_meta_data, left_on=["player_id"], right_on=["id"]
+    #     )
 
-        silver_groups = {
-            int(frame_number): group
-            for frame_number, group in silver_tracking_data.groupby("frame")
-        }
+    #     silver_groups = {
+    #         int(frame_number): group
+    #         for frame_number, group in silver_tracking_data.groupby("frame")
+    #     }
 
-        min_frame = int(silver_tracking_data["frame"].min())
-        max_frame = int(silver_tracking_data["frame"].max())
+    #     min_frame = int(silver_tracking_data["frame"].min())
+    #     max_frame = int(silver_tracking_data["frame"].max())
         
-        if silver_event_data is not None:
-            events = silver_event_data.sort_values("frame_start").to_dict("records")
-        else:
-            events = []
+    #     if silver_event_data is not None:
+    #         events = silver_event_data.sort_values("frame_start").to_dict("records")
+    #     else:
+    #         events = []
         
-        event_idx = 0
-        n_events = len(events)
-        active_events = []
-        frames = {}
-        for frame_number in range(min_frame, max_frame + 1):
-            group = silver_groups.get(frame_number)
+    #     event_idx = 0
+    #     n_events = len(events)
+    #     active_events = []
+    #     frames = {}
+    #     for frame_number in range(min_frame, max_frame + 1):
+    #         group = silver_groups.get(frame_number)
             
-            # Adding tracking data
-            if group is None or group.empty:
-                frames[frame_number] = {
-                    'period': None,
-                    'players': {
-                        'x': [],
-                        'y': [],
-                        'player_id': [],
-                        'id': [],
-                        'short_name': [],
-                        'number': [],
-                        'team_id': [],
-                        'total_time': [],
-                        'player_role.name': [],
-                        'player_role.acronym': [],
-                        'is_gk': [],
-                        'direction_player_1st_half': [],
-                        'direction_player_2nd_half': [],
-                    },
-                    'ball': {
-                        'ball_x': None,
-                        'ball_y': None,
-                        'ball_z': None,
-                    },
-                    'events': []
-                }
-            else:
-                frames[frame_number] = {
-                    'period': group['period'].iloc[0],
-                    'players': {
-                        'x': group['x'].tolist(),
-                        'y': group['y'].tolist(),
-                        'player_id': group['player_id'].tolist(),
-                        'id': group['id'].tolist(),
-                        'short_name': group['short_name'].tolist(),
-                        'number': group['number'].tolist(),
-                        'team_id': group['team_id'].tolist(),
-                        'total_time': group['total_time'].tolist(),
-                        'player_role.name': group['player_role.name'].tolist(),
-                        'player_role.acronym': group['player_role.acronym'].tolist(),
-                        'is_gk': group['is_gk'].tolist(),
-                        'direction_player_1st_half': group['direction_player_1st_half'].tolist(),
-                        'direction_player_2nd_half': group['direction_player_2nd_half'].tolist(),
-                    },
-                    'ball': {
-                        'ball_x': group['ball_x'].iloc[0],
-                        'ball_y': group['ball_y'].iloc[0],
-                        'ball_z': group['ball_z'].iloc[0],
-                    },
-                    'events': []
-                }
+    #         # Adding tracking data
+    #         if group is None or group.empty:
+    #             frames[frame_number] = {
+    #                 'period': None,
+    #                 'players': {
+    #                     'x': [],
+    #                     'y': [],
+    #                     'player_id': [],
+    #                     'id': [],
+    #                     'short_name': [],
+    #                     'number': [],
+    #                     'team_id': [],
+    #                     'total_time': [],
+    #                     'player_role.name': [],
+    #                     'player_role.acronym': [],
+    #                     'is_gk': [],
+    #                     'direction_player_1st_half': [],
+    #                     'direction_player_2nd_half': [],
+    #                 },
+    #                 'ball': {
+    #                     'ball_x': None,
+    #                     'ball_y': None,
+    #                     'ball_z': None,
+    #                 },
+    #                 'events': []
+    #             }
+    #         else:
+    #             frames[frame_number] = {
+    #                 'period': group['period'].iloc[0],
+    #                 'players': {
+    #                     'x': group['x'].tolist(),
+    #                     'y': group['y'].tolist(),
+    #                     'player_id': group['player_id'].tolist(),
+    #                     'id': group['id'].tolist(),
+    #                     'short_name': group['short_name'].tolist(),
+    #                     'number': group['number'].tolist(),
+    #                     'team_id': group['team_id'].tolist(),
+    #                     'total_time': group['total_time'].tolist(),
+    #                     'player_role.name': group['player_role.name'].tolist(),
+    #                     'player_role.acronym': group['player_role.acronym'].tolist(),
+    #                     'is_gk': group['is_gk'].tolist(),
+    #                     'direction_player_1st_half': group['direction_player_1st_half'].tolist(),
+    #                     'direction_player_2nd_half': group['direction_player_2nd_half'].tolist(),
+    #                 },
+    #                 'ball': {
+    #                     'ball_x': group['ball_x'].iloc[0],
+    #                     'ball_y': group['ball_y'].iloc[0],
+    #                     'ball_z': group['ball_z'].iloc[0],
+    #                 },
+    #                 'events': []
+    #             }
             
-            # # Adding event data
-            while event_idx < n_events and events[event_idx]['frame_start'] <= frame_number:
-                active_events.append(events[event_idx])
-                event_idx += 1
+    #         # # Adding event data
+    #         while event_idx < n_events and events[event_idx]['frame_start'] <= frame_number:
+    #             active_events.append(events[event_idx])
+    #             event_idx += 1
             
-            active_events = [e for e in active_events if e['frame_start'] <= frame_number <= e['frame_end']]
+    #         active_events = [e for e in active_events if e['frame_start'] <= frame_number <= e['frame_end']]
             
-            frames[frame_number]['events'] = active_events
+    #         frames[frame_number]['events'] = active_events
             
-        return frames
+    #     return frames
 
     def _get_bronze_event_data(self, match_id) -> pd.DataFrame:
         event_data_github_url = f"https://raw.githubusercontent.com/SkillCorner/opendata/refs/heads/master/data/matches/{match_id}/{match_id}_dynamic_events.csv"
@@ -349,16 +349,6 @@ class SkillCornerDataIngestor:
         # gold_tracking_data = self._get_gold_tracking_data(silver_tracking_data, silver_meta_data, silver_event_data)
         key_moments = self._get_key_moments(bronze_event_data)
         
-        # final_data = {
-        #     'match': bronze_meta_data,
-        #     'frames': gold_tracking_data,
-        #     'key_moments': key_moments
-        # }
-        
-        
-        # with open(f"../data/gold_tracking_data.json", "w") as f:
-        #     json.dump(final_data, f)
-        
         silver_tracking_data.to_parquet(
             "../data/silver_tracking_data.parquet",
             engine="pyarrow",
@@ -367,6 +357,12 @@ class SkillCornerDataIngestor:
         
         silver_meta_data.to_parquet(
             "../data/silver_meta_data.parquet",
+            engine="pyarrow",
+            index=False,
+        )
+        
+        silver_event_data.to_parquet(
+            "../data/silver_event_data.parquet",
             engine="pyarrow",
             index=False,
         )

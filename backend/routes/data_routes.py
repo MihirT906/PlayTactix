@@ -18,12 +18,6 @@ async def hello():
 @router.get("/match/{match_id}")
 async def download_match_data(match_id: int):
     try:
-        # with open("../data/gold_tracking_data.json", "r") as f:
-        #     gold_tracking_data = json.load(f)
-
-        # if gold_tracking_data.get("match", {}).get("id") == match_id:
-        #     return {"message": f"Data for match {match_id} already exists in gold_tracking_data.json"}
-
         sc_data_ingestor = SkillCornerDataIngestor()
         sc_data_ingestor.load_data(match_id)
         
@@ -34,13 +28,6 @@ async def download_match_data(match_id: int):
 @router.get("/frames")
 async def get_frame_data(start: int = Query(1), end: int = Query(50)):
     try:
-        # with open(f"../data/gold_tracking_data.json", "r") as f:
-        #     gold_tracking_data = json.load(f)
-        
-        # frames = gold_tracking_data['frames']
-        # filtered_frames = {frame_num: frames[str(frame_num)] for frame_num in range(start, end + 1) if str(frame_num) in frames}
-
-        # return filtered_frames
         frame_data_service = FrameDataService()
         ret = frame_data_service.get_frames(match_id=1886347, start=start, end=end)
         return ret
@@ -51,12 +38,9 @@ async def get_frame_data(start: int = Query(1), end: int = Query(50)):
 @router.get("/match_meta")
 async def get_match_meta_data():
     try:
-        with open(f"../data/gold_tracking_data.json", "r") as f:
-            gold_tracking_data = json.load(f)
-        
-        match_meta_data = gold_tracking_data.get('match', {})
-
-        return match_meta_data
+        frame_data_service = FrameDataService()
+        ret = frame_data_service.get_metadata(match_id=1886347)
+        return ret["data"]
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

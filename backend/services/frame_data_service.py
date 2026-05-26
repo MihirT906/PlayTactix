@@ -1,17 +1,34 @@
+import json
+
 import pandas as pd
 
 class FrameDataService:
     def __init__(self):
         pass
+    
+    def get_metadata(self, match_id: int) -> dict:
+        try:
+            with open(f"../data/gold_tracking_data.json", "r") as f:
+                meta_data = json.load(f)
+            
+            return {
+                "requested_match_id": match_id,
+                "data": meta_data.get('match', {})
+            }
+        except Exception as e:
+            print(f"Error reading gold_tracking_data.json: {e}")
+            return {"error": "Failed to read gold_tracking_data.json."}
+        
 
     def get_frames(self, match_id: int, start: int, end: int) -> dict:
         
         try:
             tracking_df = pd.read_parquet("../data/silver_tracking_data.parquet")
-            meta_df = pd.read_parquet("../data/silver_meta_data.parquet")
+            # meta_df = pd.read_parquet("../data/silver_meta_data.parquet")
             events_df = pd.read_parquet("../data/silver_event_data.parquet")
             
-            final_df = tracking_df.merge(meta_df, left_on=["player_id"], right_on=["id"])
+            # final_df = tracking_df.merge(meta_df, left_on=["player_id"], right_on=["id"])
+            final_df = tracking_df
             
             #filter the df from start to end using the frame column
             final_df = final_df[(final_df["frame"] >= start) & (final_df["frame"] <= end)]
@@ -104,6 +121,7 @@ class FrameDataService:
                     frames[frame_number]["events"] = list(active_events)
             
             return {
+                "requested_match_id": match_id,
                 "requested_start": start,
                 "requested_end": end,
                 "frames": frames,

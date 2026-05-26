@@ -56,7 +56,7 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
       if (result.didLoadChunk) {
         setChunkRange(result.newChunkRange || { start: 0, end: 0 })
         console.log('Updating chunk range in App component:', result.newChunkRange)
-        setEventsData(dataManager.getEventData(episodeRange.start || 0, episodeRange.end || 0))
+        setEventsData(dataManager.getEventData(result.newChunkRange?.start || 0, result.newChunkRange?.end || 0))
       }
 
       setIsFetching(false) // Set fetching flag to false

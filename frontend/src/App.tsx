@@ -120,9 +120,7 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
       <div className="app-shell">
         <header className="app-header">
           <div className="app-title-group">
-            <Link to="/" className="home-icon" aria-label="Go to home screen">
-              <FaHome aria-hidden="true" />
-            </Link>
+            <span className="app-kicker">Match Workspace</span>
             <h1 className="app-title">{APP_CONFIG.brand.title}</h1>
           </div>
           {/* <div className="frame-status">Frame {currentFrame} / 50</div> */}
@@ -132,16 +130,29 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
 
         <div className={`app-container ${isSettingsOpen ? 'app-container--settings-open' : ''}`}>
           <aside className={`left-panel settings-sidebar ${isSettingsOpen ? 'is-open' : ''}`} aria-label="Settings sidebar">
-            <button
-              type="button"
-              className={`settings-sidebar-toggle ${isSettingsOpen ? 'is-active' : ''}`}
-              onClick={() => setIsSettingsOpen((value) => !value)}
-              aria-expanded={isSettingsOpen}
-              aria-controls="settings-sidebar-panel"
-              aria-label={isSettingsOpen ? 'Close settings panel' : 'Open settings panel'}
-            >
-              <FaCog aria-hidden="true" />
-            </button>
+            <div className="settings-sidebar-rail">
+              <div className="settings-sidebar-rail-header">
+                <span className="settings-sidebar-rail-kicker">Navigation</span>
+                <span className="settings-sidebar-rail-title">Workspace</span>
+              </div>
+              <nav className="settings-sidebar-nav" aria-label="Primary workspace actions">
+                <Link to="/" className="settings-sidebar-toggle" aria-label="Go to home screen">
+                  <FaHome aria-hidden="true" />
+                  <span>Home</span>
+                </Link>
+                <button
+                  type="button"
+                  className={`settings-sidebar-toggle ${isSettingsOpen ? 'is-active' : ''}`}
+                  onClick={() => setIsSettingsOpen((value) => !value)}
+                  aria-expanded={isSettingsOpen}
+                  aria-controls="settings-sidebar-panel"
+                  aria-label={isSettingsOpen ? 'Close settings panel' : 'Open settings panel'}
+                >
+                  <FaCog aria-hidden="true" />
+                  <span>Settings</span>
+                </button>
+              </nav>
+            </div>
             {isSettingsOpen ? (
               <div id="settings-sidebar-panel" className="settings-sidebar-panel">
                 <Settings matchData={matchData} />

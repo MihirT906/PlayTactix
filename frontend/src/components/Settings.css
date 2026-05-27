@@ -1,7 +1,7 @@
 .settings-display {
     min-height: 600px;
     width: 100%;
-    max-width: 320px;
+    max-width: none;
     background: var(--match-section-background);
     border-top: var(--match-section-border-top);
     border-bottom: var(--match-section-border-bottom);

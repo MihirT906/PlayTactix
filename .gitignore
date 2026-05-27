@@ -17,6 +17,7 @@ out/
 .vscode/
 .idea/
 .github/
+tests/
 
 # OS
 .DS_Store

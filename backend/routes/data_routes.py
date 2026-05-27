@@ -1,5 +1,12 @@
 import json
+from pathlib import Path
 from fastapi import APIRouter, HTTPException, Query
+
+try:
+    from backend.paths import DATA_DIR
+except ModuleNotFoundError:
+    DATA_DIR = Path(__file__).resolve().parents[2] / "data"
+
 from services.data_ingestor_github import SkillCornerDataIngestor
 from services.frame_data_service import FrameDataService
 
@@ -48,7 +55,7 @@ async def get_match_meta_data():
 @router.get("/match_key_moments")
 async def get_match_key_moments():
     try:
-        with open(f"../data/gold_tracking_data.json", "r") as f:
+        with (DATA_DIR / "gold_tracking_data.json").open("r") as f:
             gold_tracking_data = json.load(f)
         
         key_moments = gold_tracking_data.get('key_moments', {})

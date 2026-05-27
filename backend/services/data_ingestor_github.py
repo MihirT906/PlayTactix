@@ -1,16 +1,23 @@
 import json
+from pathlib import Path
 
 import pandas as pd
 import numpy as np
 from typing import Dict
 import requests
 
+try:
+    from backend.paths import DATA_DIR
+except ModuleNotFoundError:
+    DATA_DIR = Path(__file__).resolve().parents[2] / "data"
+
 class SkillCornerDataIngestor:
     def __init__(self):
-        pass
-        # Get the absolute path to the backend directory
-        # backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        # self.csv_path = os.path.join(backend_dir, "..", "data", DATA_FILE_NAME)
+        self.data_dir = DATA_DIR
+        self.data_dir.mkdir(parents=True, exist_ok=True)
+
+    def _data_path(self, filename: str) -> Path:
+        return self.data_dir / filename
     
     def _time_to_seconds(self, time_str) -> int:
         """Convert time string in HH:MM:SS format to total seconds."""
@@ -351,21 +358,21 @@ class SkillCornerDataIngestor:
         enriched_tracking_data = silver_tracking_data.merge(silver_meta_data, left_on=["player_id"], right_on=["id"])
         
         enriched_tracking_data.to_parquet(
-            "../data/silver_tracking_data.parquet",
+            self._data_path("silver_tracking_data.parquet"),
             engine="pyarrow",
             index=False,
         )
         
-        with open("../data/bronze_meta_data.json", "w") as f:
+        with self._data_path("bronze_meta_data.json").open("w") as f:
             json.dump(bronze_meta_data, f)
         # silver_meta_data.to_parquet(
-        #     "../data/silver_meta_data.parquet",
+        #     self._data_path("silver_meta_data.parquet"),
         #     engine="pyarrow",
         #     index=False,
         # )
         
         silver_event_data.to_parquet(
-            "../data/silver_event_data.parquet",
+            self._data_path("silver_event_data.parquet"),
             engine="pyarrow",
             index=False,
         )

@@ -1,14 +1,23 @@
 import json
+from pathlib import Path
 
 import pandas as pd
 
+try:
+    from backend.paths import DATA_DIR
+except ModuleNotFoundError:
+    DATA_DIR = Path(__file__).resolve().parents[2] / "data"
+
 class FrameDataService:
     def __init__(self):
-        pass
+        self.data_dir = DATA_DIR
+
+    def _data_path(self, filename: str):
+        return self.data_dir / filename
     
     def get_metadata(self, match_id: int) -> dict:
         try:
-            with open(f"../data/gold_tracking_data.json", "r") as f:
+            with self._data_path("gold_tracking_data.json").open("r") as f:
                 meta_data = json.load(f)
             
             return {
@@ -23,9 +32,9 @@ class FrameDataService:
     def get_frames(self, match_id: int, start: int, end: int) -> dict:
         
         try:
-            tracking_df = pd.read_parquet("../data/silver_tracking_data.parquet")
-            # meta_df = pd.read_parquet("../data/silver_meta_data.parquet")
-            events_df = pd.read_parquet("../data/silver_event_data.parquet")
+            tracking_df = pd.read_parquet(self._data_path("silver_tracking_data.parquet"))
+            # meta_df = pd.read_parquet(self._data_path("silver_meta_data.parquet"))
+            events_df = pd.read_parquet(self._data_path("silver_event_data.parquet"))
             
             # final_df = tracking_df.merge(meta_df, left_on=["player_id"], right_on=["id"])
             final_df = tracking_df

@@ -1,5 +1,6 @@
 import type { MatchData } from '../types/MatchDataInterfaces';
 import './MatchDetailsDisplay.css'
+import type { CSSProperties } from 'react';
 import { useEffect } from 'react';
 import { APP_CONFIG, THEME_CSS_VARIABLES } from '../config'
 import { useStyleConfig } from '../context/StyleConfigContext';
@@ -26,19 +27,21 @@ const MatchDetailsDisplay = ({ matchData }: { matchData: MatchData | null }) => 
         year: 'numeric',
     }).format(new Date(matchData.date_time));
 
-    const renderScorers = (scorers: typeof homeScorers, accentClass: string) => (
+    const venueText = `${matchData.stadium.name}, ${matchData.stadium.city}`;
+    const matchHeadline = `${matchData.competition_edition.name} ${matchData.competition_round.name}`;
+
+    const renderScorers = (scorers: typeof homeScorers, accentClass: string, teamName: string) => (
         <div className={`scorers-panel ${accentClass}`}>
+            <div className="scorers-panel-header">
+                <h3>{teamName}</h3>
+            </div>
             {scorers.length > 0 ? (
                 <ul className="players-list">
                     {scorers.map((player) => (
                         <li key={player.id} className="player-item">
-                            <div className="player-meta">
-                                <span className="player-name">
-                                    {player.first_name} {player.last_name}
-                                </span>
-                                <span className="player-role">#{player.number} {player.player_role.acronym}</span>
-                            </div>
-                            <span className="goal-count">{player.goal}x</span>
+                            <span className="player-name" title={`${player.first_name} ${player.last_name}`}>
+                                {player.first_name} {player.last_name}
+                            </span>
                         </li>
                     ))}
                 </ul>
@@ -68,40 +71,54 @@ const MatchDetailsDisplay = ({ matchData }: { matchData: MatchData | null }) => 
                             inset 0 0 0 0 transparent,
                             0 4px 12px rgba(0,0,0,0.08)
                             `
-            } as React.CSSProperties}>
-            <div className="team-row">
-                <div className="team-column team-home-column">
-                    {renderScorers(homeScorers, 'home')}
-                </div>
-                <div className="match-summary">
-                    <div className="team team-home">
-                        <div className="team-shirt left">
-                            <svg viewBox="0 0 64 64">
-                                <path d="M20 6 L28 10 H36 L44 6 L54 16 L48 24 V54 H16 V24 L10 16 Z" />
-                            </svg>
+            } as CSSProperties}>
+            <div className="match-hero-layout">
+                <div className="match-hero-copy">
+                    {/* <div className="match-kicker">Featured Match</div> */}
+                    <div className="match-title-block">
+                        <h2 className="match-headline">{matchHeadline}</h2>
+                        <div className="match-meta" aria-label="Competition and venue details">
+                            <span>{matchDate}</span>
+                            <span className="match-meta-separator" aria-hidden="true">/</span>
+                            <span>{venueText}</span>
                         </div>
-                        <span className="team-name">{matchData.home_team.short_name}</span>
                     </div>
-                    <div className="details"> 
-                        <span className="competition-name">
-                            {matchData.competition_edition.name}
-                        </span>
-                        <span className="vs">{matchData.home_team_score} - {matchData.away_team_score}</span>
-                        <span className="match-round">{matchData.competition_round.name}</span>
-                        <span className="venue">{matchDate}</span>
-                        <span className="venue">{matchData.stadium.name}, {matchData.stadium.city}</span>
-                    </div>
-                    <div className="team team-away">
-                        <div className="team-shirt right">
-                            <svg viewBox="0 0 64 64">
-                                <path d="M20 6 L28 10 H36 L44 6 L54 16 L48 24 V54 H16 V24 L10 16 Z" />
-                            </svg>
+                    <div className="match-teams-showcase">
+                        <div className="team-spotlight team-home">
+                            <div className="team-shirt-shell left">
+                                <div className="team-copy">
+                                    <span className="team-label">Home</span>
+                                    <span className="team-name">{matchData.home_team.short_name}</span>
+                                </div>
+                                <div className="team-shirt left" aria-hidden="true">
+                                    <svg viewBox="0 0 64 64">
+                                        <path d="M20 6 L28 10 H36 L44 6 L54 16 L48 24 V54 H16 V24 L10 16 Z" />
+                                    </svg>
+                                </div>
+                            </div>
                         </div>
-                        <span className="team-name">{matchData.away_team.short_name}</span>
+                        <div className="score-block" aria-label="Final score">
+                            <span className="score-total">{matchData.home_team_score} - {matchData.away_team_score}</span>
+                            <span className="score-caption">Full time</span>
+                        </div>
+                        <div className="team-spotlight team-away">
+                            <div className="team-shirt-shell right">
+                                <div className="team-shirt right" aria-hidden="true">
+                                    <svg viewBox="0 0 64 64">
+                                        <path d="M20 6 L28 10 H36 L44 6 L54 16 L48 24 V54 H16 V24 L10 16 Z" />
+                                    </svg>
+                                </div>
+                                <div className="team-copy">
+                                    <span className="team-label">Away</span>
+                                    <span className="team-name">{matchData.away_team.short_name}</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div className="team-column team-away-column">
-                    {renderScorers(awayScorers, 'away')}
+                <div className="match-hero-sidebars" aria-label="Goal scorers">
+                    {renderScorers(homeScorers, 'home', matchData.home_team.short_name)}
+                    {renderScorers(awayScorers, 'away', matchData.away_team.short_name)}
                 </div>
             </div>
         </div>

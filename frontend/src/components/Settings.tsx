@@ -74,7 +74,12 @@ const Settings: React.FC<{ matchData: MatchData | null }> = ({ matchData }) => {
 
     return (
         <div className="settings-display">
+            <div className="settings-display-header">
+                <span className="settings-kicker">Style Controls</span>
+                <h3>Settings</h3>
+            </div>
             <div className="settings-box settings-box--flat">
+                <div className="settings-section-heading">Teams & Events</div>
                 <SettingsRow label={`Home Team (${matchData?.home_team?.acronym ?? 'Home Team'})`} color={homeTeamColor} visible={teamVisibility.home} onChange={setHomeTeamColor} onToggleVisibility={(visible) => setTeamVisibility('home', visible)} />
                 <SettingsRow label={`Away Team (${matchData?.away_team?.acronym ?? 'Away Team'})`} color={awayTeamColor} visible={teamVisibility.away} onChange={setAwayTeamColor} onToggleVisibility={(visible) => setTeamVisibility('away', visible)} />
                 <SettingsRow label={'Player Possession'} color={eventStyles.playerPossession.color} visible={eventVisibility.playerPossession} onChange={(color) => setEventStyleColor('playerPossession', color)} onToggleVisibility={(visible) => setEventVisibility('playerPossession', visible)}/>
@@ -84,6 +89,7 @@ const Settings: React.FC<{ matchData: MatchData | null }> = ({ matchData }) => {
 
             </div>
             <div className="settings-box settings-box--flat">
+                <div className="settings-section-heading">Overlays</div>
                 <SettingsRow label={'Passing Network'} color={null} visible={overlayVisibility.passing_network} onChange={setHomeTeamColor} onToggleVisibility={(visible) => setOverlayVisibility('passing_network', visible)} />
 
             </div>

@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react'
 import './App.css'
 import DataManager from './services/DataManager'
 import AnnotationStore from './services/AnnotationStore-optimized'
-import { APP_CONFIG, CHUNK_SIZE, SLEEP_INTERVAL, THEME_CSS_VARIABLES } from './config'
-import { data, Link } from 'react-router-dom';
-import { FaHome } from 'react-icons/fa';
+import { APP_CONFIG, SLEEP_INTERVAL, THEME_CSS_VARIABLES } from './config'
+import { Link } from 'react-router-dom';
+import { FaCog, FaHome } from 'react-icons/fa';
 import type { MatchData } from './types/MatchDataInterfaces';
 import type { FrameData, Event } from './types/FrameDataInterfaces'
 import type { KeyMomentsData } from './types/KeyMomentsDataInterfaces'
@@ -13,7 +13,6 @@ import { StyleConfigProvider } from './context/StyleConfigContext'
 import PlotLayoutComponent from './components/PlotLayoutComponent'
 import KeyMomentFinderComponent from './components/KeyMomentFinderComponent'
 import Settings from './components/Settings'
-import AnnotationDisplay from './components/AnnotationDisplay'
 
 type MainContentView = 'plot' | 'keyMoments'
 
@@ -28,7 +27,8 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
   const [currentFrameData, setCurrentFrameData] = useState<FrameData | null>(null)
   const [isFetching, setIsFetching] = useState(false) // Track if data is being fetched
   const [annotationUpdateEvent, setAnnotationUpdateEvent] = useState(false)
-  const [mainContentView, setMainContentView] = useState<MainContentView>('plot')
+  const [mainContentView] = useState<MainContentView>('plot')
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
   useEffect(() => {
     const root = document.documentElement
@@ -130,12 +130,26 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
         
         <MatchDetailsDisplay matchData={matchData!} />
 
-        <div className="app-container">
-          <div className="left-panel">
-            <Settings matchData={matchData!}/>
-          </div>
+        <div className={`app-container ${isSettingsOpen ? 'app-container--settings-open' : ''}`}>
+          <aside className={`left-panel settings-sidebar ${isSettingsOpen ? 'is-open' : ''}`} aria-label="Settings sidebar">
+            <button
+              type="button"
+              className={`settings-sidebar-toggle ${isSettingsOpen ? 'is-active' : ''}`}
+              onClick={() => setIsSettingsOpen((value) => !value)}
+              aria-expanded={isSettingsOpen}
+              aria-controls="settings-sidebar-panel"
+              aria-label={isSettingsOpen ? 'Close settings panel' : 'Open settings panel'}
+            >
+              <FaCog aria-hidden="true" />
+            </button>
+            {isSettingsOpen ? (
+              <div id="settings-sidebar-panel" className="settings-sidebar-panel">
+                <Settings matchData={matchData} />
+              </div>
+            ) : null}
+          </aside>
           <div className="main-content">
-            <div className="main-content-toggle" role="tablist" aria-label="Main content view switcher">
+            {/* <div className="main-content-toggle" role="tablist" aria-label="Main content view switcher">
               <button
                 type="button"
                 className={`main-content-toggle-button ${mainContentView === 'plot' ? 'is-active' : ''}`}
@@ -152,7 +166,7 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
               >
                 Key Moment Finder
               </button>
-            </div>
+            </div> */}
             {mainContentView === 'plot' ? (
               <div style={{ width: '100%' }}>
                 <PlotLayoutComponent
@@ -174,9 +188,9 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
               <KeyMomentFinderComponent episodeRange={episodeRange} onAddCustomEpisodeRange={addCustomEpisodeRange} keyMomentsData={keyMomentsData} />
             )}
           </div>
-          <div className="right-panel">
+          {/* <div className="right-panel">
             <AnnotationDisplay annotationStore={annotationStore} currentFrame={currentFrame} annotationUpdateEvent={annotationUpdateEvent} />
-          </div>
+          </div> */}
         </div>
       </div>
     </StyleConfigProvider>

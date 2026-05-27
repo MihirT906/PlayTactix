@@ -1,6 +1,6 @@
 .PlotComponent {
-  width: 600px; /* Fixed width */
-  height: 400px; /* Fixed height */
+  width: 900px; /* Match the Plotly layout width */
+  height: 620px; /* Match the Plotly layout height */
   display: block; /* Ensure it behaves as a block-level element */
 }
 

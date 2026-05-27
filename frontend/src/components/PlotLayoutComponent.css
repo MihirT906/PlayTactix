@@ -1,0 +1,12 @@
+.plot-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.plot-layout__plot {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}

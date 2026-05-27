@@ -1,3 +1,4 @@
+import './PlotLayoutComponent.css'
 import Controls from './Controls'
 import PlotComponent from './PlotComponent'
 import type { MatchData } from '../types/MatchDataInterfaces'
@@ -33,7 +34,7 @@ function PlotLayoutComponent({
   onAnnotationUpdate,
 }: PlotLayoutComponentProps) {
   return (
-    <>
+    <div className="plot-layout">
       <Controls
         isPlaying={isPlaying}
         onPlayPause={onPlayPause}
@@ -43,13 +44,16 @@ function PlotLayoutComponent({
         chunkRange={chunkRange}
         annotationStore={annotationStore}
       />
-      <PlotComponent
-        currentFrame={currentFrame}
-        matchData={matchData}
-        frameData={frameData}
-        annotationStore={annotationStore}
-        onAnnotationUpdate={onAnnotationUpdate}
-      />
+      <div className="plot-layout__plot">
+        <PlotComponent
+          currentFrame={currentFrame}
+          matchData={matchData}
+          frameData={frameData}
+          annotationStore={annotationStore}
+          onAnnotationUpdate={onAnnotationUpdate}
+        />
+      </div>
+
       <EventDisplayComponent
         eventsData={eventsData}
         scaleStart={episodeRange.start}
@@ -57,7 +61,7 @@ function PlotLayoutComponent({
         currentFrame={currentFrame}
         matchData={matchData}
       />
-    </>
+    </div>
   )
 }
 

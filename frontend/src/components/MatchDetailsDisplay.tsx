@@ -66,11 +66,6 @@ const MatchDetailsDisplay = ({ matchData }: { matchData: MatchData | null }) => 
             style={{
                 "--home-color": homeTeamColor,
                 "--away-color": awayTeamColor,
-
-                boxShadow: `
-                            inset 0 0 0 0 transparent,
-                            0 4px 12px rgba(0,0,0,0.08)
-                            `
             } as CSSProperties}>
             <div className="match-hero-layout">
                 <div className="match-hero-copy">

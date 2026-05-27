@@ -2,14 +2,31 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 20px;
+    padding: 50px;
     background: var(--app-bg-primary, #000000);
     min-height: 100vh;
 }
 
+.home-screen--embedded {
+    width: 100%;
+    min-height: auto;
+    padding: 0;
+    align-items: stretch;
+    background: transparent;
+}
+
+.home-screen--embedded .home-title {
+    margin: 0 0 20px;
+}
+
+.home-screen--embedded .match-list {
+    max-width: none;
+}
+
 .home-title {
-    font-size: 2.5rem;
-    font-weight: bold;
+    font-size: 1.8rem;
+    font-family: Avenir, Montserrat, Corbel, 'URW Gothic', source-sans-pro, sans-serif;
+    font-weight: lighter;
     color: var(--app-bg-accent, orange);
     margin-bottom: 20px;
 }

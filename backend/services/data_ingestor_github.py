@@ -365,6 +365,16 @@ class SkillCornerDataIngestor:
         
         with self._data_path("bronze_meta_data.json").open("w") as f:
             json.dump(bronze_meta_data, f)
+
+        with self._data_path("gold_tracking_data.json").open("w") as f:
+            json.dump(
+                {
+                    "match_id": match_id,
+                    "match": bronze_meta_data,
+                    "key_moments": key_moments,
+                },
+                f,
+            )
         # silver_meta_data.to_parquet(
         #     self._data_path("silver_meta_data.parquet"),
         #     engine="pyarrow",

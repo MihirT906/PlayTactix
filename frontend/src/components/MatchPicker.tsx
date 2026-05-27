@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
-import './HomeScreen.css';
+import './MatchPicker.css';
 import MatchDataManager from '../services/MatchDataManager';
-import { useNavigate } from 'react-router-dom';
 import type { MatchData } from '../types/MatchDataInterfaces';
 import { APP_CONFIG, THEME_CSS_VARIABLES } from '../config'
 
-const HomeScreen = () => {
+type MatchPickerProps = {
+    onMatchSelected: (matchId: number) => void;
+};
+
+const MatchPicker = ({ onMatchSelected }: MatchPickerProps) => {
     const [matches, setMatches] = useState<MatchData[]>([]);
     const [loading, setLoading] = useState<boolean>(false); // Added loading state
-    const navigate = useNavigate(); // Added useNavigate hook
 
     const matchDataManager = new MatchDataManager();
 
@@ -76,18 +78,17 @@ const HomeScreen = () => {
         setLoading(true);
         try {
             await matchDataManager.downloadMatchData(matchId);
-            
+            onMatchSelected(matchId);
         } catch (error) {
             console.error(`Error downloading match data for match ${matchId}:`, error);
         } finally {
-            navigate('/app'); // Navigate to /app after download
             setLoading(false);
         }
     };
 
     return (
-        <div className={`home-screen ${loading ? 'loading' : ''}`}>
-            <h1 className="home-title">Choose a game ...</h1>
+        <div className={`home-screen home-screen--embedded ${loading ? 'loading' : ''}`}>
+            <h1 className="home-title">SkillCorner OpenData Matches:</h1>
             {loading && (
                 <div className="loading-overlay">
                     <div className="spinner"></div>
@@ -137,4 +138,4 @@ const HomeScreen = () => {
     );
 };
 
-export default HomeScreen;
+export default MatchPicker;

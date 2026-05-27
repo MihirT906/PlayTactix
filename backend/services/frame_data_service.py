@@ -17,16 +17,16 @@ class FrameDataService:
     
     def get_metadata(self, match_id: int) -> dict:
         try:
-            with self._data_path("gold_tracking_data.json").open("r") as f:
+            with self._data_path("bronze_meta_data.json").open("r") as f:
                 meta_data = json.load(f)
             
             return {
                 "requested_match_id": match_id,
-                "data": meta_data.get('match', {})
+                "data": meta_data
             }
         except Exception as e:
-            print(f"Error reading gold_tracking_data.json: {e}")
-            return {"error": "Failed to read gold_tracking_data.json."}
+            print(f"Error reading bronze_meta_data.json: {e}")
+            return {"error": "Failed to read bronze_meta_data.json."}
         
 
     def get_frames(self, match_id: int, start: int, end: int) -> dict:

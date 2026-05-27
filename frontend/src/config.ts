@@ -46,8 +46,8 @@ export const APP_CONFIG = {
 		cssVariables: {
 			'--app-bg-primary': '#2C2F33',
 			'--app-bg-secondary': '#ffffff4c',
-			'--app-bg-accent': '#F27805',
-			'--app-bg-accent-light': '#f27805be',
+				'--app-bg-accent': '#f59e0b',
+				'--app-bg-accent-light': '#f59e0bbe',
 			'--app-border-color': '#000000',
 			'--app-border-radius': '12px',
 			'--app-info-font-size': '14px',

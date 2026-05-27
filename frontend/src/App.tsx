@@ -13,8 +13,10 @@ import { StyleConfigProvider } from './context/StyleConfigContext'
 import PlotLayoutComponent from './components/PlotLayoutComponent'
 import KeyMomentFinderComponent from './components/KeyMomentFinderComponent'
 import Settings from './components/Settings'
+import MatchPicker from './components/MatchPicker'
 
 type MainContentView = 'plot' | 'keyMoments'
+type AppView = 'idle' | 'picker' | 'workspace'
 
 function App({dataManager, annotationStore}: {dataManager: DataManager, annotationStore: AnnotationStore}) {
   const [isPlaying, setIsPlaying] = useState(false) // Start with paused state
@@ -29,6 +31,11 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
   const [annotationUpdateEvent, setAnnotationUpdateEvent] = useState(false)
   const [mainContentView] = useState<MainContentView>('plot')
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [appView, setAppView] = useState<AppView>('idle')
+  const [selectedMatchId, setSelectedMatchId] = useState<number | null>(null)
+
+  const isPickerView = appView === 'picker'
+  const hasSelectedGame = appView === 'workspace'
 
   useEffect(() => {
     const root = document.documentElement
@@ -42,6 +49,8 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
 
 
   useEffect(() => {
+    if (selectedMatchId === null) return
+
     const fetchFrameData = async () => {
       setIsFetching(true) // Set fetching flag to true
       const result = await dataManager.getFrameData(currentFrame)
@@ -64,9 +73,11 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
 
     fetchFrameData()
     console.log("Events data in app", eventsData)
-  }, [currentFrame])
+  }, [currentFrame, selectedMatchId])
 
   useEffect(() => {
+    if (selectedMatchId === null) return
+
     const fetchMatchData = async () => {
       const data = await dataManager.fetchMatchMetaData()
       if (data) {
@@ -77,9 +88,11 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
     }
 
     fetchMatchData()
-  }, [])
+  }, [selectedMatchId])
 
   useEffect(() => {
+    if (selectedMatchId === null) return
+
     const fetchKeyMomentsData = async () => {
       const data = await dataManager.fetchKeyMoments()
       if (data) {
@@ -90,7 +103,7 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
     }
 
     fetchKeyMomentsData()
-  }, [])
+  }, [selectedMatchId])
 
   useEffect(() => {
     if (!isPlaying || isFetching) return // Only proceed if not fetching
@@ -119,16 +132,48 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
     <StyleConfigProvider matchData={matchData}>
       <div className="app-shell">
         <header className="app-header">
-          <div className="app-title-group">
-            <span className="app-kicker">Match Workspace</span>
+          <div className="app-header-main">
+            <div className="app-title-group">
             <h1 className="app-title">{APP_CONFIG.brand.title}</h1>
+            </div>
+            <button
+              type="button"
+              className={`app-header-action ${isPickerView ? 'is-active' : ''}`}
+              onClick={() => {
+                setIsSettingsOpen(false)
+                setAppView('picker')
+              }}
+              aria-label="Choose game"
+            >
+              Choose Game
+            </button>
           </div>
           {/* <div className="frame-status">Frame {currentFrame} / 50</div> */}
         </header>
-        
-        <MatchDetailsDisplay matchData={matchData!} />
 
-        <div className={`app-container ${isSettingsOpen ? 'app-container--settings-open' : ''}`}>
+        {isPickerView ? (
+          <div className="app-picker-shell">
+            <MatchPicker
+              onMatchSelected={(matchId) => {
+                dataManager.setMatchId(matchId)
+                setSelectedMatchId(matchId)
+                setMatchData(null)
+                setKeyMomentsData(null)
+                setEventsData(new Map())
+                setCurrentFrameData(null)
+                setChunkRange({ start: 0, end: 0 })
+                setEpisodeRange({ start: 10, end: 1000 })
+                setCurrentFrame(10)
+                setAppView('workspace')
+              }}
+            />
+          </div>
+        ) : null}
+
+        {hasSelectedGame ? <MatchDetailsDisplay matchData={matchData!} /> : null}
+
+        {hasSelectedGame ? (
+        <div className={`app-container app-container--active ${isSettingsOpen ? 'app-container--settings-open' : ''}`}>
           <aside className={`left-panel settings-sidebar ${isSettingsOpen ? 'is-open' : ''}`} aria-label="Settings sidebar">
             <div className="settings-sidebar-rail">
               <div className="settings-sidebar-rail-header">
@@ -136,7 +181,7 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
                 <span className="settings-sidebar-rail-title">Workspace</span>
               </div>
               <nav className="settings-sidebar-nav" aria-label="Primary workspace actions">
-                <Link to="/" className="settings-sidebar-toggle" aria-label="Go to home screen">
+                <Link to="/app" className="settings-sidebar-toggle" aria-label="Go to app home">
                   <FaHome aria-hidden="true" />
                   <span>Home</span>
                 </Link>
@@ -147,37 +192,20 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
                   aria-expanded={isSettingsOpen}
                   aria-controls="settings-sidebar-panel"
                   aria-label={isSettingsOpen ? 'Close settings panel' : 'Open settings panel'}
+                  disabled={!hasSelectedGame}
                 >
                   <FaCog aria-hidden="true" />
                   <span>Settings</span>
                 </button>
               </nav>
             </div>
-            {isSettingsOpen ? (
+            {hasSelectedGame && isSettingsOpen ? (
               <div id="settings-sidebar-panel" className="settings-sidebar-panel">
                 <Settings matchData={matchData} />
               </div>
             ) : null}
           </aside>
           <div className="main-content">
-            {/* <div className="main-content-toggle" role="tablist" aria-label="Main content view switcher">
-              <button
-                type="button"
-                className={`main-content-toggle-button ${mainContentView === 'plot' ? 'is-active' : ''}`}
-                onClick={() => setMainContentView('plot')}
-                aria-pressed={mainContentView === 'plot'}
-              >
-                Plot Layout
-              </button>
-              <button
-                type="button"
-                className={`main-content-toggle-button ${mainContentView === 'keyMoments' ? 'is-active' : ''}`}
-                onClick={() => setMainContentView('keyMoments')}
-                aria-pressed={mainContentView === 'keyMoments'}
-              >
-                Key Moment Finder
-              </button>
-            </div> */}
             {mainContentView === 'plot' ? (
               <div style={{ width: '100%' }}>
                 <PlotLayoutComponent
@@ -203,6 +231,7 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
             <AnnotationDisplay annotationStore={annotationStore} currentFrame={currentFrame} annotationUpdateEvent={annotationUpdateEvent} />
           </div> */}
         </div>
+        ) : null}
       </div>
     </StyleConfigProvider>
   )

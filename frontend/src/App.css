@@ -61,6 +61,12 @@
   -webkit-backdrop-filter: none;
 }
 
+.app-header-main {
+  display: flex;
+  align-items: flex-end;
+  gap: 56px;
+}
+
 .app-title-group {
   display: flex;
   flex-direction: column;
@@ -84,11 +90,34 @@
 
 .app-title {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 2.0rem;
   font-family: Avenir, Montserrat, Corbel, 'URW Gothic', source-sans-pro, sans-serif;
   font-weight: normal;
   letter-spacing: 0.02em;
   color: var(--app-title-color, var(--app-title-color, #f8fafc));
+}
+
+.app-header-action {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--app-title-color, #f8fafc);
+  font-size: 1.2rem;
+  font-family: Avenir, Montserrat, Corbel, 'URW Gothic', source-sans-pro, sans-serif;
+  font-weight: normal;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+.app-header-action:hover,
+.app-header-action.is-active {
+  color: color-mix(in srgb, var(--app-bg-accent, #f59e0b) 68%, white);
+}
+
+.app-header-action:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.7);
+  outline-offset: 6px;
 }
 
 .frame-status {
@@ -116,6 +145,16 @@
   border-radius: var(--match-section-radius);
   background: var(--match-section-background);
   box-shadow: var(--match-section-shadow);
+}
+
+.app-container--active {
+  display: grid;
+  width: 100%;
+}
+
+.app-picker-shell {
+  width: 100%;
+  margin-top: 22px;
 }
 
 .app-container--settings-open {
@@ -225,6 +264,17 @@
   border-color: rgba(255, 255, 255, 0.24);
 }
 
+.settings-sidebar-toggle:disabled {
+  opacity: 0.64;
+  cursor: not-allowed;
+}
+
+.settings-sidebar-toggle:disabled:hover {
+  transform: none;
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
 .settings-sidebar-toggle:focus-visible {
   outline: 2px solid rgba(255, 255, 255, 0.72);
   outline-offset: 3px;
@@ -327,6 +377,12 @@
   .app-container {
     padding: 16px 14px;
     grid-template-columns: 1fr;
+  }
+
+  .app-header-main {
+    flex-wrap: wrap;
+    width: 100%;
+    gap: 20px;
   }
 
   .app-container--settings-open {

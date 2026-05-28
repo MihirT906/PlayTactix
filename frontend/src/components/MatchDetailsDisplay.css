@@ -2,7 +2,7 @@
 .match-info {
   margin: 12px 0 20px;
   padding: 22px 14px 16px;
-  font-family: Avenir, Montserrat, Corbel, 'URW Gothic', source-sans-pro, sans-serif;
+  font-family: var(--font-family-sans);
   border-top: var(--match-section-border-top);
   border-bottom: var(--match-section-border-bottom);
   border-radius: var(--match-section-radius);
@@ -11,10 +11,9 @@
 }
 
 .match-hero-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.8fr);
+  display: flex;
+  flex-direction: column;
   gap: 24px;
-  align-items: stretch;
 }
 
 .match-hero-copy {
@@ -33,13 +32,13 @@
   align-items: center;
   padding: 7px 12px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: var(--surface-subtle-background);
+  border: 1px solid var(--surface-subtle-border);
   font-size: 0.76rem;
   font-weight: 800;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.82);
+  color: var(--color-text-soft);
 }
 
 .match-title-block {
@@ -53,12 +52,12 @@
 .match-headline {
   margin: 0;
   /* max-width: 14ch; */
-  font-size: 1.2rem;
-  font-weight: bold;
+  font-size: 0.96rem;
+  font-weight: lighter;
   line-height: 0.95;
   /* font-weight: 900; */
   letter-spacing: -0.04em;
-  color: rgba(255, 255, 255, 0.98);
+  color: var(--color-text-muted);
   text-wrap: balance;
   text-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
 }
@@ -71,7 +70,7 @@
   min-width: 0;
   font-size: 0.96rem;
   line-height: 1.5;
-  color: rgba(255, 255, 255, 0.76);
+  color: var(--color-text-muted);
 }
 
 .match-meta-separator {
@@ -80,7 +79,7 @@
 
 .match-teams-showcase {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-columns: minmax(180px, 0.9fr) minmax(0, 1fr) auto minmax(0, 1fr) minmax(180px, 0.9fr);
   gap: 22px;
   align-items: center;
   width: 100%;
@@ -137,15 +136,15 @@
   font-weight: 800;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.56);
+  color: var(--color-accent);
 }
 
 .team-name {
   font-size: 1.8rem;
-  font-family: Avenir, Montserrat, Corbel, 'URW Gothic', source-sans-pro, sans-serif;
+  font-family: var(--font-family-sans);
   font-weight: lighter;
   letter-spacing: 0.02em;
-  color: rgba(255, 255, 255, 0.96);
+  color: var(--color-text-secondary);
   text-wrap: balance;
 }
 
@@ -184,7 +183,7 @@
   line-height: 1;
   font-weight: bold;
   letter-spacing: 0.03em;
-  color: #ffffff;
+  color: var(--color-text-primary);
   text-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
 }
 
@@ -193,20 +192,13 @@
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.58);
-}
-
-.match-hero-sidebars {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
-  align-content: center;
+  color: var(--color-text-primary);
 }
 
 .scorers-panel {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
   max-height: 120px;
   padding: 0;
@@ -214,28 +206,28 @@
 
 .scorers-panel.home {
   text-align: left;
+  justify-self: start;
 }
 
 .scorers-panel.away {
-  text-align: left;
+  text-align: right;
+  justify-self: end;
 }
 
-.scorers-panel-header {
-  display: flex;
-  align-items: center;
-  min-height: 28px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+.scorers-panel.away .players-list,
+.scorers-panel.away .scorers-label,
+.scorers-panel.away .players-empty {
+  text-align: right;
 }
 
-.scorers-panel-header h3 {
+.scorers-label {
   margin: 0;
-  font-size: 0.95rem;
-  font-weight: 800;
-  color: rgba(255, 255, 255, 0.96);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  padding: 8px 0 4px;
+  font-size: 0.8rem;
+  font-weight: normal;
+  letter-spacing: 0.08em;
+  color: var(--color-accent);
+  text-align: left;
 }
 
 .players-list {
@@ -268,7 +260,7 @@
 .player-item {
   width: 100%;
   padding: 0;
-  color: var(--app-info-font-color, #ffffff);
+  color: var(--app-info-font-color, var(--color-text-primary));
 }
 
 .player-name {
@@ -279,27 +271,24 @@
   text-overflow: ellipsis;
   font-size: 0.9rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.88);
+  color: var(--color-text-secondary);
 }
 
 .players-empty {
   margin: 0;
   padding: 8px 0 4px;
   font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.56);
+  color: var(--color-text-secondary);
   text-align: left;
 }
 
 @media (max-width: 1100px) {
-  .match-hero-layout {
-    grid-template-columns: 1fr;
-  }
-
   .match-teams-showcase {
     grid-template-columns: 1fr;
     justify-items: center;
   }
 
+  .scorers-panel,
   .team-spotlight,
   .team-home,
   .team-away {
@@ -308,12 +297,17 @@
     text-align: center;
   }
 
-  .team-shirt-shell {
-    justify-content: center;
+  .scorers-panel.home,
+  .scorers-panel.away,
+  .scorers-panel.away .players-list,
+  .scorers-panel.away .scorers-label,
+  .scorers-panel.away .players-empty {
+    justify-self: stretch;
+    text-align: center;
   }
 
-  .match-hero-sidebars {
-    grid-template-columns: 1fr 1fr;
+  .team-shirt-shell {
+    justify-content: center;
   }
 }
 
@@ -331,10 +325,6 @@
     min-height: 0;
   }
 
-  .match-hero-sidebars {
-    grid-template-columns: 1fr;
-  }
-
   .player-item {
     align-items: flex-start;
   }
@@ -348,6 +338,7 @@
   .team,
   .details,
   .scorers-panel,
+  .scorers-label,
   .players-empty {
     width: 100%;
     text-align: center;

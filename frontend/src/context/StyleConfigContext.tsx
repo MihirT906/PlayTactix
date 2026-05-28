@@ -42,8 +42,8 @@ type StyleConfigProviderProps = {
 const normalizeColor = (color: string) => color.toUpperCase();
 
 const DEFAULT_STYLE_CONFIG = {
-	homeTeamColor: '#F27805',
-	awayTeamColor: '#2563EB',
+	homeTeamColor: APP_CONFIG.theme.defaultTeamColors.home,
+	awayTeamColor: APP_CONFIG.theme.defaultTeamColors.away,
 	eventStyles: {
 		playerPossession: { ...APP_CONFIG.events.playerPossession },
 		passingOption: { ...APP_CONFIG.events.passingOption },
@@ -75,8 +75,8 @@ const DEFAULT_STYLE_CONFIG = {
 const StyleConfigContext = createContext<StyleConfigContextValue | null>(null);
 
 export const StyleConfigProvider = ({ children, matchData }: StyleConfigProviderProps) => {
-	const [homeTeamColor, setHomeTeamColor] = useState(DEFAULT_STYLE_CONFIG.homeTeamColor);
-	const [awayTeamColor, setAwayTeamColor] = useState(DEFAULT_STYLE_CONFIG.awayTeamColor);
+	const [homeTeamColor, setHomeTeamColor] = useState<string>(DEFAULT_STYLE_CONFIG.homeTeamColor);
+	const [awayTeamColor, setAwayTeamColor] = useState<string>(DEFAULT_STYLE_CONFIG.awayTeamColor);
 	const [eventStyles, setEventStyles] = useState(DEFAULT_STYLE_CONFIG.eventStyles);
 	const [teamVisibility, setTeamVisibilityState] = useState(DEFAULT_STYLE_CONFIG.teamVisibility);
 	const [eventVisibility, setEventVisibilityState] = useState(DEFAULT_STYLE_CONFIG.eventVisibility);

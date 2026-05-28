@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import './MatchPicker.css';
+import { APP_CONFIG } from '../config';
 import MatchDataManager from '../services/MatchDataManager';
+import TeamShirt from './TeamShirt.tsx';
 import type { MatchData } from '../types/MatchDataInterfaces';
-import { APP_CONFIG, THEME_CSS_VARIABLES } from '../config'
 
 type MatchPickerProps = {
     onMatchSelected: (matchId: number) => void;
@@ -13,17 +14,6 @@ const MatchPicker = ({ onMatchSelected }: MatchPickerProps) => {
     const [loading, setLoading] = useState<boolean>(false); // Added loading state
 
     const matchDataManager = new MatchDataManager();
-
-
-    useEffect(() => {
-        const root = document.documentElement
-    
-        Object.entries(THEME_CSS_VARIABLES).forEach(([variable, value]) => {
-          root.style.setProperty(variable, value)
-        })
-    
-        document.title = APP_CONFIG.brand.title
-    }, [])
 
 
     useEffect(() => {
@@ -52,15 +42,7 @@ const MatchPicker = ({ onMatchSelected }: MatchPickerProps) => {
                             return null;
                         }
                         const match = await matchResponse.json();
-                        // return {
-                        //     id: match.id,
-                        //     date_time: match.date_time,
-                        //     stadium: match.stadium,
-                        //     home_team: match.home_team,
-                        //     away_team: match.away_team,
-                        //     home_team_score: match.home_team_score,
-                        //     away_team_score: match.away_team_score,
-                        // };
+                        
                         return match
                     })
                 );
@@ -87,7 +69,7 @@ const MatchPicker = ({ onMatchSelected }: MatchPickerProps) => {
     };
 
     return (
-        <div className={`home-screen home-screen--embedded ${loading ? 'loading' : ''}`}>
+        <div className="home-screen home-screen--embedded">
             <h1 className="home-title">SkillCorner OpenData Matches:</h1>
             {loading && (
                 <div className="loading-overlay">
@@ -102,18 +84,14 @@ const MatchPicker = ({ onMatchSelected }: MatchPickerProps) => {
                         onClick={() => handleMatchClick(match.id)}
                         disabled={loading} // Disable buttons when loading
                         style={{
-                            "--home-color": match.home_team_kit?.jersey_color ?? "#3b82f6",
-                            "--away-color": match.away_team_kit?.jersey_color ?? "#ef4444"
+                            "--home-color": match.home_team_kit?.jersey_color ?? APP_CONFIG.theme.defaultTeamColors.home,
+                            "--away-color": match.away_team_kit?.jersey_color ?? APP_CONFIG.theme.defaultTeamColors.away
                         } as React.CSSProperties}
                     >
                         <div className="match-header">
                             <div className="team-row">
                                 <div className="team">
-                                    <div className="team-shirt left">
-                                        <svg viewBox="0 0 64 64">
-                                            <path d="M20 6 L28 10 H36 L44 6 L54 16 L48 24 V54 H16 V24 L10 16 Z" />
-                                        </svg>
-                                    </div>
+                                    <TeamShirt side="left" />
                                     <span>{match.home_team.short_name}</span>
                                 </div>
                                 <div className="details"> 
@@ -122,11 +100,7 @@ const MatchPicker = ({ onMatchSelected }: MatchPickerProps) => {
                                 </div>
                                 
                                 <div className="team">
-                                    <div className="team-shirt right">
-                                        <svg viewBox="0 0 64 64">
-                                            <path d="M20 6 L28 10 H36 L44 6 L54 16 L48 24 V54 H16 V24 L10 16 Z" />
-                                        </svg>
-                                    </div>
+                                    <TeamShirt side="right" />
                                     <span>{match.away_team.short_name}</span>
                                 </div>
                             </div>

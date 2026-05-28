@@ -1,5 +1,5 @@
 import React from 'react'
-import './Controls.css' // Importing a CSS file for styling
+import './Controls.css'
 import AnnotationStore from '../services/AnnotationStore-optimized'
 import { FaPlay, FaPause } from 'react-icons/fa'
 
@@ -9,7 +9,7 @@ interface ControlsProps {
   currentFrame: number
   episodeRange: { start: number; end: number }
   onFrameChange: (frame: number) => void
-  chunkRange: { start: number; end: number } // Added chunk range prop
+  chunkRange: { start: number; end: number }
   annotationStore: AnnotationStore
 }
 
@@ -27,7 +27,7 @@ const Controls: React.FC<ControlsProps> = ({ isPlaying, onPlayPause, currentFram
   return (
     <div className="controls-container">
       <div className="controls-toolbar">
-        <button className="play-pause-button" onClick={onPlayPause}>
+        <button className="app-header-action play-pause-button" onClick={onPlayPause}>
           {isPlaying ? <FaPause /> : <FaPlay />}
         </button>
         <span className="frame-label">Frame: {currentFrame}</span>

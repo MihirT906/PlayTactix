@@ -288,7 +288,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
 
   return (
     <div className="plot-container">
-      <Plot className='PlotComponent'
+      <Plot
         data={[
           ...overlayTraces,
           ...playerTraces,

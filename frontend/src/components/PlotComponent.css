@@ -1,9 +1,3 @@
-.PlotComponent {
-  width: 900px; /* Match the Plotly layout width */
-  height: 620px; /* Match the Plotly layout height */
-  display: block; /* Ensure it behaves as a block-level element */
-}
-
 .plot-container {
   display: flex;
   justify-content: center;

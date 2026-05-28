@@ -1,8 +1,7 @@
 import type { MatchData } from '../types/MatchDataInterfaces';
 import './MatchDetailsDisplay.css'
 import type { CSSProperties } from 'react';
-import { useEffect } from 'react';
-import { APP_CONFIG, THEME_CSS_VARIABLES } from '../config'
+import TeamShirt from './TeamShirt.tsx';
 import { useStyleConfig } from '../context/StyleConfigContext';
 
 const MatchDetailsDisplay = ({ matchData }: { matchData: MatchData | null }) => {
@@ -30,11 +29,9 @@ const MatchDetailsDisplay = ({ matchData }: { matchData: MatchData | null }) => 
     const venueText = `${matchData.stadium.name}, ${matchData.stadium.city}`;
     const matchHeadline = `${matchData.competition_edition.name} ${matchData.competition_round.name}`;
 
-    const renderScorers = (scorers: typeof homeScorers, accentClass: string, teamName: string) => (
+    const renderScorers = (scorers: typeof homeScorers, accentClass: string) => (
         <div className={`scorers-panel ${accentClass}`}>
-            <div className="scorers-panel-header">
-                <h3>{teamName}</h3>
-            </div>
+            <p className="scorers-label">Scorers</p>
             {scorers.length > 0 ? (
                 <ul className="players-list">
                     {scorers.map((player) => (
@@ -51,16 +48,6 @@ const MatchDetailsDisplay = ({ matchData }: { matchData: MatchData | null }) => 
         </div>
     );
 
-    useEffect(() => {
-        const root = document.documentElement
-        
-        Object.entries(THEME_CSS_VARIABLES).forEach(([variable, value]) => {
-              root.style.setProperty(variable, value)
-            })
-        
-        document.title = APP_CONFIG.brand.title
-    }, [])
-    
     return (
         <div className="match-info"
             style={{
@@ -79,17 +66,14 @@ const MatchDetailsDisplay = ({ matchData }: { matchData: MatchData | null }) => 
                         </div>
                     </div>
                     <div className="match-teams-showcase">
+                        {renderScorers(homeScorers, 'home')}
                         <div className="team-spotlight team-home">
                             <div className="team-shirt-shell left">
                                 <div className="team-copy">
                                     <span className="team-label">Home</span>
                                     <span className="team-name">{matchData.home_team.short_name}</span>
                                 </div>
-                                <div className="team-shirt left" aria-hidden="true">
-                                    <svg viewBox="0 0 64 64">
-                                        <path d="M20 6 L28 10 H36 L44 6 L54 16 L48 24 V54 H16 V24 L10 16 Z" />
-                                    </svg>
-                                </div>
+                                <TeamShirt side="left" />
                             </div>
                         </div>
                         <div className="score-block" aria-label="Final score">
@@ -98,22 +82,15 @@ const MatchDetailsDisplay = ({ matchData }: { matchData: MatchData | null }) => 
                         </div>
                         <div className="team-spotlight team-away">
                             <div className="team-shirt-shell right">
-                                <div className="team-shirt right" aria-hidden="true">
-                                    <svg viewBox="0 0 64 64">
-                                        <path d="M20 6 L28 10 H36 L44 6 L54 16 L48 24 V54 H16 V24 L10 16 Z" />
-                                    </svg>
-                                </div>
+                                <TeamShirt side="right" />
                                 <div className="team-copy">
                                     <span className="team-label">Away</span>
                                     <span className="team-name">{matchData.away_team.short_name}</span>
                                 </div>
                             </div>
                         </div>
+                        {renderScorers(awayScorers, 'away')}
                     </div>
-                </div>
-                <div className="match-hero-sidebars" aria-label="Goal scorers">
-                    {renderScorers(homeScorers, 'home', matchData.home_team.short_name)}
-                    {renderScorers(awayScorers, 'away', matchData.away_team.short_name)}
                 </div>
             </div>
         </div>

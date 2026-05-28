@@ -75,7 +75,6 @@ const Settings: React.FC<{ matchData: MatchData | null }> = ({ matchData }) => {
     return (
         <div className="settings-display">
             <div className="settings-display-header">
-                <span className="settings-kicker">Style Controls</span>
                 <h3>Settings</h3>
             </div>
             <div className="settings-box settings-box--flat">

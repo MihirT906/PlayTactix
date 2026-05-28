@@ -43,6 +43,10 @@ export const APP_CONFIG = {
 		},
 	},
 	theme: {
+		defaultTeamColors: {
+			home: '#3B82F6',
+			away: '#EF4444',
+		},
 		cssVariables: {
 			'--app-bg-primary': '#2C2F33',
 			'--app-bg-secondary': '#ffffff4c',

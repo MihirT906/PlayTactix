@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { FaChartLine, FaFilter, FaPlus } from 'react-icons/fa'
 import TimelineStore from '../services/TimelineStore'
 import type { TimelineOption } from '../types/TimelineOption'
@@ -20,8 +20,10 @@ const filterValueOptions: SelectOption[] = [
 ]
 
 const metricColumnOptions: SelectOption[] = [
-  { value: 'x_pass', label: 'x_pass' },
-  { value: 'event_type', label: 'event_type' },
+  { value: 'n_opponents_overtaken', label: 'n_opponents_overtaken' },
+  { value: 'xpass_completion', label: 'xpass_completion' },
+  { value: 'xthreat', label: 'xthreat' },
+  { value: 'xloss_player_possession_max', label: 'xloss_player_possession_max' },
 ]
 
 const metricValueOptions: SelectOption[] = [
@@ -43,6 +45,8 @@ function TimelineTab({ timelineStore }: TimelineTabProps) {
   const [selectedMetricValue, setSelectedMetricValue] = useState('')
   const [savedTimelines, setSavedTimelines] = useState<TimelineOption[]>(timelineStore.getAll())
 
+  useEffect(() => timelineStore.subscribe(setSavedTimelines), [timelineStore])
+
   const handleOptionSelect = (optionType: 'filter' | 'metric') => {
     setActiveOptionView(optionType)
     setIsAddMenuOpen(false)
@@ -60,8 +64,6 @@ function TimelineTab({ timelineStore }: TimelineTabProps) {
       operator: 'equals',
       value: selectedFilterValue,
     })
-
-    setSavedTimelines(timelineStore.getAll())
     setSelectedFilterColumn('')
     setSelectedFilterValue('')
     setActiveOptionView(null)
@@ -78,8 +80,6 @@ function TimelineTab({ timelineStore }: TimelineTabProps) {
       column: selectedMetricColumn,
       aggregation: selectedMetricValue,
     })
-
-    setSavedTimelines(timelineStore.getAll())
     setSelectedMetricColumn('')
     setSelectedMetricValue('')
     setActiveOptionView(null)

@@ -4,6 +4,7 @@ import PlotComponent from './PlotComponent'
 import type { MatchData } from '../types/MatchDataInterfaces'
 import type { FrameData, Event } from '../types/FrameDataInterfaces'
 import type AnnotationStore from '../services/AnnotationStore-optimized'
+import type TimelineStore from '../services/TimelineStore'
 import EventDisplayComponent from './EventDisplayComponent'
 
 type PlotLayoutComponentProps = {
@@ -17,6 +18,7 @@ type PlotLayoutComponentProps = {
   frameData: FrameData | null
   eventsData: Map<number, Event[]> | null
   annotationStore: AnnotationStore
+  timelineStore: TimelineStore
   onAnnotationUpdate: () => void
 }
 
@@ -31,6 +33,7 @@ function PlotLayoutComponent({
   frameData,
   eventsData,
   annotationStore,
+  timelineStore,
   onAnnotationUpdate,
 }: PlotLayoutComponentProps) {
   return (
@@ -60,6 +63,7 @@ function PlotLayoutComponent({
         scaleEnd={episodeRange.end}
         currentFrame={currentFrame}
         matchData={matchData}
+        timelineStore={timelineStore}
       />
     </div>
   )

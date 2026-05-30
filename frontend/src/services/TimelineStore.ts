@@ -22,12 +22,16 @@ type CreateMetricTimelineInput = {
 
 type CreateTimelineInput = CreateFilterTimelineInput | CreateMetricTimelineInput
 
+type TimelineStoreListener = (timelines: TimelineOption[]) => void
+
 export default class TimelineStore {
     private timelines: TimelineOption[] = []
+    private listeners: Set<TimelineStoreListener> = new Set()
 
     add(input: CreateTimelineInput): TimelineOption {
         const timeline = this.createTimeline(input)
         this.timelines.push(timeline)
+        this.notifyListeners()
         return timeline
     }
 
@@ -41,6 +45,16 @@ export default class TimelineStore {
 
     clear(): void {
         this.timelines = []
+        this.notifyListeners()
+    }
+
+    subscribe(listener: TimelineStoreListener): () => void {
+        this.listeners.add(listener)
+        listener(this.getAll())
+
+        return () => {
+            this.listeners.delete(listener)
+        }
     }
 
     private createTimeline(input: CreateTimelineInput): TimelineOption {
@@ -72,5 +86,13 @@ export default class TimelineStore {
 
     private createTimelineId(): string {
         return `timeline-${Date.now()}-${this.timelines.length + 1}`
+    }
+
+    private notifyListeners(): void {
+        const timelines = this.getAll()
+
+        for (const listener of this.listeners) {
+            listener(timelines)
+        }
     }
 }

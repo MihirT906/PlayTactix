@@ -1,8 +1,28 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
+import TimelineStore from '../services/TimelineStore'
+import { useStyleConfig } from '../context/StyleConfigContext'
 import type { Event } from '../types/FrameDataInterfaces'
 import type { MatchData } from '../types/MatchDataInterfaces'
-import { useStyleConfig } from '../context/StyleConfigContext'
+import type { TimelineOption } from '../types/TimelineOption'
 import './EventDisplayComponent.css'
+
+type TimelineEvent = Event & {
+  laneIndex: number
+  leftPercent: number
+  widthPercent: number
+}
+
+type TimelineRow = {
+  timeline: TimelineOption
+  events: TimelineEvent[]
+  laneCount: number
+}
+
+const TIMELINE_LANE_HEIGHT = 22
+const TIMELINE_LABEL_WIDTH = 220
+const TIMELINE_ROW_GAP = 12
+const TIMELINE_MIN_TRACK_WIDTH = 960
+const TIMELINE_PIXELS_PER_FRAME = 2
 
 type EventDisplayProps = {
   eventsData: Map<number, Event[]> | null
@@ -10,144 +30,24 @@ type EventDisplayProps = {
   scaleEnd: number
   currentFrame: number
   matchData: MatchData | null
+  timelineStore: TimelineStore
 }
 
-type EventDisplayConfig = {
-  title: string
-  eventType: string
-  metricLabel: string
-  metricRange: [number, number]
-  getMetricValue: (event: Event) => number | null
-  getEventLabel?: (event: Event) => string
-}
-
-type TimelineEvent = Event & {
-  lane: number
-}
-
-type ChartPoint = {
-  x: number
-  y: number
-}
-
-type LaneChart = {
-  lane: number
-  points: string
-}
-
-type EventDisplayTrackProps = {
-  config: EventDisplayConfig
-  eventsData: Map<number, Event[]> | null
-  scaleStart: number
-  scaleEnd: number
-  totalFrames: number
-  currentFramePercent: number
-  matchData: MatchData | null
-  homeTeamColor: string
-  awayTeamColor: string
-  isExpanded: boolean
-  onToggle: () => void
-}
-
-const LANE_HEIGHT = 50
-const XLOSS_LINE_THICKNESS = 2
-const CHART_VERTICAL_PADDING = 6
-
-const EVENT_DISPLAY_CONFIGS: EventDisplayConfig[] = [
-  {
-    title: 'Player Possession Timeline',
-    eventType: 'player_possession',
-    metricLabel: 'n_opponents_overtaken',
-    metricRange: [0, 10],
-    getMetricValue: (event) => (event.n_opponents_overtaken === -1 ? null : event.n_opponents_overtaken),
-    getEventLabel: (event) => `${event.player_name} (${event.player_position})`,
-  },
-  {
-    title: 'Passing Options Timeline',
-    eventType: 'passing_option',
-    metricLabel: 'xpass_completion',
-    metricRange: [0, 1],
-    getMetricValue: (event) => (event.xthreat === -1 ? null : event.xthreat),
-    getEventLabel: (event) => `${event.player_name} (${event.player_position})`,
-  },
-  {
-    title: 'On Ball Engagement Timeline',
-    eventType: 'on_ball_engagement',
-    metricLabel: 'xloss_player_possession_max',
-    metricRange: [0, 1],
-    getMetricValue: (event) => (event.xloss_player_possession_max === -1 ? null : event.xloss_player_possession_max),
-    getEventLabel: (event) => `${event.player_name} (${event.player_position})`,
-  },
-]
-
-function EventDisplayTrack({
-  config,
+const EventDisplayComponent: React.FC<EventDisplayProps> = ({
   eventsData,
   scaleStart,
   scaleEnd,
-  totalFrames,
-  currentFramePercent,
+  currentFrame,
   matchData,
-  homeTeamColor,
-  awayTeamColor,
-  isExpanded,
-  onToggle,
-}: EventDisplayTrackProps) {
-  const [rangeStart, rangeEnd] = config.metricRange
-  const metricMin = Math.min(rangeStart, rangeEnd)
-  const metricMax = Math.max(rangeStart, rangeEnd)
-  const chartMin = Math.min(metricMin, 0)
-  const chartMax = Math.max(metricMax, 0)
+  timelineStore,
+}) => {
+  const [timelines, setTimelines] = useState<TimelineOption[]>(timelineStore.getAll())
+  const { homeTeamColor, awayTeamColor } = useStyleConfig()
+  const visibleFrameSpan = Math.max(scaleEnd - scaleStart, 1)
+  const timelineTrackWidth = Math.max(visibleFrameSpan * TIMELINE_PIXELS_PER_FRAME, TIMELINE_MIN_TRACK_WIDTH)
+  const timelineContentWidth = TIMELINE_LABEL_WIDTH + TIMELINE_ROW_GAP + timelineTrackWidth
 
-  const timelineEvents = useMemo<TimelineEvent[]>(() => {
-    const uniqueEvents = new Map<string, Event>()
-
-    if (eventsData) {
-      for (const frameEvents of eventsData.values()) {
-        for (const event of frameEvents) {
-          if (event.event_type !== config.eventType) {
-            continue
-          }
-
-          if (!uniqueEvents.has(event.event_id)) {
-            uniqueEvents.set(event.event_id, event)
-          }
-        }
-      }
-    }
-
-    const sortedEvents = Array.from(uniqueEvents.values())
-      .filter((event) => event.frame_end >= scaleStart && event.frame_start <= scaleEnd)
-      .sort((left, right) => {
-        if (left.frame_start !== right.frame_start) {
-          return left.frame_start - right.frame_start
-        }
-
-        return left.frame_end - right.frame_end
-      })
-
-    const laneEndFrames: number[] = []
-
-    return sortedEvents.map((event) => {
-      let laneIndex = laneEndFrames.findIndex((endFrame) => endFrame < event.frame_start)
-
-      if (laneIndex === -1) {
-        laneIndex = laneEndFrames.length
-        laneEndFrames.push(event.frame_end)
-      } else {
-        laneEndFrames[laneIndex] = event.frame_end
-      }
-
-      return {
-        ...event,
-        lane: laneIndex,
-      }
-    })
-  }, [config.eventType, eventsData, scaleEnd, scaleStart])
-
-  const laneCount = timelineEvents.length > 0
-    ? Math.max(...timelineEvents.map((event) => event.lane)) + 1
-    : 1
+  useEffect(() => timelineStore.subscribe(setTimelines), [timelineStore])
 
   const getEventColor = (teamId: number) => {
     if (teamId === matchData?.home_team.id) {
@@ -161,266 +61,139 @@ function EventDisplayTrack({
     return '#F59E0B'
   }
 
-  const getEventTextColor = (backgroundColor: string) => {
-    const normalized = backgroundColor.replace('#', '')
-
-    if (normalized.length !== 6) {
-      return '#111827'
-    }
-
-    const red = Number.parseInt(normalized.slice(0, 2), 16)
-    const green = Number.parseInt(normalized.slice(2, 4), 16)
-    const blue = Number.parseInt(normalized.slice(4, 6), 16)
-    const brightness = (red * 299 + green * 587 + blue * 114) / 1000
-
-    return brightness > 150 ? '#111827' : '#F8FAFC'
-  }
-
-  const getClampedMetricValue = (event: Event) => {
-    const metricValue = config.getMetricValue(event)
-
-    if (metricValue === null) {
-      return null
-    }
-
-    return Math.min(Math.max(metricValue, metricMin), metricMax)
-  }
-
   const getEventLabel = (event: Event) => {
-    if (config.getEventLabel) {
-      return config.getEventLabel(event)
-    }
-
     return event.player_name
   }
 
-  const trackHeight = laneCount * LANE_HEIGHT
-
-  const laneCharts = useMemo<LaneChart[]>(() => {
-    const metricSpan = Math.max(chartMax - chartMin, 1)
-    const laneHeight = Math.max(LANE_HEIGHT - (CHART_VERTICAL_PADDING * 2), 1)
-    const toX = (frame: number) => ((frame - scaleStart) / totalFrames) * 100
-    const toY = (value: number, lane: number) => {
-      const normalizedValue = (value - chartMin) / metricSpan
-      const laneTop = lane * LANE_HEIGHT
-
-      return laneTop + LANE_HEIGHT - CHART_VERTICAL_PADDING - (normalizedValue * laneHeight)
+  const visibleEvents = useMemo<Event[]>(() => {
+    if (!eventsData) {
+      return []
     }
 
-    const laneEvents = new Map<number, TimelineEvent[]>()
+    const uniqueEvents = new Map<string, Event>()
 
-    for (const event of timelineEvents) {
-      const eventsForLane = laneEvents.get(event.lane) ?? []
-      eventsForLane.push(event)
-      laneEvents.set(event.lane, eventsForLane)
+    for (const frameEvents of eventsData.values()) {
+      for (const event of frameEvents) {
+        uniqueEvents.set(event.event_id, event)
+      }
     }
 
-    return Array.from({ length: laneCount }, (_, lane) => {
-      const eventsForLane = laneEvents.get(lane) ?? []
-      const boundaries = new Set<number>([scaleStart, scaleEnd])
-
-      for (const event of eventsForLane) {
-        boundaries.add(Math.max(event.frame_start, scaleStart))
-        boundaries.add(Math.min(event.frame_end, scaleEnd))
-      }
-
-      const sortedBoundaries = Array.from(boundaries)
-        .filter((frame) => frame >= scaleStart && frame <= scaleEnd)
-        .sort((left, right) => left - right)
-
-      if (sortedBoundaries.length === 1) {
-        sortedBoundaries.push(scaleEnd)
-      }
-
-      const getValueAtFrame = (frame: number) => {
-        for (const event of eventsForLane) {
-          if (event.frame_start <= frame && event.frame_end >= frame) {
-            return getClampedMetricValue(event) ?? 0
-          }
+    return Array.from(uniqueEvents.values())
+      .filter((event) => event.frame_end >= scaleStart && event.frame_start <= scaleEnd)
+      .sort((left, right) => {
+        if (left.frame_start !== right.frame_start) {
+          return left.frame_start - right.frame_start
         }
 
-        return 0
+        return left.frame_end - right.frame_end
+      })
+  }, [eventsData, scaleEnd, scaleStart])
+
+  const computeTimelineEvents = (timeline: TimelineOption, sourceEvents: Event[]): TimelineEvent[] => {
+    if (timeline.kind !== 'filter') {
+      return []
+    }
+
+    const matchingEvents = sourceEvents.filter(
+      (event) => event[timeline.condition.column as keyof Event] === timeline.condition.value,
+    )
+    const laneEndFrames: number[] = []
+
+    return matchingEvents.map((event) => {
+      let laneIndex = laneEndFrames.findIndex((endFrame) => endFrame <= event.frame_start)
+
+      if (laneIndex === -1) {
+        laneIndex = laneEndFrames.length
+        laneEndFrames.push(event.frame_end)
+      } else {
+        laneEndFrames[laneIndex] = event.frame_end
       }
 
-      const points: ChartPoint[] = []
-      let previousValue = getValueAtFrame(scaleStart)
-      points.push({ x: toX(scaleStart), y: toY(previousValue, lane) })
-
-      for (let index = 1; index < sortedBoundaries.length; index += 1) {
-        const boundary = sortedBoundaries[index]
-        points.push({ x: toX(boundary), y: toY(previousValue, lane) })
-
-        if (boundary === scaleEnd) {
-          continue
-        }
-
-        const nextBoundary = sortedBoundaries[index + 1] ?? scaleEnd
-        const sampleFrame = boundary + ((nextBoundary - boundary) / 2)
-        const nextValue = getValueAtFrame(sampleFrame)
-
-        if (nextValue !== previousValue) {
-          points.push({ x: toX(boundary), y: toY(nextValue, lane) })
-          previousValue = nextValue
-        }
-      }
+      const leftPercent = ((Math.max(event.frame_start, scaleStart) - scaleStart) / visibleFrameSpan) * 100
+      const widthPercent =
+        ((Math.min(event.frame_end, scaleEnd) - Math.max(event.frame_start, scaleStart)) / visibleFrameSpan) * 100
 
       return {
-        lane,
-        points: points.map((point) => `${point.x},${point.y}`).join(' '),
+        ...event,
+        laneIndex,
+        leftPercent,
+        widthPercent: Math.max(widthPercent, 0.6),
       }
     })
-  }, [chartMax, chartMin, laneCount, metricMax, metricMin, scaleEnd, scaleStart, timelineEvents, totalFrames])
-
-  return (
-    <div className="event-display__section">
-      <div className="event-display__section-header">
-        <button
-          type="button"
-          className="event-display__section-toggle"
-          onClick={onToggle}
-          aria-expanded={isExpanded}
-        >
-          <span
-            className={`event-display__section-arrow${isExpanded ? ' event-display__section-arrow--expanded' : ''}`}
-            aria-hidden="true"
-          />
-          <h3>{config.title}</h3>
-        </button>
-      </div>
-
-      {isExpanded && (
-        <div
-          className="event-display__track"
-          style={{ height: `${trackHeight}px` }}
-        >
-          <svg
-            className="event-display__xloss-chart"
-            viewBox={`0 0 100 ${trackHeight}`}
-            preserveAspectRatio="none"
-            aria-hidden="true"
-          >
-            {laneCharts.map((laneChart) => (
-              <polyline
-                key={laneChart.lane}
-                className="event-display__xloss-line"
-                points={laneChart.points}
-                style={{ strokeWidth: XLOSS_LINE_THICKNESS }}
-              />
-            ))}
-          </svg>
-          <div
-            className="event-display__current-marker event-display__current-marker--track"
-            style={{ left: `${currentFramePercent}%` }}
-          />
-          {timelineEvents.map((event) => {
-            const visibleStart = Math.max(event.frame_start, scaleStart)
-            const visibleEnd = Math.min(event.frame_end, scaleEnd)
-            const left = ((visibleStart - scaleStart) / totalFrames) * 100
-            const width = Math.max(((visibleEnd - visibleStart) / totalFrames) * 100, 2)
-            const backgroundColor = getEventColor(event.team_id)
-            const color = getEventTextColor(backgroundColor)
-            const eventLabel = getEventLabel(event)
-            const metricValue = getClampedMetricValue(event)
-            const metricText = metricValue === null ? 'N/A' : metricValue.toFixed(2)
-
-            return (
-              <div
-                key={event.event_id}
-                className="event-display__box"
-                style={{
-                  background: backgroundColor,
-                  color,
-                  left: `${left}%`,
-                  width: `${width}%`,
-                  top: `${event.lane * LANE_HEIGHT}px`,
-                }}
-                title={`${eventLabel} | ${config.metricLabel}: ${metricText}`}
-              >
-                <span className="event-display__label">
-                  {eventLabel}
-                </span>
-              </div>
-            )
-          })}
-        </div>
-      )}
-    </div>
-  )
-}
-
-function EventDisplayComponent({
-  eventsData,
-  scaleStart,
-  scaleEnd,
-  currentFrame,
-  matchData,
-}: EventDisplayProps) {
-  const { homeTeamColor, awayTeamColor } = useStyleConfig()
-  const [expandedEventTypes, setExpandedEventTypes] = useState<string[]>([])
-
-  const totalFrames = Math.max(scaleEnd - scaleStart, 1)
-
-  const tickInterval = 100
-  const firstTick = Math.ceil(scaleStart / tickInterval) * tickInterval
-  const ticks = Array.from(
-    { length: Math.max(Math.floor((scaleEnd - firstTick) / tickInterval) + 1, 0) },
-    (_, index) => firstTick + index * tickInterval,
-  )
-  const currentFramePercent = ((Math.min(Math.max(currentFrame, scaleStart), scaleEnd) - scaleStart) / totalFrames) * 100
-  const hasExpandedTracks = expandedEventTypes.length > 0
-
-  const toggleEventType = (eventType: string) => {
-    setExpandedEventTypes((current) => (
-      current.includes(eventType)
-        ? current.filter((value) => value !== eventType)
-        : [...current, eventType]
-    ))
   }
+
+  const timelineRows = useMemo<TimelineRow[]>(() => {
+    if (!eventsData) {
+      return timelines.map((timeline) => ({ timeline, events: [], laneCount: 1 }))
+    }
+
+    return timelines.map((timeline) => {
+      const events = computeTimelineEvents(timeline, visibleEvents)
+      const laneCount = Math.max(...events.map((event) => event.laneIndex + 1), 1)
+
+      return {
+        timeline,
+        events,
+        laneCount,
+      }
+    })
+  }, [eventsData, timelines, visibleEvents])
+
+  const currentFrameOffset = ((currentFrame - scaleStart) / visibleFrameSpan) * 100
+
 
   return (
     <section className="event-display">
       <div className="event-display__header">
         <h3>Event Timelines</h3>
       </div>
-
-      {hasExpandedTracks && (
-        <div className="event-display__tick-row" aria-hidden="true">
-          {ticks.map((tick) => (
+      <div className="event-display__scroll">
+        <div className="event-display__body" style={{ minWidth: `${timelineContentWidth}px` }}>
+          {timelineRows.map(({ timeline, events, laneCount }) => (
             <div
-              key={tick}
-              className="event-display__tick"
+              key={timeline.id}
+              className="event-display__row"
               style={{
-                left: `${((tick - scaleStart) / totalFrames) * 100}%`,
+                gridTemplateColumns: `${TIMELINE_LABEL_WIDTH}px ${timelineTrackWidth}px`,
               }}
             >
-              {tick}
+              <div className="event-display__label-row">{timeline.label}</div>
+              <div
+                className="event-display__track"
+                style={{
+                  height: `${laneCount * TIMELINE_LANE_HEIGHT}px`,
+                }}
+              >
+                <div
+                  className="event-display__current-frame"
+                  style={{ left: `${Math.min(Math.max(currentFrameOffset, 0), 100)}%` }}
+                  aria-hidden="true"
+                />
+                {events.map((event) => {
+                  const eventLabel = getEventLabel(event)
+
+                  return (
+                    <div
+                      key={event.event_id}
+                      className="event-display__event"
+                      data-label={eventLabel}
+                      style={{
+                        background: getEventColor(event.team_id),
+                        left: `${event.leftPercent}%`,
+                        width: `${event.widthPercent}%`,
+                        top: `${event.laneIndex * TIMELINE_LANE_HEIGHT + 2}px`,
+                      }}
+                      title={eventLabel}
+                    >
+                      <span className="event-display__event-label">{eventLabel}</span>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
           ))}
-          <div
-            className="event-display__current-marker event-display__current-marker--ticks"
-            style={{ left: `${currentFramePercent}%` }}
-          >
-            <span className="event-display__current-label">{currentFrame}</span>
-          </div>
         </div>
-      )}
-
-      {EVENT_DISPLAY_CONFIGS.map((config) => (
-        <EventDisplayTrack
-          key={config.title}
-          config={config}
-          eventsData={eventsData}
-          scaleStart={scaleStart}
-          scaleEnd={scaleEnd}
-          totalFrames={totalFrames}
-          currentFramePercent={currentFramePercent}
-          matchData={matchData}
-          homeTeamColor={homeTeamColor}
-          awayTeamColor={awayTeamColor}
-          isExpanded={expandedEventTypes.includes(config.eventType)}
-          onToggle={() => toggleEventType(config.eventType)}
-        />
-      ))}
+      </div>
     </section>
   )
 }

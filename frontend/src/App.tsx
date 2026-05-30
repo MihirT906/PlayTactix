@@ -190,6 +190,7 @@ function App({dataManager, annotationStore, timelineStore}: {dataManager: DataMa
                       frameData={currentFrameData}
                       eventsData={eventsData}
                       annotationStore={annotationStore}
+                      timelineStore={timelineStore}
                       onAnnotationUpdate={() => setAnnotationUpdateEvent(!annotationUpdateEvent)}
                     />
                   </div>

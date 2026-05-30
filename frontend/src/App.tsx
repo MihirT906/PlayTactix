@@ -10,11 +10,9 @@ import type { KeyMomentsData } from './types/KeyMomentsDataInterfaces'
 import MatchDetailsDisplay from './components/MatchDetailsDisplay'
 import { StyleConfigProvider } from './context/StyleConfigContext'
 import PlotLayoutComponent from './components/PlotLayoutComponent'
-import KeyMomentFinderComponent from './components/KeyMomentFinderComponent'
 import MatchPicker from './components/MatchPicker'
 import WorkspaceSidebar, { type SidebarPanel } from './components/WorkspaceSidebar'
 
-type MainContentView = 'plot' | 'keyMoments'
 type AppView = 'idle' | 'picker' | 'workspace'
 
 function App({dataManager, annotationStore, timelineStore}: {dataManager: DataManager, annotationStore: AnnotationStore, timelineStore: TimelineStore}) {
@@ -28,7 +26,6 @@ function App({dataManager, annotationStore, timelineStore}: {dataManager: DataMa
   const [currentFrameData, setCurrentFrameData] = useState<FrameData | null>(null)
   const [isFetching, setIsFetching] = useState(false) // Track if data is being fetched
   const [annotationUpdateEvent, setAnnotationUpdateEvent] = useState(false)
-  const [mainContentView] = useState<MainContentView>('plot')
   const [activeSidebarPanel, setActiveSidebarPanel] = useState<SidebarPanel>(null)
   const [appView, setAppView] = useState<AppView>('idle')
   const [selectedMatchId, setSelectedMatchId] = useState<number | null>(null)
@@ -175,28 +172,27 @@ function App({dataManager, annotationStore, timelineStore}: {dataManager: DataMa
                 onActivePanelChange={setActiveSidebarPanel}
                 matchData={matchData}
                 timelineStore={timelineStore}
+                episodeRange={episodeRange}
+                onAddCustomEpisodeRange={addCustomEpisodeRange}
+                keyMomentsData={keyMomentsData}
               />
               <div className="main-content">
-                {mainContentView === 'plot' ? (
-                  <div style={{ width: '100%' }}>
-                    <PlotLayoutComponent
-                      isPlaying={isPlaying}
-                      onPlayPause={handlePlayPause}
-                      currentFrame={currentFrame}
-                      onFrameChange={handleFrameChange}
-                      episodeRange={episodeRange}
-                      chunkRange={chunkRange}
-                      matchData={matchData}
-                      frameData={currentFrameData}
-                      eventsData={eventsData}
-                      annotationStore={annotationStore}
-                      timelineStore={timelineStore}
-                      onAnnotationUpdate={() => setAnnotationUpdateEvent(!annotationUpdateEvent)}
-                    />
-                  </div>
-                ) : (
-                  <KeyMomentFinderComponent episodeRange={episodeRange} onAddCustomEpisodeRange={addCustomEpisodeRange} keyMomentsData={keyMomentsData} />
-                )}
+                <div style={{ width: '100%' }}>
+                  <PlotLayoutComponent
+                    isPlaying={isPlaying}
+                    onPlayPause={handlePlayPause}
+                    currentFrame={currentFrame}
+                    onFrameChange={handleFrameChange}
+                    episodeRange={episodeRange}
+                    chunkRange={chunkRange}
+                    matchData={matchData}
+                    frameData={currentFrameData}
+                    eventsData={eventsData}
+                    annotationStore={annotationStore}
+                    timelineStore={timelineStore}
+                    onAnnotationUpdate={() => setAnnotationUpdateEvent(!annotationUpdateEvent)}
+                  />
+                </div>
               </div>
               {/* <div className="right-panel">
                 <AnnotationDisplay annotationStore={annotationStore} currentFrame={currentFrame} annotationUpdateEvent={annotationUpdateEvent} />

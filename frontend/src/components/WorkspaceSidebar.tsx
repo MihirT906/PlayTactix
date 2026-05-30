@@ -1,22 +1,36 @@
-import { FaCog, FaStream } from 'react-icons/fa'
+import { FaCog, FaSearch, FaStream } from 'react-icons/fa'
 import './WorkspaceSidebar.css'
 import Settings from './Settings.tsx'
 import TimelineTab from './TimelineTab.tsx'
 import type { MatchData } from '../types/MatchDataInterfaces'
+import type { KeyMomentsData } from '../types/KeyMomentsDataInterfaces'
 import TimelineStore from '../services/TimelineStore'
+import KeyMomentFinderComponent from './KeyMomentFinderComponent'
 
-export type SidebarPanel = 'settings' | 'timeline' | null
+export type SidebarPanel = 'settings' | 'timeline' | 'search' | null
 
 type WorkspaceSidebarProps = {
   activePanel: SidebarPanel
   onActivePanelChange: (panel: SidebarPanel) => void
   matchData: MatchData | null
   timelineStore: TimelineStore
+  episodeRange: { start: number; end: number }
+  onAddCustomEpisodeRange: (start: number, end: number) => void
+  keyMomentsData: KeyMomentsData | null
 }
 
-function WorkspaceSidebar({ activePanel, onActivePanelChange, matchData, timelineStore }: WorkspaceSidebarProps) {
+function WorkspaceSidebar({
+  activePanel,
+  onActivePanelChange,
+  matchData,
+  timelineStore,
+  episodeRange,
+  onAddCustomEpisodeRange,
+  keyMomentsData,
+}: WorkspaceSidebarProps) {
   const isSettingsPanelOpen = activePanel === 'settings'
   const isTimelinePanelOpen = activePanel === 'timeline'
+  const isSearchPanelOpen = activePanel === 'search'
   const isSidebarPanelOpen = activePanel !== null
 
   return (
@@ -46,6 +60,17 @@ function WorkspaceSidebar({ activePanel, onActivePanelChange, matchData, timelin
             <FaStream aria-hidden="true" />
             <span>Timeline</span>
           </button>
+          <button
+            type="button"
+            className={`app-header-action workspace-sidebar-action ${isSearchPanelOpen ? 'is-active' : ''}`}
+            onClick={() => onActivePanelChange(isSearchPanelOpen ? null : 'search')}
+            aria-expanded={isSearchPanelOpen}
+            aria-controls="search-sidebar-panel"
+            aria-label={isSearchPanelOpen ? 'Close key moments panel' : 'Open key moments panel'}
+          >
+            <FaSearch aria-hidden="true" />
+            <span>Search</span>
+          </button>
         </nav>
       </div>
       {isSettingsPanelOpen ? (
@@ -55,6 +80,14 @@ function WorkspaceSidebar({ activePanel, onActivePanelChange, matchData, timelin
       ) : isTimelinePanelOpen ? (
         <div id="timeline-sidebar-panel" className="settings-sidebar-panel timeline-sidebar-panel">
           <TimelineTab timelineStore={timelineStore} />
+        </div>
+      ) : isSearchPanelOpen ? (
+        <div id="search-sidebar-panel" className="settings-sidebar-panel">
+          <KeyMomentFinderComponent
+            episodeRange={episodeRange}
+            onAddCustomEpisodeRange={onAddCustomEpisodeRange}
+            keyMomentsData={keyMomentsData}
+          />
         </div>
       ) : null}
     </aside>

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { FaChevronDown } from 'react-icons/fa'
 import type { KeyMomentsData } from '../types/KeyMomentsDataInterfaces'
 import './KeyMomentFinderComponent.css'
 
@@ -49,9 +50,7 @@ function KeyMomentFinderComponent({ episodeRange, onAddCustomEpisodeRange, keyMo
             }}
           >
             <span className="key-moment-count">{moments.length}</span>
-            <span className={`key-moment-arrow${isExpanded ? ' is-expanded' : ''}`} aria-hidden="true">
-              v
-            </span>
+            <FaChevronDown className={`key-moment-arrow${isExpanded ? ' is-expanded' : ''}`} aria-hidden="true" />
           </button>
         </div>
 
@@ -87,9 +86,12 @@ function KeyMomentFinderComponent({ episodeRange, onAddCustomEpisodeRange, keyMo
 
   return (
     <section className="key-moment-finder-panel" aria-labelledby="key-moment-finder-heading">
-      <h2 id="key-moment-finder-heading" className="key-moment-finder-title">
-        Choose Key Moment
-      </h2>
+      <div className="key-moment-finder-header">
+        <h2 id="key-moment-finder-heading" className="key-moment-finder-title">
+          Key Moments Finder
+        </h2>
+        <p className="key-moment-finder-description">Jump to saved moments or define a custom frame range.</p>
+      </div>
 
       {keyMomentsData ? (
         <div className="key-moment-groups">

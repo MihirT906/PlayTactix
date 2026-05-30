@@ -15,7 +15,7 @@ type EventStyle = {
 
 type EventStyleKey = keyof typeof APP_CONFIG.events;
 type TeamVisibilityKey = 'home' | 'away';
-type OverlayVisibilityKey = 'pass_option_threat';
+type OverlayVisibilityKey = 'pass_option_prob';
 
 type VisibilityState<T extends string> = Record<T, boolean>;
 
@@ -61,7 +61,7 @@ const DEFAULT_STYLE_CONFIG = {
 		offBallRun: true,
 	},
 	overlayVisibility: {
-		pass_option_threat: false,
+		pass_option_prob: false,
 	},
 } satisfies {
 	homeTeamColor: string;

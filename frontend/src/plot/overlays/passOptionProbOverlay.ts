@@ -2,7 +2,19 @@ import type { FrameData } from '../../types/FrameDataInterfaces'
 import { useStyleConfig } from '../../context/StyleConfigContext'
 import { APP_CONFIG } from '../../config'
 
-export function buildPassOptionThreatOverlay(frameData: FrameData | null) {
+const PASS_COMPLETION_THRESHOLD = 0.65
+const PASS_OPTION_PROB_INVERSE_COLOR = '#0f172a'
+
+const getOverlayOpacity = (xPassCompletion: number) => {
+    const isGoodPass = xPassCompletion >= PASS_COMPLETION_THRESHOLD
+    const normalized = isGoodPass
+        ? (xPassCompletion - PASS_COMPLETION_THRESHOLD) / (1 - PASS_COMPLETION_THRESHOLD)
+        : xPassCompletion / PASS_COMPLETION_THRESHOLD
+
+    return 0.15 + 0.85 * Math.pow(Math.max(0, Math.min(normalized, 1)), 0.4)
+}
+
+export function buildPassOptionProbOverlay(frameData: FrameData | null) {
     if (!frameData) {
         return null;
     }
@@ -28,22 +40,24 @@ export function buildPassOptionThreatOverlay(frameData: FrameData | null) {
 
         if (sourceIndex == null || targetIndex == null) return [];
 
-        const rawOpacity = event.xthreat;
-        if (rawOpacity === -1) return [];
-        const normalized = Math.min(rawOpacity / 0.1, 1);
-        const opacity = 0.15 + 0.85 * Math.pow(normalized, 0.4);
+        const xPassCompletion = event.xpass_completion;
+        if (xPassCompletion === -1) return [];
+
+        const isGoodPass = xPassCompletion >= PASS_COMPLETION_THRESHOLD
+        const opacity = getOverlayOpacity(xPassCompletion)
+        const lineColor = isGoodPass ? eventStyles.passingOption.color : PASS_OPTION_PROB_INVERSE_COLOR
 
         return [{
             x: [players.x[sourceIndex], players.x[targetIndex]],
             y: [players.y[sourceIndex], players.y[targetIndex]],
             type: 'scatter',
             mode: 'lines',
-            hoverinfo: 'text',
-            text: `xPass: ${rawOpacity.toFixed(2)}`,
+            hovertemplate:`xPass Completion: ${xPassCompletion.toFixed(2)}<extra></extra>`,
+            hoverlabel: 'xPass Completion',
             opacity,
             line: {
-            color: eventStyles.passingOption.color,
-            width: plotConfig.markerSize,
+                color: lineColor,
+                width: plotConfig.markerSize,
             },
         }];
     });

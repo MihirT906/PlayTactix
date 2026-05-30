@@ -8,7 +8,7 @@ import { APP_CONFIG, SELECTED_POINTS_OPACITY, UNSELECTED_POINTS_OPACITY } from '
 import backgroundImage from '../../../data/background_image.png';
 import type { MatchData } from '../types/MatchDataInterfaces'
 import { useStyleConfig } from '../context/StyleConfigContext'
-import { buildPassOptionThreatOverlay } from '../plot/overlays/passOptionThreatOverlay'
+import { buildPassOptionProbOverlay } from '../plot/overlays/passOptionProbOverlay'
 
 
 // const annotationStore = new AnnotationStore()
@@ -155,36 +155,44 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
     const visibleTeamMask = getVisibleTeamMask(players.team_id);
     const applyVisibilityMask = (mask: boolean[]) => mask.map((isVisible, index) => isVisible && visibleTeamMask[index]);
 
-    const build = (mask: boolean[], lineColor: string, lineWidth = 1, sizeMultiplier = 1) => ({
-      x: filterByMask(players.x, mask),
-      y: filterByMask(players.y, mask),
-      mode: 'markers+text',
-      type: 'scatter',
-      marker: {
-        size: plotConfig.markerSize * sizeMultiplier,
-        color: filterByMask(players.team_id, mask).map((id) => {
-          if (id === matchData?.home_team.id) {
-            return homeTeamColor;
-          } else if (id === matchData?.away_team.id) {
-            return awayTeamColor;
-          } else {
-            return plotConfig.markerColor; // Default color if team ID doesn't match
-          }
-        }),
-        line: {
-          color: lineColor,
-          width: lineWidth,
+    const build = (mask: boolean[], lineColor: string, lineWidth = 1, sizeMultiplier = 1) => {
+      const visibleNames = filterByMask(players.short_name, mask)
+      const visibleNumbers = filterByMask(players.number, mask)
+
+      return {
+        x: filterByMask(players.x, mask),
+        y: filterByMask(players.y, mask),
+        customdata: visibleNames.map((name, index) => [name, visibleNumbers[index]]),
+        mode: 'markers+text',
+        type: 'scatter',
+        hovertemplate: '%{customdata[0]}<br><b>#%{customdata[1]}</b><extra></extra>',
+        hoverlabel: {
+          font: {
+            size: 16,
+          },
         },
-        opacity: SELECTED_POINTS_OPACITY,
-      },
-      selectedpoints: firstPoint !== null || focusPoints.length > 0 ? [firstPoint, ...focusPoints] : undefined, // Highlight points that are either the first point selected or have focus lines connected to them
-      selected: {
-        marker: { opacity: SELECTED_POINTS_OPACITY },
-      },
-      unselected: {
-        marker: { opacity: firstPoint !== null || focusPoints.length > 0 ? UNSELECTED_POINTS_OPACITY : SELECTED_POINTS_OPACITY },
-      },
-    });
+        marker: {
+          size: plotConfig.markerSize * sizeMultiplier,
+          color: filterByMask(players.team_id, mask).map((id) => {
+            if (id === matchData?.home_team.id) return homeTeamColor
+            if (id === matchData?.away_team.id) return awayTeamColor
+            return plotConfig.markerColor
+          }),
+          line: {
+            color: lineColor,
+            width: lineWidth,
+          },
+          opacity: SELECTED_POINTS_OPACITY,
+        },
+        selectedpoints: firstPoint !== null || focusPoints.length > 0 ? [firstPoint, ...focusPoints] : undefined,
+        selected: {
+          marker: { opacity: SELECTED_POINTS_OPACITY },
+        },
+        unselected: {
+          marker: { opacity: firstPoint !== null || focusPoints.length > 0 ? UNSELECTED_POINTS_OPACITY : SELECTED_POINTS_OPACITY },
+        },
+      }
+    }
 
     const EMPTY_MASK = frameData?.players?.x?.map(() => true) || [];
     return [
@@ -198,8 +206,8 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
   const overlayTraces = useMemo(() => {
     if (!overlay) return [];
 
-    if (overlay === 'pass_option_threat') {
-      return buildPassOptionThreatOverlay(frameData) || [];
+    if (overlay === 'pass_option_prob') {
+      return buildPassOptionProbOverlay(frameData) || [];
     }
 
     return [];
@@ -298,6 +306,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
             y: [frameData?.ball.ball_y],
             mode: 'markers+text',
             type: 'scatter',
+            hovertemplate: 'Ball<extra></extra>',
             marker: {
               size: plotConfig.ballMarkerSize,
               color: plotConfig.ballMarkerColor,
@@ -318,6 +327,8 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
           paper_bgcolor: 'rgba(0, 0, 0, 0.3)',
           plot_bgcolor: 'rgba(0, 0, 0, 0.3)',
           showlegend: false,
+          hovermode: 'x',
+          hoverdistance: 1,
           dragmode: dragMode as any,
           shapes: [...lines, ...shapes], // Contains player focus lines
           images: [

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import './App.css'
 import DataManager from './services/DataManager'
 import AnnotationStore from './services/AnnotationStore-optimized'
+import TimelineStore from './services/TimelineStore'
 import { APP_CONFIG, SLEEP_INTERVAL, THEME_CSS_VARIABLES } from './config'
 import type { MatchData } from './types/MatchDataInterfaces';
 import type { FrameData, Event } from './types/FrameDataInterfaces'
@@ -16,7 +17,7 @@ import WorkspaceSidebar, { type SidebarPanel } from './components/WorkspaceSideb
 type MainContentView = 'plot' | 'keyMoments'
 type AppView = 'idle' | 'picker' | 'workspace'
 
-function App({dataManager, annotationStore}: {dataManager: DataManager, annotationStore: AnnotationStore}) {
+function App({dataManager, annotationStore, timelineStore}: {dataManager: DataManager, annotationStore: AnnotationStore, timelineStore: TimelineStore}) {
   const [isPlaying, setIsPlaying] = useState(false) // Start with paused state
   const [chunkRange, setChunkRange] = useState({ start: 0, end: 0 })
   const [matchData, setMatchData] = useState<MatchData | null>(null)
@@ -173,6 +174,7 @@ function App({dataManager, annotationStore}: {dataManager: DataManager, annotati
                 activePanel={activeSidebarPanel}
                 onActivePanelChange={setActiveSidebarPanel}
                 matchData={matchData}
+                timelineStore={timelineStore}
               />
               <div className="main-content">
                 {mainContentView === 'plot' ? (

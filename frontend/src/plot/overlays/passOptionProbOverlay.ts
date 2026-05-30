@@ -3,7 +3,21 @@ import { useStyleConfig } from '../../context/StyleConfigContext'
 import { APP_CONFIG } from '../../config'
 
 const PASS_COMPLETION_THRESHOLD = 0.65
-const PASS_OPTION_PROB_INVERSE_COLOR = '#0f172a'
+
+const getInvertedHexColor = (color: string) => {
+    const normalizedColor = color.trim()
+    const hex = normalizedColor.startsWith('#') ? normalizedColor.slice(1) : normalizedColor
+
+    if (!/^[0-9a-fA-F]{6}$/.test(hex)) {
+        return color
+    }
+
+    const invertedHex = (0xffffff ^ Number.parseInt(hex, 16))
+        .toString(16)
+        .padStart(6, '0')
+
+    return `#${invertedHex}`
+}
 
 const getOverlayOpacity = (xPassCompletion: number) => {
     const isGoodPass = xPassCompletion >= PASS_COMPLETION_THRESHOLD
@@ -45,7 +59,9 @@ export function buildPassOptionProbOverlay(frameData: FrameData | null) {
 
         const isGoodPass = xPassCompletion >= PASS_COMPLETION_THRESHOLD
         const opacity = getOverlayOpacity(xPassCompletion)
-        const lineColor = isGoodPass ? eventStyles.passingOption.color : PASS_OPTION_PROB_INVERSE_COLOR
+        const lineColor = isGoodPass
+            ? eventStyles.passingOption.color
+            : getInvertedHexColor(eventStyles.passingOption.color)
 
         return [{
             x: [players.x[sourceIndex], players.x[targetIndex]],

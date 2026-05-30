@@ -89,7 +89,7 @@ const Settings: React.FC<{ matchData: MatchData | null }> = ({ matchData }) => {
             </div>
             <div className="settings-box settings-box--flat">
                 <div className="settings-section-heading">Overlays</div>
-                <SettingsRow label={'Passing Network'} color={null} visible={overlayVisibility.passing_network} onChange={setHomeTeamColor} onToggleVisibility={(visible) => setOverlayVisibility('passing_network', visible)} />
+                <SettingsRow label={'Pass Option Threat'} color={null} visible={overlayVisibility.pass_option_threat} onChange={setHomeTeamColor} onToggleVisibility={(visible) => setOverlayVisibility('pass_option_threat', visible)} />
 
             </div>
         </div>

@@ -2,13 +2,13 @@ import type { FrameData } from '../../types/FrameDataInterfaces'
 import { useStyleConfig } from '../../context/StyleConfigContext'
 import { APP_CONFIG } from '../../config'
 
-
-export function buildPassingNetworkOverlay(frameData: FrameData | null) {
+export function buildPassOptionThreatOverlay(frameData: FrameData | null) {
     if (!frameData) {
         return null;
     }
+
     const plotConfig = APP_CONFIG.plot
-    const { homeTeamColor, awayTeamColor, eventStyles, teamVisibility, eventVisibility, overlayVisibility } = useStyleConfig()
+    const { eventStyles } = useStyleConfig()
 
     const players = frameData.players;
     const playerIndexById = new Map(
@@ -49,5 +49,4 @@ export function buildPassingNetworkOverlay(frameData: FrameData | null) {
     });
     
     return traces;
-
 }

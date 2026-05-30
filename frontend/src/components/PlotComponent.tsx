@@ -8,7 +8,7 @@ import { APP_CONFIG, SELECTED_POINTS_OPACITY, UNSELECTED_POINTS_OPACITY } from '
 import backgroundImage from '../../../data/background_image.png';
 import type { MatchData } from '../types/MatchDataInterfaces'
 import { useStyleConfig } from '../context/StyleConfigContext'
-import { buildPassingNetworkOverlay } from '../plot/overlays/passingNetworkOverlay'
+import { buildPassOptionThreatOverlay } from '../plot/overlays/passOptionThreatOverlay'
 
 
 // const annotationStore = new AnnotationStore()
@@ -198,8 +198,8 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
   const overlayTraces = useMemo(() => {
     if (!overlay) return [];
 
-    if (overlay === 'passing_network') {
-      return buildPassingNetworkOverlay(frameData) || [];
+    if (overlay === 'pass_option_threat') {
+      return buildPassOptionThreatOverlay(frameData) || [];
     }
 
     return [];

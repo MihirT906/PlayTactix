@@ -61,18 +61,26 @@ export default class DataManager {
     }
   }
 
-  async fetchMatchMetaData(){
+  async fetchMatchMetaData() {
     if (this.selectedMatchId === null) {
       return null
     }
 
     try {
-      const response = await fetch(`http://localhost:8000/data/match_meta?match_id=${this.selectedMatchId}`)
+      const response = await fetch(
+        `http://localhost:8000/data/match_meta?match_id=${this.selectedMatchId}`
+      )
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch match metadata: ${response.status}`)
+      }
+
       const data = await response.json()
       return data
     } catch (error) {
       console.error('Error fetching match metadata:', error)
     }
+
     return null
   }
 

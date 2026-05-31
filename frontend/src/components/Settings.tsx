@@ -3,12 +3,15 @@ import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import "./Settings.css";
 import type { MatchData } from '../types/MatchDataInterfaces';
 import { useStyleConfig } from '../context/StyleConfigContext';
+import { useMatchSession } from '../context/MatchSessionContext'
+
+
 
 type SettingsRowProps = {
     label: string;
     color: string | null;
     visible: boolean;
-    onChange: (c: string) => void;
+    onChange?: (c: string) => void;
     onToggleVisibility?: (visible: boolean) => void;
 };
 
@@ -48,7 +51,7 @@ const SettingsRow: React.FC<SettingsRowProps> = ({ label, color, visible, onChan
                     className="settings-color-input-hidden"
                     type="color"
                     value={color || '#000000'}
-                    onChange={(event) => onChange(event.target.value.toUpperCase())}
+                    onChange={(event) => onChange?.(event.target.value.toUpperCase())}
                     aria-label={`Choose color for ${label}`}
                 />
             </div>
@@ -63,14 +66,19 @@ const Settings: React.FC<{ matchData: MatchData | null }> = ({ matchData }) => {
         eventStyles,
         teamVisibility,
         eventVisibility,
-        overlayVisibility,
         setHomeTeamColor,
         setAwayTeamColor,
         setEventStyleColor,
         setTeamVisibility,
         setEventVisibility,
-        setOverlayVisibility,
     } = useStyleConfig();
+
+    const {
+        session,
+        setActiveOverlay,
+    } = useMatchSession()
+
+    const activeOverlay = session.overlays.active
 
     return (
         <div className="settings-display">
@@ -89,8 +97,8 @@ const Settings: React.FC<{ matchData: MatchData | null }> = ({ matchData }) => {
             </div>
             <div className="settings-box settings-box--flat">
                 <div className="settings-section-heading">Overlays</div>
-                <SettingsRow label={'Pass Option Probability'} color={null} visible={overlayVisibility.pass_option_prob} onChange={setHomeTeamColor} onToggleVisibility={(visible) => setOverlayVisibility('pass_option_prob', visible)} />
-                <SettingsRow label={'Pitch Control'} color={null} visible={overlayVisibility.pitch_control} onChange={setHomeTeamColor} onToggleVisibility={(visible) => setOverlayVisibility('pitch_control', visible)} />
+                <SettingsRow label={'Pass Option Probability'} color={null} visible={activeOverlay === 'pass_option_prob'} onChange={setHomeTeamColor} onToggleVisibility={(visible) => setActiveOverlay(visible ? 'pass_option_prob' : null)} />
+                <SettingsRow label={'Pitch Control'} color={null} visible={activeOverlay === 'pitch_control'} onChange={setHomeTeamColor} onToggleVisibility={(visible) => setActiveOverlay(visible ? 'pitch_control' : null)} />
 
             </div>
         </div>

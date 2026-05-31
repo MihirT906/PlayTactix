@@ -15,7 +15,7 @@ type EventStyle = {
 
 type EventStyleKey = keyof typeof APP_CONFIG.events;
 type TeamVisibilityKey = 'home' | 'away';
-type OverlayVisibilityKey = 'pass_option_prob' | 'pitch_control';
+// type OverlayVisibilityKey = 'pass_option_prob' | 'pitch_control';
 
 type VisibilityState<T extends string> = Record<T, boolean>;
 
@@ -25,13 +25,13 @@ type StyleConfigContextValue = {
 	eventStyles: Record<EventStyleKey, EventStyle>;
 	teamVisibility: VisibilityState<TeamVisibilityKey>;
 	eventVisibility: VisibilityState<EventStyleKey>;
-	overlayVisibility: VisibilityState<OverlayVisibilityKey>;
+	// overlayVisibility: VisibilityState<OverlayVisibilityKey>;
 	setHomeTeamColor: (color: string) => void;
 	setAwayTeamColor: (color: string) => void;
 	setEventStyleColor: (eventKey: EventStyleKey, color: string) => void;
 	setTeamVisibility: (teamKey: TeamVisibilityKey, visible: boolean) => void;
 	setEventVisibility: (eventKey: EventStyleKey, visible: boolean) => void;
-	setOverlayVisibility: (overlayKey: OverlayVisibilityKey, visible: boolean) => void;
+	// setOverlayVisibility: (overlayKey: OverlayVisibilityKey, visible: boolean) => void;
 };
 
 type StyleConfigProviderProps = {
@@ -60,17 +60,17 @@ const DEFAULT_STYLE_CONFIG = {
 		onBallEngagement: true,
 		offBallRun: true,
 	},
-	overlayVisibility: {
-		pass_option_prob: false,
-		pitch_control: false,
-	},
+	// overlayVisibility: {
+	// 	pass_option_prob: false,
+	// 	pitch_control: false,
+	// },
 } satisfies {
 	homeTeamColor: string;
 	awayTeamColor: string;
 	eventStyles: Record<EventStyleKey, EventStyle>;
 	teamVisibility: VisibilityState<TeamVisibilityKey>;
 	eventVisibility: VisibilityState<EventStyleKey>;
-	overlayVisibility: VisibilityState<OverlayVisibilityKey>;
+	// overlayVisibility: VisibilityState<OverlayVisibilityKey>;
 };
 
 const StyleConfigContext = createContext<StyleConfigContextValue | null>(null);
@@ -81,7 +81,7 @@ export const StyleConfigProvider = ({ children, matchData }: StyleConfigProvider
 	const [eventStyles, setEventStyles] = useState(DEFAULT_STYLE_CONFIG.eventStyles);
 	const [teamVisibility, setTeamVisibilityState] = useState(DEFAULT_STYLE_CONFIG.teamVisibility);
 	const [eventVisibility, setEventVisibilityState] = useState(DEFAULT_STYLE_CONFIG.eventVisibility);
-	const [overlayVisibility, setOverlayVisibilityState] = useState<VisibilityState<OverlayVisibilityKey>>(DEFAULT_STYLE_CONFIG.overlayVisibility);
+	// const [overlayVisibility, setOverlayVisibilityState] = useState<VisibilityState<OverlayVisibilityKey>>(DEFAULT_STYLE_CONFIG.overlayVisibility);
 
 	useEffect(() => {
 		const homeColor = matchData?.home_team_kit?.jersey_color;
@@ -104,7 +104,7 @@ export const StyleConfigProvider = ({ children, matchData }: StyleConfigProvider
 				eventStyles,
 				teamVisibility,
 				eventVisibility,
-				overlayVisibility,
+				// overlayVisibility,
 				setHomeTeamColor: (color: string) => setHomeTeamColor(normalizeColor(color)),
 				setAwayTeamColor: (color: string) => setAwayTeamColor(normalizeColor(color)),
 				setEventStyleColor: (eventKey, color) => {
@@ -128,24 +128,24 @@ export const StyleConfigProvider = ({ children, matchData }: StyleConfigProvider
 						[eventKey]: visible,
 					}));
 				},
-				setOverlayVisibility: (overlayKey, visible) => {
-					setOverlayVisibilityState((currentVisibility) => {
-						if (!visible) {
-							return {
-								...currentVisibility,
-								[overlayKey]: false,
-							};
-						}
+				// setOverlayVisibility: (overlayKey, visible) => {
+				// 	setOverlayVisibilityState((currentVisibility) => {
+				// 		if (!visible) {
+				// 			return {
+				// 				...currentVisibility,
+				// 				[overlayKey]: false,
+				// 			};
+				// 		}
 
-						return Object.keys(currentVisibility).reduce(
-							(nextVisibility, key) => ({
-								...nextVisibility,
-								[key]: key === overlayKey,
-							}),
-							{} as VisibilityState<OverlayVisibilityKey>
-						);
-					});
-				},
+				// 		return Object.keys(currentVisibility).reduce(
+				// 			(nextVisibility, key) => ({
+				// 				...nextVisibility,
+				// 				[key]: key === overlayKey,
+				// 			}),
+				// 			{} as VisibilityState<OverlayVisibilityKey>
+				// 		);
+				// 	});
+				// },
 			}}
 		>
 			{children}
@@ -163,4 +163,4 @@ export const useStyleConfig = () => {
 	return context;
 };
 
-export type { EventStyleKey, OverlayVisibilityKey, TeamVisibilityKey };
+export type { EventStyleKey, TeamVisibilityKey };

@@ -8,6 +8,7 @@ import { APP_CONFIG, SELECTED_POINTS_OPACITY, UNSELECTED_POINTS_OPACITY } from '
 import backgroundImage from '../../../data/background_image.png';
 import type { MatchData } from '../types/MatchDataInterfaces'
 import { useStyleConfig } from '../context/StyleConfigContext'
+import { useMatchSession } from '../context/MatchSessionContext'
 import { buildPassOptionProbOverlay } from '../plot/overlays/passOptionProbOverlay'
 import { buildPitchControlOverlay } from '../plot/overlays/pitchControlOverlay.ts'
 
@@ -24,7 +25,9 @@ interface PlotComponentProps {
 
 const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, frameData, annotationStore, onAnnotationUpdate }) => {
   const plotConfig = APP_CONFIG.plot
-  const { homeTeamColor, awayTeamColor, eventStyles, teamVisibility, eventVisibility, overlayVisibility } = useStyleConfig()
+  const { homeTeamColor, awayTeamColor, eventStyles, teamVisibility, eventVisibility } = useStyleConfig()
+  const { session } = useMatchSession()
+  const overlay = session.overlays.active
   const [focusPoints, setFocusPoints] = useState<number[]>([]) // Points that are highlighted on click
   const [firstPoint, setFirstPoint] = useState<number | null>(null) // First point selected when drawing a line between two players
   const [focusEnabled, setFocusEnabled] = useState(false) // 'Player Focus' mode toggled to draw lines
@@ -33,10 +36,6 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
   const [dragMode, setDragMode] = useState<string>('select')
   const [overlayTraces, setOverlayTraces] = useState<any[]>([]); 
   const image_src = backgroundImage; // Set the background image source
-  const overlay = useMemo(
-    () => Object.entries(overlayVisibility).find(([, visible]) => visible)?.[0] ?? null,
-    [overlayVisibility]
-  )
 
   // Utility function to filter arrays based on a boolean mask
   const filterByMask = <T,>(arr: T[], mask: boolean[]) =>

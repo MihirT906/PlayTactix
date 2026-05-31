@@ -7,6 +7,7 @@ import {
 } from 'react'
 import type DataManager from '../services/DataManager'
 import type { SidebarPanel } from '../components/WorkspaceSidebar'
+import type OverlayManager from '../services/OverlayManager'
 
 export type LoadStatus = 'idle' | 'loading' | 'ready' | 'error'
 export type OverlayKind = 'pass_option_prob' | 'pitch_control'
@@ -37,6 +38,7 @@ export type MatchSessionState = {
 
 type MatchSessionResources = {
   dataManager: DataManager
+  overlayManager: OverlayManager
 }
 
 type MatchSessionContextValue = {
@@ -63,8 +65,9 @@ type MatchSessionContextValue = {
 }
 
 type MatchSessionProviderProps = {
-  children: ReactNode
-  dataManager: DataManager
+    children: ReactNode
+    dataManager: DataManager
+    overlayManager: OverlayManager
 }
 
 const DEFAULT_EPISODE_RANGE = { start: 10, end: 1000 }
@@ -101,14 +104,16 @@ const MatchSessionContext = createContext<MatchSessionContextValue | null>(null)
 export function MatchSessionProvider({
   children,
   dataManager,
+  overlayManager,
 }: MatchSessionProviderProps) {
   const [session, setSession] = useState<MatchSessionState>(createInitialMatchSessionState)
 
   const resources = useMemo(
     () => ({
-      dataManager,
+        dataManager,
+        overlayManager,
     }),
-    [dataManager]
+    [dataManager, overlayManager]
   )
 
   const value = useMemo<MatchSessionContextValue>(() => {
@@ -118,6 +123,7 @@ export function MatchSessionProvider({
 
         selectMatch: (matchId: number) => {
             dataManager.setMatchId(matchId)
+            overlayManager.setMatchId(matchId)
 
             setSession({
                 ...createInitialMatchSessionState(),

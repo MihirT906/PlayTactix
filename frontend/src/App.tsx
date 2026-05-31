@@ -13,20 +13,23 @@ import PlotLayoutComponent from './components/PlotLayoutComponent'
 import MatchPicker from './components/MatchPicker'
 import WorkspaceSidebar, { type SidebarPanel } from './components/WorkspaceSidebar'
 import { MatchSessionProvider, useMatchSession } from './context/MatchSessionContext'
+import type OverlayManager from './services/OverlayManager'
 
 
 type AppView = 'idle' | 'picker' | 'workspace'
 function App({
   dataManager,
+  overlayManager,
   annotationStore,
   timelineStore,
 }: {
   dataManager: DataManager
+  overlayManager: OverlayManager
   annotationStore: AnnotationStore
   timelineStore: TimelineStore
 }) {
   return (
-    <MatchSessionProvider dataManager={dataManager}>
+    <MatchSessionProvider dataManager={dataManager} overlayManager={overlayManager}>
       <AppContent
         annotationStore={annotationStore}
         timelineStore={timelineStore}

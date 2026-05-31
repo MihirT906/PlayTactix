@@ -26,7 +26,8 @@ interface PlotComponentProps {
 const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, frameData, annotationStore, onAnnotationUpdate }) => {
   const plotConfig = APP_CONFIG.plot
   const { homeTeamColor, awayTeamColor, eventStyles, teamVisibility, eventVisibility } = useStyleConfig()
-  const { session } = useMatchSession()
+  const { session, resources } = useMatchSession()
+  const overlayManager = resources.overlayManager
   const overlay = session.overlays.active
   const [focusPoints, setFocusPoints] = useState<number[]>([]) // Points that are highlighted on click
   const [firstPoint, setFirstPoint] = useState<number | null>(null) // First point selected when drawing a line between two players
@@ -233,7 +234,11 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
       }
 
       if (overlay === 'pass_option_prob') {
-        setOverlayTraces(buildPassOptionProbOverlay(frameData) || []);
+        const result = await overlayManager.getOverlayForFrame(overlay, currentFrame, frameData);
+        
+        if (!cancelled && result.payload?.kind === 'pass_option_prob') {
+          setOverlayTraces(buildPassOptionProbOverlay(result.payload.data, eventStyles.passingOption.color) || []);
+        }
         return;
       }
 
@@ -254,7 +259,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
     return () => {
       cancelled = true;
     };
-  }, [overlay, frameData]);
+  }, [overlay, frameData, currentFrame, overlayManager, eventStyles.passingOption.color]);
 
   // Creates lines to add to Plotly.layout using the player focus lines stored in annotationStore
   const updateLines = () => { 

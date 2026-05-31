@@ -1,5 +1,4 @@
 import type { FrameData } from '../../types/FrameDataInterfaces'
-import { useStyleConfig } from '../../context/StyleConfigContext'
 import { APP_CONFIG } from '../../config'
 
 const PASS_COMPLETION_THRESHOLD = 0.65
@@ -23,18 +22,21 @@ const getOverlayOpacity = (xPassCompletion: number) => {
     const isGoodPass = xPassCompletion >= PASS_COMPLETION_THRESHOLD
     const normalized = isGoodPass
         ? (xPassCompletion - PASS_COMPLETION_THRESHOLD) / (1 - PASS_COMPLETION_THRESHOLD)
-        : xPassCompletion / PASS_COMPLETION_THRESHOLD
+        : (PASS_COMPLETION_THRESHOLD - xPassCompletion) / (1 - PASS_COMPLETION_THRESHOLD)
 
+    return normalized
     return 0.15 + 0.85 * Math.pow(Math.max(0, Math.min(normalized, 1)), 0.4)
 }
 
-export function buildPassOptionProbOverlay(frameData: FrameData | null) {
+export function buildPassOptionProbOverlay(
+  frameData: FrameData | null,
+  passingOptionColor: string
+){
     if (!frameData) {
         return null;
     }
 
     const plotConfig = APP_CONFIG.plot
-    const { eventStyles } = useStyleConfig()
 
     const players = frameData.players;
     const playerIndexById = new Map(
@@ -60,8 +62,8 @@ export function buildPassOptionProbOverlay(frameData: FrameData | null) {
         const isGoodPass = xPassCompletion >= PASS_COMPLETION_THRESHOLD
         const opacity = getOverlayOpacity(xPassCompletion)
         const lineColor = isGoodPass
-            ? eventStyles.passingOption.color
-            : getInvertedHexColor(eventStyles.passingOption.color)
+            ? passingOptionColor
+            : getInvertedHexColor(passingOptionColor)
 
         return [{
             x: [players.x[sourceIndex], players.x[targetIndex]],

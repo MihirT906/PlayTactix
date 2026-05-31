@@ -14,21 +14,83 @@ import MatchPicker from './components/MatchPicker'
 import WorkspaceSidebar, { type SidebarPanel } from './components/WorkspaceSidebar'
 
 type AppView = 'idle' | 'picker' | 'workspace'
+type LoadStatus = 'idle' | 'loading' | 'ready' | 'error'
+type OverlayKind = 'pass_option_prob' | 'pitch_control' 
+
+type MatchSessionState = {
+  match: {
+    id: number | null
+    metaStatus: LoadStatus
+    keyMomentStatus: LoadStatus
+  }
+  playback: {
+    currentFrame: number
+    episodeRange: { start: number; end: number }
+    isPlaying: boolean
+    isFrameLoading: boolean
+  }
+  rawData: {
+    loadedFrameRange: { start: number; end: number } | null
+  }
+  overlays: {
+    active: OverlayKind[]
+  }
+  ui: {
+    activeSidebarPanel: 'settings' | 'timeline' | 'search' | null
+  }
+}
+
+type MatchSessionResources = {
+  dataManager: DataManager
+}
+
+const DEFAULT_EPISODE_RANGE = { start: 10, end: 1000 }
+
+const createInitialMatchSessionState = (): MatchSessionState => ({
+  match: {
+    id: null,
+    metaStatus: 'idle',
+    keyMomentStatus: 'idle',
+  },
+  playback: {
+    currentFrame: DEFAULT_EPISODE_RANGE.start,
+    episodeRange: DEFAULT_EPISODE_RANGE,
+    isPlaying: false,
+    isFrameLoading: false,
+  },
+  rawData: {
+    loadedFrameRange: null,
+  },
+  overlays: {
+    active: [],
+  },
+  ui: {
+    activeSidebarPanel: null,
+  },
+})
 
 function App({dataManager, annotationStore, timelineStore}: {dataManager: DataManager, annotationStore: AnnotationStore, timelineStore: TimelineStore}) {
-  const [isPlaying, setIsPlaying] = useState(false) // Start with paused state
-  const [chunkRange, setChunkRange] = useState({ start: 0, end: 0 })
-  const [matchData, setMatchData] = useState<MatchData | null>(null)
+  const [session, setSession] = useState<MatchSessionState>(createInitialMatchSessionState())
+  const selectedMatchId = session.match.id
+  const currentFrame = session.playback.currentFrame
+  const episodeRange = session.playback.episodeRange
+  const isPlaying = session.playback.isPlaying
+  const isFetching = session.playback.isFrameLoading
+  const activeSidebarPanel = session.ui.activeSidebarPanel
+  const chunkRange = session.rawData.loadedFrameRange ?? { start: 0, end: 0 }
+  // const [isPlaying, setIsPlaying] = useState(false) // Start with paused state
+  // const [chunkRange, setChunkRange] = useState({ start: 0, end: 0 })
+  const [matchMetaData, setMatchMetaData] = useState<MatchData | null>(null)
   const [keyMomentsData, setKeyMomentsData] = useState<KeyMomentsData | null>(null)
   const [eventsData, setEventsData] = useState<Map<number, Event[]>>(new Map()) // State to hold events data
-  const [episodeRange, setEpisodeRange] = useState({ start: 10, end: 1000 })
-  const [currentFrame, setCurrentFrame] = useState(episodeRange.start)
+  // const [episodeRange, setEpisodeRange] = useState({ start: 10, end: 1000 })
+  // const [currentFrame, setCurrentFrame] = useState(episodeRange.start)
   const [currentFrameData, setCurrentFrameData] = useState<FrameData | null>(null)
-  const [isFetching, setIsFetching] = useState(false) // Track if data is being fetched
+  // const [isFetching, setIsFetching] = useState(false) // Track if data is being fetched
   const [annotationUpdateEvent, setAnnotationUpdateEvent] = useState(false)
-  const [activeSidebarPanel, setActiveSidebarPanel] = useState<SidebarPanel>(null)
+  // const [activeSidebarPanel, setActiveSidebarPanel] = useState<SidebarPanel>(null)
   const [appView, setAppView] = useState<AppView>('idle')
-  const [selectedMatchId, setSelectedMatchId] = useState<number | null>(null)
+  // const [selectedMatchId, setSelectedMatchId] = useState<number | null>(null)
 
   useEffect(() => {
     const root = document.documentElement
@@ -41,88 +103,187 @@ function App({dataManager, annotationStore, timelineStore}: {dataManager: DataMa
   }, [])
 
 
-  useEffect(() => {
+  useEffect(() => { // Fetch frame data when currentFrame changes
     if (selectedMatchId === null) return
 
     const fetchFrameData = async () => {
-      setIsFetching(true) // Set fetching flag to true
+      // First, set the frameLoading flag to true to indicate that we're fetching data
+      setSession((prev) => ({
+        ...prev,
+        playback: {
+          ...prev.playback,
+          isFrameLoading: true,
+        },
+      }))
+
+      // Collect frame data from dataManager
       const result = await dataManager.getFrameData(currentFrame)
+
       if (result.frameData) {
-        // console.log(`Data for frame ${currentFrame}:`, result.frameData)
         setCurrentFrameData(result.frameData)
       } else {
         console.warn(`No data available for frame ${currentFrame}`)
         setCurrentFrameData(null)
       }
 
-      if (result.didLoadChunk) {
-        setChunkRange(result.newChunkRange || { start: 0, end: 0 })
-        console.log('Updating chunk range in App component:', result.newChunkRange)
+      // If a new chunk was loaded, update the chunk range and fetch events for the new range
+      if (result.didLoadChunk && result.newChunkRange) {
+        setSession((prev) => ({
+          ...prev,
+          rawData: {
+            ...prev.rawData,
+            loadedFrameRange: result.newChunkRange,
+          },
+        }))
         setEventsData(dataManager.getEventData(result.newChunkRange?.start || 0, result.newChunkRange?.end || 0))
       }
 
-      setIsFetching(false) // Set fetching flag to false
+      // Finally, set the frameLoading flag back to false
+      setSession((prev) => ({
+        ...prev,
+        playback: {
+          ...prev.playback,
+          isFrameLoading: false,
+        },
+      }))
     }
 
     fetchFrameData()
-    console.log("Events data in app", eventsData)
-  }, [currentFrame, selectedMatchId])
+  }, [currentFrame, selectedMatchId, dataManager])
 
-  useEffect(() => {
+  useEffect(() => { // Fetch match metadata when a match is selected
     if (selectedMatchId === null) return
 
-    const fetchMatchData = async () => {
+    const fetchMatchMetaData = async () => {
+      // First set the metaStatus to 'loading' to indicate that we're fetching data
+      setSession((prev) => ({
+        ...prev,
+        match: {
+          ...prev.match,
+          metaStatus: 'loading',
+        },
+      }))
+
+      // Collect match metadata from dataManager
       const data = await dataManager.fetchMatchMetaData()
       if (data) {
-        setMatchData(data)
+        setMatchMetaData(data)
+        // After successfully fetching metadata, update the metaStatus to 'ready'
+        setSession((prev) => ({
+          ...prev,
+          match: {
+            ...prev.match,
+            metaStatus: 'ready',
+          },
+        }))
       } else {
         console.warn('No match metadata available')
+        // If fetching metadata fails, set the metaStatus to 'error'
+        setSession((prev) => ({
+          ...prev,
+          match: {
+            ...prev.match,
+            metaStatus: 'error',
+          },
+        }))
       }
     }
 
-    fetchMatchData()
+    fetchMatchMetaData()
   }, [selectedMatchId])
 
   useEffect(() => {
     if (selectedMatchId === null) return
 
     const fetchKeyMomentsData = async () => {
+      // First set the keyMomentStatus to 'loading' to indicate that we're fetching data
+      setSession((prev) => ({
+        ...prev,
+        match: {
+          ...prev.match,
+          keyMomentStatus: 'loading',
+        },
+      }))
+
+      // Collect key moments data from dataManager
       const data = await dataManager.fetchKeyMoments()
       if (data) {
         setKeyMomentsData(data)
+        // After successfully fetching key moments, update the keyMomentStatus to 'ready'
+        setSession((prev) => ({
+          ...prev,
+          match: {
+            ...prev.match,
+            keyMomentStatus: 'ready',
+          },
+        }))
       } else {
         console.warn('No key moments data available')
+        // If fetching key moments fails, set the keyMomentStatus to 'error'
+        setSession((prev) => ({
+          ...prev,
+          match: {
+            ...prev.match,
+            keyMomentStatus: 'error',
+          },
+        }))
       }
     }
 
     fetchKeyMomentsData()
   }, [selectedMatchId])
 
-  useEffect(() => {
-    if (!isPlaying || isFetching) return // Only proceed if not fetching
+  useEffect(() => { // For playback control - auto-advance frames when isPlaying is true
+    if (!isPlaying || isFetching) return
+
     const interval = setInterval(() => {
-      setCurrentFrame(prev => (prev >= episodeRange.end ? episodeRange.start : prev + 1))
+      setSession((prev) => ({
+        ...prev,
+        playback: {
+          ...prev.playback,
+          currentFrame: prev.playback.currentFrame >= prev.playback.episodeRange.end ? prev.playback.episodeRange.start : prev.playback.currentFrame + 1,
+        },
+      }))
     }, SLEEP_INTERVAL)
 
     return () => clearInterval(interval)
   }, [isPlaying, isFetching])
 
   const handlePlayPause = () => {
-    setIsPlaying(!isPlaying)
+    setSession((prev) => ({
+      ...prev,
+      playback: {
+        ...prev.playback,
+        isPlaying: !prev.playback.isPlaying,
+      },
+    }))
   }
 
   const handleFrameChange = (frame: number) => {
-    setCurrentFrame(frame)
-    setIsPlaying(false) // Pause the animation when the user moves the slider
+    setSession((prev) => ({
+      ...prev,
+      playback: {
+        ...prev.playback,
+        currentFrame: frame,
+        isPlaying: false, // Pause the animation when the user moves the slider
+      },
+    }))
   }
 
   const addCustomEpisodeRange = (start: number, end: number) => {
-    setEpisodeRange({ start, end })
-    setCurrentFrame(start) // Reset to the start of the new range
+    setSession((prev) => ({
+      ...prev,
+      playback: {
+        ...prev.playback,
+        episodeRange: { start, end },
+        currentFrame: start, // Reset to the start of the new range
+        isPlaying: false, // Pause playback when a new range is added
+      },
+    }))
   }
 
   return (
-    <StyleConfigProvider matchData={matchData}>
+    <StyleConfigProvider matchData={matchMetaData}>
       <div className="app-shell">
         <header className="app-header">
           <div className="app-title-group">
@@ -133,7 +294,13 @@ function App({dataManager, annotationStore, timelineStore}: {dataManager: DataMa
               type="button"
               className={`app-header-action ${appView === 'picker' ? 'is-active' : ''}`}
               onClick={() => {
-                setActiveSidebarPanel(null)
+                setSession((prev) => ({
+                  ...prev,
+                  ui: {
+                    ...prev.ui,
+                    activeSidebarPanel: null, // Close any open sidebar panel when navigating back to picker
+                  },
+                }))
                 setAppView('picker')
               }}
               aria-label="Choose game"
@@ -148,14 +315,18 @@ function App({dataManager, annotationStore, timelineStore}: {dataManager: DataMa
             <MatchPicker
               onMatchSelected={(matchId) => {
                 dataManager.setMatchId(matchId)
-                setSelectedMatchId(matchId)
-                setMatchData(null)
+                setMatchMetaData(null)
                 setKeyMomentsData(null)
                 setEventsData(new Map())
                 setCurrentFrameData(null)
-                setChunkRange({ start: 0, end: 0 })
-                setEpisodeRange({ start: 10, end: 1000 })
-                setCurrentFrame(10)
+                setSession({
+                  ...createInitialMatchSessionState(),
+                  match: {
+                    id: matchId,
+                    metaStatus: 'idle',
+                    keyMomentStatus: 'idle',
+                  },
+                })
                 setAppView('workspace')
               }}
             />
@@ -164,13 +335,21 @@ function App({dataManager, annotationStore, timelineStore}: {dataManager: DataMa
 
         {appView === 'workspace' ? (
           <div className="workspace-content">
-            <MatchDetailsDisplay matchData={matchData!} />
+            <MatchDetailsDisplay matchData={matchMetaData!} />
 
             <div className={`app-container app-container--active ${activeSidebarPanel !== null ? 'app-container--settings-open' : ''}`}>
               <WorkspaceSidebar
                 activePanel={activeSidebarPanel}
-                onActivePanelChange={setActiveSidebarPanel}
-                matchData={matchData}
+                onActivePanelChange={(panel) => 
+                  setSession((prev) => ({
+                    ...prev,
+                    ui: {
+                      ...prev.ui,
+                      activeSidebarPanel: panel, // Toggle panel visibility
+                    }
+                  }))
+                }
+                matchData={matchMetaData}
                 timelineStore={timelineStore}
                 episodeRange={episodeRange}
                 onAddCustomEpisodeRange={addCustomEpisodeRange}
@@ -185,7 +364,7 @@ function App({dataManager, annotationStore, timelineStore}: {dataManager: DataMa
                     onFrameChange={handleFrameChange}
                     episodeRange={episodeRange}
                     chunkRange={chunkRange}
-                    matchData={matchData}
+                    matchData={matchMetaData}
                     frameData={currentFrameData}
                     eventsData={eventsData}
                     annotationStore={annotationStore}

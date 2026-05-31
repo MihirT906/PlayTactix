@@ -9,6 +9,7 @@ import backgroundImage from '../../../data/background_image.png';
 import type { MatchData } from '../types/MatchDataInterfaces'
 import { useStyleConfig } from '../context/StyleConfigContext'
 import { buildPassOptionProbOverlay } from '../plot/overlays/passOptionProbOverlay'
+import { buildPitchControlOverlay } from '../plot/overlays/pitchControlOverlay.ts'
 
 
 // const annotationStore = new AnnotationStore()
@@ -30,6 +31,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
   const [lines, setLines] = useState<any[]>([]) // User annotation lines
   const [shapes, setShapes] = useState<any[]>([]) // User annotation shapes
   const [dragMode, setDragMode] = useState<string>('select')
+  const [overlayTraces, setOverlayTraces] = useState<any[]>([]); 
   const image_src = backgroundImage; // Set the background image source
   const overlay = useMemo(
     () => Object.entries(overlayVisibility).find(([, visible]) => visible)?.[0] ?? null,
@@ -203,20 +205,57 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
     ];
   }, [awayTeamColor, eventStyles.onBallEngagement.color, eventStyles.onBallEngagement.width, eventStyles.passingOption.color, eventStyles.passingOption.width, eventStyles.playerPossession.color, eventStyles.playerPossession.width, eventVisibility.onBallEngagement, eventVisibility.passingOption, eventVisibility.playerPossession, frameData, homeTeamColor, matchData, playerMasks, teamVisibility.away, teamVisibility.home])
 
-  const overlayTraces = useMemo(() => {
-    if (!overlay) return [];
+  // const overlayTraces = useMemo(() => {
+  //   if (!overlay) return [];
 
-    if (overlay === 'pass_option_prob') {
-      return buildPassOptionProbOverlay(frameData) || [];
+  //   if (overlay === 'pass_option_prob') {
+  //     return buildPassOptionProbOverlay(frameData) || [];
+  //   }
+
+  //   if (overlay === 'pitch_control') {
+  //     const config = {}
+  //     return buildPitchControlOverlay(frameData, config) || [];
+  //   }
+
+  //   return [];
+  // }, [
+  //   eventStyles.passingOption.color,
+  //   frameData,
+  //   overlay,
+  //   plotConfig.markerSize
+  // ]);
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadOverlay() {
+      if (!overlay) {
+        setOverlayTraces([]);
+        return;
+      }
+
+      if (overlay === 'pass_option_prob') {
+        setOverlayTraces(buildPassOptionProbOverlay(frameData) || []);
+        return;
+      }
+
+      if (overlay === 'pitch_control') {
+        const config = {};
+        const traces = await buildPitchControlOverlay(frameData, currentFrame, config);
+        if (!cancelled) {
+          setOverlayTraces(traces || []);
+        }
+        return;
+      }
+
+      setOverlayTraces([]);
     }
 
-    return [];
-  }, [
-    eventStyles.passingOption.color,
-    frameData,
-    overlay,
-    plotConfig.markerSize
-  ]);
+    loadOverlay();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [overlay, frameData]);
 
   // Creates lines to add to Plotly.layout using the player focus lines stored in annotationStore
   const updateLines = () => { 

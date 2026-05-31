@@ -2,13 +2,15 @@
 interface FrameData {
     period: number | null;
     players: Players;
-    ball: {
-        ball_x: number | null;
-        ball_y: number | null;
-        ball_z: number | null;
-    }
+    ball: Ball;
     events: Event[] | [];
 
+}
+
+interface Ball {
+    ball_x: number | null;
+    ball_y: number | null;
+    ball_z: number | null;
 }
 
 interface Players {
@@ -61,4 +63,4 @@ interface Event {
     xshot_player_possession_max: number;
 }
 
-export type { FrameData, Event }
+export type { FrameData, Event, Players, Ball }

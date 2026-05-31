@@ -9,6 +9,7 @@ except ModuleNotFoundError:
 
 from services.data_ingestor_github import SkillCornerDataIngestor
 from services.frame_data_service import FrameDataService
+from services.pitch_control_overlay import PitchControlOverlay
 
 router = APIRouter(prefix="/data", tags=["frames"])
 
@@ -64,6 +65,16 @@ async def get_match_key_moments(match_id: int = Query(...)):
             "requested_match_id": match_id,
             "data": key_moments,
         }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/pitch_control_overlay")
+async def get_pitch_control_overlay(match_id: int = Query(...), start: int = Query(1), end: int = Query(50)):
+    try:
+        pco = PitchControlOverlay()
+        pitch_control_results = pco.get_pitch_control(match_id=match_id, start_frame=start, end_frame=end)
+        return pitch_control_results
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

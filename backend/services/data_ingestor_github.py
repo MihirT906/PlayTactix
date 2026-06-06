@@ -70,14 +70,12 @@ class KloppyDataIngestor:
         pass
         
     def _get_tracking_data_from_kloppy(self, match_id):
-        dataset = skillcorner.load(
-            meta_data=f"https://raw.githubusercontent.com/SkillCorner/opendata/741bdb798b0c1835057e3fa77244c1571a00e4aa/data/matches/{match_id}/{match_id}_match.json",
-            raw_data=f"https://media.githubusercontent.com/media/SkillCorner/opendata/741bdb798b0c1835057e3fa77244c1571a00e4aa/data/matches/{match_id}/{match_id}_tracking_extrapolated.jsonl",
-            # Optional arguments
+        dataset = skillcorner.load_open_data(
+            match_id=match_id,
             sample_rate=1,
             coordinates="skillcorner",
             include_empty_frames=False,
-            only_alive=True
+            only_alive=False
         )
         pd.set_option('display.max_columns', None)
             
@@ -195,6 +193,8 @@ class KloppyDataIngestor:
         computed_cols = [col for col in tracking_df.columns if col not in existing_base_cols]
         # numeric_cols = tracking_df.select_dtypes(include=[np.number]).columns
         # tracking_df[computed_cols] = tracking_df[computed_cols].fillna(0)
+        tracking_df = tracking_df.replace([np.inf, -np.inf], np.nan)
+        tracking_df = tracking_df.where(pd.notna(tracking_df), None)
 
         return tracking_df
 

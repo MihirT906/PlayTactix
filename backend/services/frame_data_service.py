@@ -157,7 +157,7 @@ class FrameDataService:
                         "type": "pitch_control",
                         "data": PitchControlOverlay().get_pitch_control(row)
                     }
-            
+            print("returning")
             return {
                 "requested_match_id": match_id,
                 "requested_start": start,

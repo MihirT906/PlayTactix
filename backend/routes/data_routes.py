@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 from fastapi import APIRouter, HTTPException, Query
+import math
+from fastapi.responses import JSONResponse 
 
 try:
     from backend.paths import DATA_DIR
@@ -18,6 +20,15 @@ data_ingestor: DataIngestor = None
 def set_data_ingestor(ingestor: DataIngestor):
     global data_ingestor
     data_ingestor = ingestor
+
+def sanitize_nan(obj):
+    if isinstance(obj, float) and math.isnan(obj):
+        return None
+    elif isinstance(obj, dict):
+        return {k: sanitize_nan(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [sanitize_nan(v) for v in obj]
+    return obj
     
 @router.get("/hello")
 async def hello():
@@ -38,7 +49,7 @@ async def get_frame_data(match_id: int = Query(...), start: int = Query(1), end:
     try:
         frame_data_service = FrameDataService()
         ret = frame_data_service.get_frames(match_id=match_id, start=start, end=end)
-        return ret
+        return JSONResponse(content=sanitize_nan(ret))
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

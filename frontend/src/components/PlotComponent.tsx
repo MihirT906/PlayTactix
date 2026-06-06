@@ -242,7 +242,10 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
       }
 
       if (overlay === 'pitch_control') {
-        const config = {};
+        const config = {
+          'homeTeamColor': homeTeamColor,
+          'awayTeamColor': awayTeamColor,
+        };
         const traces = await buildPitchControlOverlay(frameData, matchData, config);
         if (!cancelled) {
           setOverlayTraces(traces || []);
@@ -258,7 +261,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
     return () => {
       cancelled = true;
     };
-  }, [overlay, frameData, currentFrame, overlayManager, eventStyles.passingOption.color]);
+  }, [overlay, frameData, currentFrame, overlayManager, eventStyles.passingOption.color, homeTeamColor, awayTeamColor, matchData]);
 
   // Creates lines to add to Plotly.layout using the player focus lines stored in annotationStore
   const updateLines = () => { 
@@ -383,7 +386,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
               sizex: 113,
               sizey: 76,
               layer: 'below',
-              opacity: 0.8,
+              opacity: 0.6,
               sizing: 'stretch',
             }
           ]

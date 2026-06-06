@@ -28,6 +28,8 @@ class FrameDataService:
         }
 
     def _player_descriptors(self, meta_data: dict) -> list[tuple[str, int]]:
+        '''Returns a list of (team, player_id) tuples based on the metadata.'''
+        
         home_team_id = meta_data["home_team"]["id"]
         players = []
 
@@ -87,16 +89,19 @@ class FrameDataService:
 
     def get_frames(self, match_id: int, start: int, end: int) -> dict:
         try:
+            # Read stored data
             tracking_df = pd.read_parquet(self._data_path("silver_tracking_data_kloppy.parquet"))
             events_df = pd.read_parquet(self._data_path("silver_event_data.parquet"))
             with self._data_path("bronze_meta_data.json").open("r") as f:
                 meta_data = json.load(f)
 
             final_df = tracking_df.copy()
+            
+            # Filter to requested frame range
             final_df["frame"] = final_df["frame_id"].astype(int)
             final_df = final_df[(final_df["frame"] >= start) & (final_df["frame"] <= end)]
 
-            player_descriptors = self._player_descriptors(meta_data)
+            player_descriptors = self._player_descriptors(meta_data) # (team, player_id) tuples
             frame_rows = {
                 int(row["frame"]): row
                 for _, row in final_df.drop_duplicates("frame").iterrows()
@@ -151,13 +156,6 @@ class FrameDataService:
                     frames[frame_number]["overlays"]["pitch_control"] = {
                         "type": "pitch_control",
                         "data": PitchControlOverlay().get_pitch_control(row)
-                        # "data": [
-                        #     [0.1, 0.2, 0.4, 0.7, 0.9],
-                        #     [0.1, 0.3, 0.5, 0.7, 0.8],
-                        #     [0.2, 0.4, 0.5, 0.6, 0.8],
-                        #     [0.2, 0.3, 0.4, 0.6, 0.7],
-                        #     [0.1, 0.2, 0.3, 0.5, 0.6],
-                        # ]
                     }
             
             return {

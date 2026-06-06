@@ -1,3 +1,4 @@
+import { useStyleConfig } from '../../context/StyleConfigContext'
 import type { FrameData } from '../../types/FrameDataInterfaces'
 import type { MatchData } from '../../types/MatchDataInterfaces'
 
@@ -43,10 +44,15 @@ const normalizeColor = (color: string | undefined, fallback: string) => {
   return color.trim()
 }
 
+export type PitchControlOverlayConfig = {
+  homeTeamColor?: string;
+  awayTeamColor?: string;
+}
+
 export async function buildPitchControlOverlay(
   frameData: FrameData | null,
   matchData: MatchData | null,
-  config: {},
+  config: PitchControlOverlayConfig,
 ) {
   if (!frameData) {
     return null
@@ -57,14 +63,15 @@ export async function buildPitchControlOverlay(
     if (!pitchControl) {
       return null
     }
-
-    const awayColor = normalizeColor(matchData?.away_team_kit?.jersey_color, '#2563EB')
-    const homeColor = normalizeColor(matchData?.home_team_kit?.jersey_color, '#DC2626')
+    const homeTeamColor = config['homeTeamColor'] || normalizeColor(matchData?.home_team_kit?.jersey_color, '#DC2626')
+    const awayTeamColor = config['awayTeamColor'] || normalizeColor(matchData?.away_team_kit?.jersey_color, '#2563EB')
+    // const awayColor = normalizeColor(matchData?.away_team_kit?.jersey_color, '#2563EB')
+    // const homeColor = normalizeColor(matchData?.home_team_kit?.jersey_color, '#DC2626')
 
     const rows = 68
     const cols = 106
 
-    const blendedColor = blendHexColors(awayColor, homeColor, 0.5)
+    const blendedColor = blendHexColors(awayTeamColor, homeTeamColor, 0.5)
 
     return [{
       type: 'contour',
@@ -75,16 +82,16 @@ export async function buildPitchControlOverlay(
       dy: 68 / (rows - 1),
       hoverinfo: 'skip',
       showscale: false,
-      opacity: 0.7,
+      opacity: 0.4,
       contours: {
         // showlabels: true,
-        coloring: 'heatmap',
-        showlines: false,
+        coloring: 'fill',
+        showlines: true,
       },
       colorscale: [
-        [0, homeColor],
+        [0, homeTeamColor],
         [0.5, blendedColor],
-        [1, awayColor],
+        [1, awayTeamColor],
       ],
     }]
   } catch (error) {

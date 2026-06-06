@@ -23,8 +23,12 @@ def _time_to_seconds(self, time_str) -> int:
 
 class DataIngestor:
     def __init__(self):
+        self.data_dir = DATA_DIR
         self.kloppy_ingestor = KloppyDataIngestor()
         self.skillcorner_ingestor = SkillCornerDataIngestor()
+    
+    def _data_path(self, filename: str) -> Path:
+        return self.data_dir / filename
     
     def load_data(self, match_id) -> Dict[str, pd.DataFrame]:
         bronze_meta_data = self.skillcorner_ingestor._get_bronze_meta_data(match_id)
@@ -63,71 +67,102 @@ class DataIngestor:
     
 class KloppyDataIngestor:
     def __init__(self):
-        self.data_dir = DATA_DIR
-        self.data_dir.mkdir(parents=True, exist_ok=True)
+        pass
         
-        def _data_path(self, filename: str) -> Path:
-            return self.data_dir / filename
+    def _get_tracking_data_from_kloppy(self, match_id):
+        dataset = skillcorner.load(
+            meta_data=f"https://raw.githubusercontent.com/SkillCorner/opendata/741bdb798b0c1835057e3fa77244c1571a00e4aa/data/matches/{match_id}/{match_id}_match.json",
+            raw_data=f"https://media.githubusercontent.com/media/SkillCorner/opendata/741bdb798b0c1835057e3fa77244c1571a00e4aa/data/matches/{match_id}/{match_id}_tracking_extrapolated.jsonl",
+            # Optional arguments
+            sample_rate=1,
+            coordinates="skillcorner",
+            include_empty_frames=False,
+            only_alive=True
+        )
+        pd.set_option('display.max_columns', None)
+            
+        tracking_df = dataset.to_df().copy()
         
-        def _get_tracking_data_from_kloppy(self, match_id):
-            dataset = skillcorner.load(
-                meta_data=f"https://raw.githubusercontent.com/SkillCorner/opendata/741bdb798b0c1835057e3fa77244c1571a00e4aa/data/matches/{match_id}/{match_id}_match.json",
-                raw_data=f"https://media.githubusercontent.com/media/SkillCorner/opendata/741bdb798b0c1835057e3fa77244c1571a00e4aa/data/matches/{match_id}/{match_id}_tracking_extrapolated.jsonl",
-                # Optional arguments
-                sample_rate=1,
-                coordinates="skillcorner",
-                include_empty_frames=False,
-                only_alive=True
-            )
-            pd.set_option('display.max_columns', None)
-            
-            tracking_df = dataset.to_df().copy()
-            
-            return tracking_df
+        return tracking_df
         
-        def _get_silver_tracking_data_from_kloppy(self, match_id, meta_data, dt=0.1):
-            # tracking_df = self._get_bronze_tracking_data(match_id)
-            tracking_df = self._get_tracking_data_from_kloppy(match_id)
-            print(tracking_df.columns)
+    def _get_silver_tracking_data_from_kloppy(self, match_id, meta_data, dt=0.1):
+        # tracking_df = self._get_bronze_tracking_data(match_id)
+        tracking_df = self._get_tracking_data_from_kloppy(match_id)
+        print(tracking_df.columns)
             
-            home_team_id = meta_data["home_team"]["id"]
+        home_team_id = meta_data["home_team"]["id"]
             
-            player_data = []
-            for player in meta_data["players"]:
-                player_data.append({
-                    "player_id": player["id"],
-                    "team_id": player["team_id"],
-                    "position": player["player_role"]["acronym"],
-                    "name": player["short_name"],
-                    "databallpy_id": (
-                        f"home_{player['id']}"
-                        if player["team_id"] == home_team_id
-                        else f"away_{player['id']}"
-                    ),
-                })
+        player_data = []
+        for player in meta_data["players"]:
+            player_data.append({
+                "player_id": player["id"],
+                "team_id": player["team_id"],
+                "position": player["player_role"]["acronym"],
+                "name": player["short_name"],
+                "databallpy_id": (
+                    f"home_{player['id']}"
+                    if player["team_id"] == home_team_id
+                    else f"away_{player['id']}"
+                ),
+            })
 
-            player_id_to_databallpy_id = {
-                str(player["player_id"]): player["databallpy_id"]
-                for player in player_data
-            }
+        player_id_to_databallpy_id = {
+            str(player["player_id"]): player["databallpy_id"]
+            for player in player_data
+        }
             
-            keep_cols = []
-            rename_map = {}
+        keep_cols = []
+        rename_map = {}
 
-            for col in tracking_df.columns:
-                if "_" not in col:
-                    continue
+        for col in tracking_df.columns:
+            if "_" not in col:
+                continue
                 
-                player_id, suffix = col.rsplit("_", 1)
+            player_id, suffix = col.rsplit("_", 1)
 
-                if suffix in {"x", "y"} and player_id in player_id_to_databallpy_id:
-                    keep_cols.append(col)
-                    rename_map[col] = f"{player_id_to_databallpy_id[player_id]}_{suffix}"
+            if suffix in {"x", "y"} and player_id in player_id_to_databallpy_id:
+                keep_cols.append(col)
+                rename_map[col] = f"{player_id_to_databallpy_id[player_id]}_{suffix}"
+
+        base_cols = [
+            "frame_id",
+            "period_id",
+            "timestamp",
+            "ball_state",
+            "ball_owning_team_id",
+            "ball_x",
+            "ball_y",
+            "ball_z",
+        ]
             
-            print(f"Keep columns: {keep_cols}")
-            print(f"Rename map: {rename_map}")
+        existing_base_cols = [col for col in base_cols if col in tracking_df.columns]
 
-            base_cols = [
+        tracking_df = tracking_df[existing_base_cols + keep_cols].rename(columns=rename_map)
+
+        if "ball_x" in tracking_df.columns and "ball_y" in tracking_df.columns:
+            tracking_df["ball_vx"] = (tracking_df["ball_x"].diff() / dt).round(2)
+            tracking_df["ball_vy"] = (tracking_df["ball_y"].diff() / dt).round(2)
+            tracking_df["ball_speed"] = np.sqrt(
+                tracking_df["ball_vx"] ** 2 + tracking_df["ball_vy"] ** 2
+            ).round(2)
+
+        for player in player_data:
+            databallpy_id = player["databallpy_id"]
+            x_col = f"{databallpy_id}_x"
+            y_col = f"{databallpy_id}_y"
+            vx_col = f"{databallpy_id}_vx"
+            vy_col = f"{databallpy_id}_vy"
+            speed_col = f"{databallpy_id}_speed"
+
+            if x_col in tracking_df.columns and y_col in tracking_df.columns:
+                tracking_df[vx_col] = (tracking_df[x_col].diff() / dt).round(2)
+                tracking_df[vy_col] = (tracking_df[y_col].diff() / dt).round(2)
+                tracking_df[speed_col] = np.sqrt(
+                    tracking_df[vx_col] ** 2 + tracking_df[vy_col] ** 2
+                ).round(2)
+
+        ordered_base_cols = [
+            col for col in [
                 "frame_id",
                 "period_id",
                 "timestamp",
@@ -136,77 +171,36 @@ class KloppyDataIngestor:
                 "ball_x",
                 "ball_y",
                 "ball_z",
+                "ball_vx",
+                "ball_vy",
+                "ball_speed",
+            ] if col in tracking_df.columns
+        ]
+
+        ordered_player_cols = []
+        for player in player_data:
+            databallpy_id = player["databallpy_id"]
+            player_cols = [
+                f"{databallpy_id}_x",
+                f"{databallpy_id}_y",
+                f"{databallpy_id}_vx",
+                f"{databallpy_id}_vy",
+                f"{databallpy_id}_speed",
             ]
-            existing_base_cols = [col for col in base_cols if col in tracking_df.columns]
+            ordered_player_cols.extend(
+                [col for col in player_cols if col in tracking_df.columns]
+            )
 
-            tracking_df = tracking_df[existing_base_cols + keep_cols].rename(columns=rename_map)
+        tracking_df = tracking_df[ordered_base_cols + ordered_player_cols]
+        computed_cols = [col for col in tracking_df.columns if col not in existing_base_cols]
+        # numeric_cols = tracking_df.select_dtypes(include=[np.number]).columns
+        # tracking_df[computed_cols] = tracking_df[computed_cols].fillna(0)
 
-            if "ball_x" in tracking_df.columns and "ball_y" in tracking_df.columns:
-                tracking_df["ball_vx"] = (tracking_df["ball_x"].diff() / dt).round(2)
-                tracking_df["ball_vy"] = (tracking_df["ball_y"].diff() / dt).round(2)
-                tracking_df["ball_speed"] = np.sqrt(
-                    tracking_df["ball_vx"] ** 2 + tracking_df["ball_vy"] ** 2
-                ).round(2)
-
-            for player in player_data:
-                databallpy_id = player["databallpy_id"]
-                x_col = f"{databallpy_id}_x"
-                y_col = f"{databallpy_id}_y"
-                vx_col = f"{databallpy_id}_vx"
-                vy_col = f"{databallpy_id}_vy"
-                speed_col = f"{databallpy_id}_speed"
-
-                if x_col in tracking_df.columns and y_col in tracking_df.columns:
-                    tracking_df[vx_col] = (tracking_df[x_col].diff() / dt).round(2)
-                    tracking_df[vy_col] = (tracking_df[y_col].diff() / dt).round(2)
-                    tracking_df[speed_col] = np.sqrt(
-                        tracking_df[vx_col] ** 2 + tracking_df[vy_col] ** 2
-                    ).round(2)
-
-            ordered_base_cols = [
-                col for col in [
-                    "frame_id",
-                    "period_id",
-                    "timestamp",
-                    "ball_state",
-                    "ball_owning_team_id",
-                    "ball_x",
-                    "ball_y",
-                    "ball_z",
-                    "ball_vx",
-                    "ball_vy",
-                    "ball_speed",
-                ] if col in tracking_df.columns
-            ]
-
-            ordered_player_cols = []
-            for player in player_data:
-                databallpy_id = player["databallpy_id"]
-                player_cols = [
-                    f"{databallpy_id}_x",
-                    f"{databallpy_id}_y",
-                    f"{databallpy_id}_vx",
-                    f"{databallpy_id}_vy",
-                    f"{databallpy_id}_speed",
-                ]
-                ordered_player_cols.extend(
-                    [col for col in player_cols if col in tracking_df.columns]
-                )
-
-            tracking_df = tracking_df[ordered_base_cols + ordered_player_cols]
-            computed_cols = [col for col in tracking_df.columns if col not in existing_base_cols]
-            # numeric_cols = tracking_df.select_dtypes(include=[np.number]).columns
-            tracking_df[computed_cols] = tracking_df[computed_cols].fillna(0)
-
-            return tracking_df
+        return tracking_df
 
 class SkillCornerDataIngestor:
     def __init__(self):
-        self.data_dir = DATA_DIR
-        self.data_dir.mkdir(parents=True, exist_ok=True)
-
-    def _data_path(self, filename: str) -> Path:
-        return self.data_dir / filename
+        pass
     
     def _get_bronze_tracking_data(self, match_id) -> pd.DataFrame:
         """Load tracking data for a specific match."""

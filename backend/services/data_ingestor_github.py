@@ -8,6 +8,9 @@ from typing import Dict
 import requests
 
 from kloppy import skillcorner
+from logger import get_logger
+
+logger = get_logger(__name__)
 
 try:
     from backend.paths import DATA_DIR
@@ -31,22 +34,35 @@ class DataIngestor:
         return self.data_dir / filename
     
     def load_data(self, match_id) -> Dict[str, pd.DataFrame]:
+        logger.info("Starting data ingestion pipeline for match_id=%s", match_id)
+
+        logger.info("Fetching bronze metadata for match_id=%s", match_id)
         bronze_meta_data = self.skillcorner_ingestor._get_bronze_meta_data(match_id)
-        # silver_meta_data = self.skillcorner_ingestor._get_silver_meta_data(bronze_meta_data)
+
+        logger.info("Fetching bronze event data for match_id=%s", match_id)
         bronze_event_data = self.skillcorner_ingestor._get_bronze_event_data(match_id)
+
+        logger.info("Transforming silver event data for match_id=%s", match_id)
         silver_event_data = self.skillcorner_ingestor._get_silver_event_data(bronze_event_data)
+
+        logger.info("Computing key moments for match_id=%s", match_id)
         key_moments = self.skillcorner_ingestor._get_key_moments(bronze_event_data)
+
+        logger.info("Fetching and enriching tracking data for match_id=%s", match_id)
         enriched_tracking_data = self.kloppy_ingestor._get_silver_tracking_data_from_kloppy(match_id, bronze_meta_data)
-        
+
+        logger.info("Writing tracking data to data store")
         enriched_tracking_data.to_parquet(
             self._data_path("silver_tracking_data_kloppy.parquet"),
             engine="pyarrow",
             index=False,
         )
-        
+
+        logger.info("Writing metadata to data store")
         with self._data_path("bronze_meta_data.json").open("w") as f:
             json.dump(bronze_meta_data, f)
 
+        logger.info("DEPRECIATED: Writing gold_tracking_data.json")
         with self._data_path("gold_tracking_data.json").open("w") as f:
             json.dump(
                 {
@@ -56,13 +72,15 @@ class DataIngestor:
                 },
                 f,
             )
-        
+
+        logger.info("Writing event data to data store")
         silver_event_data.to_parquet(
             self._data_path("silver_event_data.parquet"),
             engine="pyarrow",
             index=False,
         )
-            
+
+        logger.info("Data ingestion pipeline complete for match_id=%s", match_id)
         return enriched_tracking_data
     
 class KloppyDataIngestor:
@@ -70,6 +88,7 @@ class KloppyDataIngestor:
         pass
         
     def _get_tracking_data_from_kloppy(self, match_id):
+        logger.info("Loading tracking data from kloppy for match_id=%s", match_id)
         dataset = skillcorner.load_open_data(
             match_id=match_id,
             sample_rate=1,
@@ -78,15 +97,14 @@ class KloppyDataIngestor:
             only_alive=False
         )
         pd.set_option('display.max_columns', None)
-            
+
         tracking_df = dataset.to_df().copy()
-        
+        logger.info("Kloppy tracking data loaded rows=%s cols=%s", len(tracking_df), len(tracking_df.columns))
         return tracking_df
         
     def _get_silver_tracking_data_from_kloppy(self, match_id, meta_data, dt=0.1):
         # tracking_df = self._get_bronze_tracking_data(match_id)
         tracking_df = self._get_tracking_data_from_kloppy(match_id)
-        print(tracking_df.columns)
             
         home_team_id = meta_data["home_team"]["id"]
             
@@ -190,6 +208,7 @@ class KloppyDataIngestor:
             )
 
         tracking_df = tracking_df[ordered_base_cols + ordered_player_cols]
+        logger.info("Silver tracking data enriched rows=%s players=%s", len(tracking_df), len(player_data))
         computed_cols = [col for col in tracking_df.columns if col not in existing_base_cols]
         # numeric_cols = tracking_df.select_dtypes(include=[np.number]).columns
         # tracking_df[computed_cols] = tracking_df[computed_cols].fillna(0)
@@ -212,12 +231,14 @@ class SkillCornerDataIngestor:
         return raw_data
     
     def _get_bronze_meta_data(self, match_id) -> pd.DataFrame:
-    
-        # Ingest metadata from Github
         meta_data_github_url = f"https://raw.githubusercontent.com/SkillCorner/opendata/741bdb798b0c1835057e3fa77244c1571a00e4aa/data/matches/{match_id}/{match_id}_match.json"
+        logger.info("Fetching metadata from GitHub match_id=%s", match_id)
         response = requests.get(meta_data_github_url)
+        if not response.ok:
+            logger.error("Failed to fetch metadata match_id=%s status=%s", match_id, response.status_code)
+            response.raise_for_status()
         raw_match_data = response.json()
-        
+        logger.info("Metadata fetched successfully match_id=%s", match_id)
         return raw_match_data
     
     def _get_silver_tracking_data(self, bronze_tracking_data):
@@ -346,8 +367,9 @@ class SkillCornerDataIngestor:
 
     def _get_bronze_event_data(self, match_id) -> pd.DataFrame:
         event_data_github_url = f"https://raw.githubusercontent.com/SkillCorner/opendata/refs/heads/master/data/matches/{match_id}/{match_id}_dynamic_events.csv"
+        logger.info("Fetching event data from GitHub match_id=%s", match_id)
         raw_data = pd.read_csv(event_data_github_url)
-
+        logger.info("Event data fetched successfully match_id=%s rows=%s", match_id, len(raw_data))
         return raw_data
     
     def _get_silver_event_data(self, bronze_event_data):
@@ -378,7 +400,8 @@ class SkillCornerDataIngestor:
         silver_event_data['n_opponents_overtaken'] = silver_event_data['n_opponents_overtaken'].fillna(0).astype(int)
         silver_event_data['xloss_player_possession_max'] = silver_event_data['xloss_player_possession_max'].fillna(-1).astype(float)
         silver_event_data['xshot_player_possession_max'] = silver_event_data['xshot_player_possession_max'].fillna(-1).astype(float)
-        
+
+        logger.info("Silver event data transformed rows=%s", len(silver_event_data))
         return silver_event_data 
     
     def _get_key_moments(self, bronze_event_data):
@@ -428,5 +451,8 @@ class SkillCornerDataIngestor:
             return grouped_data.to_dict("records")
     
         events_data = bronze_event_data.copy()
-        
-        return {'goals': _get_lead_to_goals(events_data), 'shots': _get_lead_to_shots(events_data)}
+
+        goals = _get_lead_to_goals(events_data)
+        shots = _get_lead_to_shots(events_data)
+        logger.info("Key moments computed goals=%s shots=%s", len(goals), len(shots))
+        return {'goals': goals, 'shots': shots}

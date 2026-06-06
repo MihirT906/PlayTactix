@@ -1,6 +1,9 @@
 import json
 from pathlib import Path
 from services.pitch_control_overlay import PitchControlOverlay
+from logger import get_logger
+
+logger = get_logger(__name__)
 
 import pandas as pd
 
@@ -71,10 +74,11 @@ class FrameDataService:
             players["vy"].append(self._value_or_none(row.get(f"{prefix}_vy")))
             players["speed"].append(self._value_or_none(row.get(f"{prefix}_speed")))
 
-        return players
-    
+        return players  
+
     def get_metadata(self, match_id: int) -> dict:
         try:
+            logger.info("Retrieving metadata for match_id=%s from stored data", match_id)
             with self._data_path("bronze_meta_data.json").open("r") as f:
                 meta_data = json.load(f)
             
@@ -83,13 +87,14 @@ class FrameDataService:
                 "data": meta_data
             }
         except Exception as e:
-            print(f"Error reading bronze_meta_data.json: {e}")
+            logger.error("Error reading bronze_meta_data.json for match_id=%s: %s", match_id, e)
             return {"error": "Failed to read bronze_meta_data.json."}
-        
+          
 
     def get_frames(self, match_id: int, start: int, end: int) -> dict:
         try:
             # Read stored data
+            logger.info("Reading data files for match_id=%s", match_id)
             tracking_df = pd.read_parquet(self._data_path("silver_tracking_data_kloppy.parquet"))
             events_df = pd.read_parquet(self._data_path("silver_event_data.parquet"))
             with self._data_path("bronze_meta_data.json").open("r") as f:
@@ -98,6 +103,7 @@ class FrameDataService:
             final_df = tracking_df.copy()
             
             # Filter to requested frame range
+            logger.info("Filtering frames for match_id=%s to range %s-%s", match_id, start, end)
             final_df["frame"] = final_df["frame_id"].astype(int)
             final_df = final_df[(final_df["frame"] >= start) & (final_df["frame"] <= end)]
 
@@ -107,6 +113,7 @@ class FrameDataService:
                 for _, row in final_df.drop_duplicates("frame").iterrows()
             }
 
+            # Process frames
             event_idx = 0
             n_events = len(events_df)
             active_events = []
@@ -157,7 +164,7 @@ class FrameDataService:
                         "type": "pitch_control",
                         "data": PitchControlOverlay().get_pitch_control(row)
                     }
-            print("returning")
+            logger.info("Returning frames for match_id=%s", match_id, exc_info=True)
             return {
                 "requested_match_id": match_id,
                 "requested_start": start,
@@ -167,5 +174,5 @@ class FrameDataService:
             }
         
         except Exception as e:
-            print(f"Error reading parquet files: {e}")
+            logger.error("Error retrieving frames for match_id=%s: %s", match_id, e, exc_info=True)
             return {"error": "Failed to read data files."}

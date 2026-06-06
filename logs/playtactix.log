@@ -1,0 +1,10 @@
+2026-06-06 16:12:14 | INFO     | playtactix | Log cleared — new data download started
+2026-06-06 16:12:14 | INFO     | playtactix.routes.data_routes | Downloading match data for match_id=1886347
+2026-06-06 16:12:25 | INFO     | playtactix.routes.data_routes | Fetching frames match_id=1886347 start=10 end=310
+2026-06-06 16:12:25 | INFO     | playtactix.services.frame_data_service | Reading data files for match_id=1886347
+2026-06-06 16:12:25 | INFO     | playtactix.services.frame_data_service | Filtering frames for match_id=1886347 to range 10-310
+2026-06-06 16:12:29 | INFO     | playtactix.services.frame_data_service | Returning frames for match_id=1886347
+NoneType: None
+2026-06-06 16:12:30 | INFO     | playtactix.routes.data_routes | Fetching match metadata for match_id=1886347
+2026-06-06 16:12:30 | INFO     | playtactix.services.frame_data_service | Retrieving metadata for match_id=1886347 from stored data
+2026-06-06 16:12:30 | INFO     | playtactix.routes.data_routes | Fetching key moments for match_id=1886347

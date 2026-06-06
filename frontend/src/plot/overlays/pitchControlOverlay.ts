@@ -1,113 +1,94 @@
-import type { FrameData, Players, Ball } from '../../types/FrameDataInterfaces'
+import type { FrameData } from '../../types/FrameDataInterfaces'
+import type { MatchData } from '../../types/MatchDataInterfaces'
 
+const toHex = (value: number) => value.toString(16).padStart(2, '0')
 
+const blendHexColors = (first: string, second: string, weight = 0.5) => {
+  const normalize = (color: string) => {
+    const hex = color.trim().replace('#', '')
+    return /^[0-9a-fA-F]{6}$/.test(hex) ? hex : null
+  }
 
-export async function buildPitchControlOverlay(frameData: FrameData | null, currentFrame: number, config: {}) {
+  const firstHex = normalize(first)
+  const secondHex = normalize(second)
+
+  if (!firstHex || !secondHex) {
+    return '#BFBFBF'
+  }
+
+  const firstRgb = [
+    Number.parseInt(firstHex.slice(0, 2), 16),
+    Number.parseInt(firstHex.slice(2, 4), 16),
+    Number.parseInt(firstHex.slice(4, 6), 16),
+  ]
+
+  const secondRgb = [
+    Number.parseInt(secondHex.slice(0, 2), 16),
+    Number.parseInt(secondHex.slice(2, 4), 16),
+    Number.parseInt(secondHex.slice(4, 6), 16),
+  ]
+
+  const mixed = firstRgb.map((channel, index) =>
+    Math.round(channel * (1 - weight) + secondRgb[index] * weight)
+  )
+
+  return `#${toHex(mixed[0])}${toHex(mixed[1])}${toHex(mixed[2])}`
+}
+
+const normalizeColor = (color: string | undefined, fallback: string) => {
+  if (typeof color !== 'string' || color.trim().length === 0) {
+    return fallback
+  }
+
+  return color.trim()
+}
+
+export async function buildPitchControlOverlay(
+  frameData: FrameData | null,
+  matchData: MatchData | null,
+  config: {},
+) {
   if (!frameData) {
     return null
   }
 
   try {
-    let match_id = 1886347
-    let start = 10
-    let end = 200
-    const response = await fetch(`http://localhost:8000/data/pitch_control_overlay?match_id=${match_id}&start=${start}&end=${end}`)
-    const ret = await response.json()
-    const pitch_control = ret[currentFrame.toString()]
-    console.log('Received pitch control data:', pitch_control)
-    // const x = [-56.5, -28.25, 0, 28.25, 56.5]
-    // const y = [-38, -19, 0, 19, 38]
+    const pitchControl = frameData.overlays?.pitch_control?.data
+    if (!pitchControl) {
+      return null
+    }
 
-    // // z[row][col] => y first, then x
-    // const z = [
-    //   [0.1, 0.2, 0.4, 0.7, 0.9],
-    //   [0.1, 0.3, 0.5, 0.7, 0.8],
-    //   [0.2, 0.4, 0.5, 0.6, 0.8],
-    //   [0.2, 0.3, 0.4, 0.6, 0.7],
-    //   [0.1, 0.2, 0.3, 0.5, 0.6],
-    // ]
-    // return [
-    //   {
-    //     type: 'contour',
-    //     x,
-    //     y,
-    //     z,
-    //     hoverinfo: 'skip',
-    //     showscale: false,
-    //     opacity: 0.5,
-    //     contours: {
-    //       coloring: 'heatmap', // use 'lines' if you only want contour lines
-    //       showlines: false,
-    //     },
-    //     colorscale: [
-    //       [0, '#2563EB'],
-    //       [0.5, '#FFFFFF'],
-    //       [1, '#DC2626'],
-    //     ],
-    //   },
-    // ]
-    const rows = pitch_control.length
-    const cols = pitch_control[0]?.length ?? 0
+    const awayColor = normalizeColor(matchData?.away_team_kit?.jersey_color, '#2563EB')
+    const homeColor = normalizeColor(matchData?.home_team_kit?.jersey_color, '#DC2626')
+
+    const rows = 68
+    const cols = 106
+
+    const blendedColor = blendHexColors(awayColor, homeColor, 0.5)
 
     return [{
       type: 'contour',
-      z: pitch_control,
+      z: pitchControl,
       x0: -53,
       dx: 106 / (cols - 1),
       y0: -34,
       dy: 68 / (rows - 1),
       hoverinfo: 'skip',
       showscale: false,
-      opacity: 0.5,
+      opacity: 0.7,
       contours: {
+        // showlabels: true,
         coloring: 'heatmap',
         showlines: false,
       },
       colorscale: [
-        [0, '#2563EB'],
-        [0.5, '#FFFFFF'],
-        [1, '#DC2626'],
+        [0, homeColor],
+        [0.5, blendedColor],
+        [1, awayColor],
       ],
     }]
   } catch (error) {
     console.error('Error fetching pitch control overlay:', error)
     return null
   }
-
-
-
-
-
-  // const x = [-56.5, -28.25, 0, 28.25, 56.5]
-  // const y = [-38, -19, 0, 19, 38]
-
-  // // z[row][col] => y first, then x
-  // const z = [
-  //   [0.1, 0.2, 0.4, 0.7, 0.9],
-  //   [0.1, 0.3, 0.5, 0.7, 0.8],
-  //   [0.2, 0.4, 0.5, 0.6, 0.8],
-  //   [0.2, 0.3, 0.4, 0.6, 0.7],
-  //   [0.1, 0.2, 0.3, 0.5, 0.6],
-  // ]
-
-  // return [
-  //   {
-  //     type: 'contour',
-  //     x,
-  //     y,
-  //     z,
-  //     hoverinfo: 'skip',
-  //     showscale: false,
-  //     opacity: 0.5,
-  //     contours: {
-  //       coloring: 'heatmap', // use 'lines' if you only want contour lines
-  //       showlines: false,
-  //     },
-  //     colorscale: [
-  //       [0, '#2563EB'],
-  //       [0.5, '#FFFFFF'],
-  //       [1, '#DC2626'],
-  //     ],
-  //   },
-  // ]
 }

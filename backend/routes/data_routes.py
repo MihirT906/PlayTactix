@@ -7,15 +7,15 @@ try:
 except ModuleNotFoundError:
     DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 
-from services.data_ingestor_github import SkillCornerDataIngestor
+from services.data_ingestor_github import DataIngestor
 from services.frame_data_service import FrameDataService
 from services.pitch_control_overlay import PitchControlOverlay
 
 router = APIRouter(prefix="/data", tags=["frames"])
 
-data_ingestor: SkillCornerDataIngestor = None
+data_ingestor: DataIngestor = None
 
-def set_data_ingestor(ingestor: SkillCornerDataIngestor):
+def set_data_ingestor(ingestor: DataIngestor):
     global data_ingestor
     data_ingestor = ingestor
     
@@ -26,8 +26,8 @@ async def hello():
 @router.get("/match/{match_id}")
 async def download_match_data(match_id: int):
     try:
-        sc_data_ingestor = SkillCornerDataIngestor()
-        sc_data_ingestor.load_data(match_id)
+        ingestor = DataIngestor()
+        ingestor.load_data(match_id)
         
         return {"message": f"Data for match {match_id} has been saved to gold_tracking_data.json"}
     except Exception as e:

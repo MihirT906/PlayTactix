@@ -42,13 +42,13 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
   const filterByMask = <T,>(arr: T[], mask: boolean[]) =>
     arr.filter((_, idx) => mask[idx]);
 
-  const getVisibleTeamMask = (teamIds: number[]) =>
-    teamIds.map((teamId) => {
-      if (teamId === matchData?.home_team.id) {
+  const getVisibleTeamMask = (teams: string[]) =>
+    teams.map((team) => {
+      if (team === 'home') {
         return teamVisibility.home;
       }
 
-      if (teamId === matchData?.away_team.id) {
+      if (team === 'away') {
         return teamVisibility.away;
       }
 
@@ -154,20 +154,19 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
     if (players.player_id.length === 0) 
       return []; // Return empty array if there are no players in the frame data
 
-    const visibleTeamMask = getVisibleTeamMask(players.team_id);
+    const visibleTeamMask = getVisibleTeamMask(players.team);
     const applyVisibilityMask = (mask: boolean[]) => mask.map((isVisible, index) => isVisible && visibleTeamMask[index]);
 
     const build = (mask: boolean[], lineColor: string, lineWidth = 1, sizeMultiplier = 1) => {
-      const visibleNames = filterByMask(players.short_name, mask)
-      const visibleNumbers = filterByMask(players.number, mask)
+      const visiblePlayerIds = filterByMask(players.player_id, mask)
 
       return {
         x: filterByMask(players.x, mask),
         y: filterByMask(players.y, mask),
-        customdata: visibleNames.map((name, index) => [name, visibleNumbers[index]]),
+        customdata: visiblePlayerIds.map((playerId) => [playerId]),
         mode: 'markers+text',
         type: 'scatter',
-        hovertemplate: '%{customdata[0]}<br><b>#%{customdata[1]}</b><extra></extra>',
+        hovertemplate: 'Player %{customdata[0]}<extra></extra>',
         hoverlabel: {
           font: {
             size: 16,
@@ -175,9 +174,9 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
         },
         marker: {
           size: plotConfig.markerSize * sizeMultiplier,
-          color: filterByMask(players.team_id, mask).map((id) => {
-            if (id === matchData?.home_team.id) return homeTeamColor
-            if (id === matchData?.away_team.id) return awayTeamColor
+          color: filterByMask(players.team, mask).map((team) => {
+            if (team === 'home') return homeTeamColor
+            if (team === 'away') return awayTeamColor
             return plotConfig.markerColor
           }),
           line: {
@@ -244,7 +243,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
 
       if (overlay === 'pitch_control') {
         const config = {};
-        const traces = await buildPitchControlOverlay(frameData, currentFrame, config);
+        const traces = await buildPitchControlOverlay(frameData, matchData, config);
         if (!cancelled) {
           setOverlayTraces(traces || []);
         }

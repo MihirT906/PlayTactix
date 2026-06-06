@@ -6,17 +6,18 @@ import pandas as pd
 import numpy as np
 from databallpy.features import get_pitch_control_single_frame
 
-try:
-    from backend.paths import DATA_DIR
-except ModuleNotFoundError:
-    DATA_DIR = Path(__file__).resolve().parents[2] / "data"
+# try:
+#     from backend.paths import DATA_DIR
+# except ModuleNotFoundError:
+#     DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 
 class PitchControlOverlay:
     def __init__(self):
-        self.data_dir = DATA_DIR
+        pass
+        # self.data_dir = DATA_DIR
     
-    def _data_path(self, filename: str) -> Path:
-        return self.data_dir / filename
+    # def _data_path(self, filename: str) -> Path:
+    #     return self.data_dir / filename
     
     def _default_params(self):
         params = {}
@@ -127,16 +128,18 @@ class PitchControlOverlay:
         
         return pd.concat(frames, ignore_index=True)
     
-    def get_pitch_control(self, match_id=1899585, start_frame=0, end_frame=1000):
-        frames = self.get_databall_frames(match_id=match_id, start_frame=start_frame, end_frame=end_frame)
+    def get_pitch_control(self, frame_row, pitch_dimensions=(106, 68)):
+        pitch_control = get_pitch_control_single_frame(frame_row, pitch_dimensions, pitch_dimensions[0], pitch_dimensions[1])
+        return pitch_control.tolist()
+        # frames = self.get_databall_frames(match_id=match_id, start_frame=start_frame, end_frame=end_frame)
 
-        pitch_control_results = {}
-        for frame_id in range(start_frame, end_frame + 1):
-            frame = frames[frames["frame"] == frame_id]
-            pitch_dimensions = (106, 68)
-            pitch_control = get_pitch_control_single_frame(frame.iloc[0], pitch_dimensions, pitch_dimensions[0], pitch_dimensions[1])
-            pitch_control_results[frame_id] = pitch_control.tolist()
+        # pitch_control_results = {}
+        # for frame_id in range(start_frame, end_frame + 1):
+        #     frame = frames[frames["frame"] == frame_id]
+        #     pitch_dimensions = (106, 68)
+        #     pitch_control = get_pitch_control_single_frame(frame.iloc[0], pitch_dimensions, pitch_dimensions[0], pitch_dimensions[1])
+        #     pitch_control_results[frame_id] = pitch_control.tolist()
             
-        return pitch_control_results
+        # return pitch_control_results
         
         

@@ -1,3 +1,4 @@
+from fileinput import filename
 import json
 from pathlib import Path
 
@@ -6,10 +7,198 @@ import numpy as np
 from typing import Dict
 import requests
 
+from kloppy import skillcorner
+
 try:
     from backend.paths import DATA_DIR
 except ModuleNotFoundError:
     DATA_DIR = Path(__file__).resolve().parents[2] / "data"
+
+def _time_to_seconds(self, time_str) -> int:
+    """Convert time string in HH:MM:SS format to total seconds."""
+    if time_str is None:
+        return 90 * 60  # 120 minutes = 7200 seconds
+    h, m, s = map(int, time_str.split(":"))
+    return h * 3600 + m * 60 + s
+
+class DataIngestor:
+    def __init__(self):
+        self.kloppy_ingestor = KloppyDataIngestor()
+        self.skillcorner_ingestor = SkillCornerDataIngestor()
+    
+    def load_data(self, match_id) -> Dict[str, pd.DataFrame]:
+        bronze_meta_data = self.skillcorner_ingestor._get_bronze_meta_data(match_id)
+        # silver_meta_data = self.skillcorner_ingestor._get_silver_meta_data(bronze_meta_data)
+        bronze_event_data = self.skillcorner_ingestor._get_bronze_event_data(match_id)
+        silver_event_data = self.skillcorner_ingestor._get_silver_event_data(bronze_event_data)
+        key_moments = self.skillcorner_ingestor._get_key_moments(bronze_event_data)
+        enriched_tracking_data = self.kloppy_ingestor._get_silver_tracking_data_from_kloppy(match_id, bronze_meta_data)
+        
+        enriched_tracking_data.to_parquet(
+            self._data_path("silver_tracking_data_kloppy.parquet"),
+            engine="pyarrow",
+            index=False,
+        )
+        
+        with self._data_path("bronze_meta_data.json").open("w") as f:
+            json.dump(bronze_meta_data, f)
+
+        with self._data_path("gold_tracking_data.json").open("w") as f:
+            json.dump(
+                {
+                    "match_id": match_id,
+                    "match": bronze_meta_data,
+                    "key_moments": key_moments,
+                },
+                f,
+            )
+        
+        silver_event_data.to_parquet(
+            self._data_path("silver_event_data.parquet"),
+            engine="pyarrow",
+            index=False,
+        )
+            
+        return enriched_tracking_data
+    
+class KloppyDataIngestor:
+    def __init__(self):
+        self.data_dir = DATA_DIR
+        self.data_dir.mkdir(parents=True, exist_ok=True)
+        
+        def _data_path(self, filename: str) -> Path:
+            return self.data_dir / filename
+        
+        def _get_tracking_data_from_kloppy(self, match_id):
+            dataset = skillcorner.load(
+                meta_data=f"https://raw.githubusercontent.com/SkillCorner/opendata/741bdb798b0c1835057e3fa77244c1571a00e4aa/data/matches/{match_id}/{match_id}_match.json",
+                raw_data=f"https://media.githubusercontent.com/media/SkillCorner/opendata/741bdb798b0c1835057e3fa77244c1571a00e4aa/data/matches/{match_id}/{match_id}_tracking_extrapolated.jsonl",
+                # Optional arguments
+                sample_rate=1,
+                coordinates="skillcorner",
+                include_empty_frames=False,
+                only_alive=True
+            )
+            pd.set_option('display.max_columns', None)
+            
+            tracking_df = dataset.to_df().copy()
+            
+            return tracking_df
+        
+        def _get_silver_tracking_data_from_kloppy(self, match_id, meta_data, dt=0.1):
+            # tracking_df = self._get_bronze_tracking_data(match_id)
+            tracking_df = self._get_tracking_data_from_kloppy(match_id)
+            print(tracking_df.columns)
+            
+            home_team_id = meta_data["home_team"]["id"]
+            
+            player_data = []
+            for player in meta_data["players"]:
+                player_data.append({
+                    "player_id": player["id"],
+                    "team_id": player["team_id"],
+                    "position": player["player_role"]["acronym"],
+                    "name": player["short_name"],
+                    "databallpy_id": (
+                        f"home_{player['id']}"
+                        if player["team_id"] == home_team_id
+                        else f"away_{player['id']}"
+                    ),
+                })
+
+            player_id_to_databallpy_id = {
+                str(player["player_id"]): player["databallpy_id"]
+                for player in player_data
+            }
+            
+            keep_cols = []
+            rename_map = {}
+
+            for col in tracking_df.columns:
+                if "_" not in col:
+                    continue
+                
+                player_id, suffix = col.rsplit("_", 1)
+
+                if suffix in {"x", "y"} and player_id in player_id_to_databallpy_id:
+                    keep_cols.append(col)
+                    rename_map[col] = f"{player_id_to_databallpy_id[player_id]}_{suffix}"
+            
+            print(f"Keep columns: {keep_cols}")
+            print(f"Rename map: {rename_map}")
+
+            base_cols = [
+                "frame_id",
+                "period_id",
+                "timestamp",
+                "ball_state",
+                "ball_owning_team_id",
+                "ball_x",
+                "ball_y",
+                "ball_z",
+            ]
+            existing_base_cols = [col for col in base_cols if col in tracking_df.columns]
+
+            tracking_df = tracking_df[existing_base_cols + keep_cols].rename(columns=rename_map)
+
+            if "ball_x" in tracking_df.columns and "ball_y" in tracking_df.columns:
+                tracking_df["ball_vx"] = (tracking_df["ball_x"].diff() / dt).round(2)
+                tracking_df["ball_vy"] = (tracking_df["ball_y"].diff() / dt).round(2)
+                tracking_df["ball_speed"] = np.sqrt(
+                    tracking_df["ball_vx"] ** 2 + tracking_df["ball_vy"] ** 2
+                ).round(2)
+
+            for player in player_data:
+                databallpy_id = player["databallpy_id"]
+                x_col = f"{databallpy_id}_x"
+                y_col = f"{databallpy_id}_y"
+                vx_col = f"{databallpy_id}_vx"
+                vy_col = f"{databallpy_id}_vy"
+                speed_col = f"{databallpy_id}_speed"
+
+                if x_col in tracking_df.columns and y_col in tracking_df.columns:
+                    tracking_df[vx_col] = (tracking_df[x_col].diff() / dt).round(2)
+                    tracking_df[vy_col] = (tracking_df[y_col].diff() / dt).round(2)
+                    tracking_df[speed_col] = np.sqrt(
+                        tracking_df[vx_col] ** 2 + tracking_df[vy_col] ** 2
+                    ).round(2)
+
+            ordered_base_cols = [
+                col for col in [
+                    "frame_id",
+                    "period_id",
+                    "timestamp",
+                    "ball_state",
+                    "ball_owning_team_id",
+                    "ball_x",
+                    "ball_y",
+                    "ball_z",
+                    "ball_vx",
+                    "ball_vy",
+                    "ball_speed",
+                ] if col in tracking_df.columns
+            ]
+
+            ordered_player_cols = []
+            for player in player_data:
+                databallpy_id = player["databallpy_id"]
+                player_cols = [
+                    f"{databallpy_id}_x",
+                    f"{databallpy_id}_y",
+                    f"{databallpy_id}_vx",
+                    f"{databallpy_id}_vy",
+                    f"{databallpy_id}_speed",
+                ]
+                ordered_player_cols.extend(
+                    [col for col in player_cols if col in tracking_df.columns]
+                )
+
+            tracking_df = tracking_df[ordered_base_cols + ordered_player_cols]
+            computed_cols = [col for col in tracking_df.columns if col not in existing_base_cols]
+            # numeric_cols = tracking_df.select_dtypes(include=[np.number]).columns
+            tracking_df[computed_cols] = tracking_df[computed_cols].fillna(0)
+
+            return tracking_df
 
 class SkillCornerDataIngestor:
     def __init__(self):
@@ -18,13 +207,6 @@ class SkillCornerDataIngestor:
 
     def _data_path(self, filename: str) -> Path:
         return self.data_dir / filename
-    
-    def _time_to_seconds(self, time_str) -> int:
-        """Convert time string in HH:MM:SS format to total seconds."""
-        if time_str is None:
-            return 90 * 60  # 120 minutes = 7200 seconds
-        h, m, s = map(int, time_str.split(":"))
-        return h * 3600 + m * 60 + s
     
     def _get_bronze_tracking_data(self, match_id) -> pd.DataFrame:
         """Load tracking data for a specific match."""
@@ -101,8 +283,8 @@ class SkillCornerDataIngestor:
             ~((players_df.start_time.isna()) & (players_df.end_time.isna()))
         ]
         players_df["total_time"] = players_df["end_time"].apply(
-            self._time_to_seconds
-        ) - players_df["start_time"].apply(self._time_to_seconds)
+            _time_to_seconds
+        ) - players_df["start_time"].apply(_time_to_seconds)
 
         # Create a flag for GK
         players_df["is_gk"] = players_df["player_role.acronym"] == "GK"
@@ -167,94 +349,6 @@ class SkillCornerDataIngestor:
         ]
         players_df = players_df[columns_to_keep]
         return players_df
-        
-    # def _get_gold_tracking_data(self, silver_tracking_data, silver_meta_data, silver_event_data=None):
-    #     silver_tracking_data = silver_tracking_data.merge(
-    #         silver_meta_data, left_on=["player_id"], right_on=["id"]
-    #     )
-
-    #     silver_groups = {
-    #         int(frame_number): group
-    #         for frame_number, group in silver_tracking_data.groupby("frame")
-    #     }
-
-    #     min_frame = int(silver_tracking_data["frame"].min())
-    #     max_frame = int(silver_tracking_data["frame"].max())
-        
-    #     if silver_event_data is not None:
-    #         events = silver_event_data.sort_values("frame_start").to_dict("records")
-    #     else:
-    #         events = []
-        
-    #     event_idx = 0
-    #     n_events = len(events)
-    #     active_events = []
-    #     frames = {}
-    #     for frame_number in range(min_frame, max_frame + 1):
-    #         group = silver_groups.get(frame_number)
-            
-    #         # Adding tracking data
-    #         if group is None or group.empty:
-    #             frames[frame_number] = {
-    #                 'period': None,
-    #                 'players': {
-    #                     'x': [],
-    #                     'y': [],
-    #                     'player_id': [],
-    #                     'id': [],
-    #                     'short_name': [],
-    #                     'number': [],
-    #                     'team_id': [],
-    #                     'total_time': [],
-    #                     'player_role.name': [],
-    #                     'player_role.acronym': [],
-    #                     'is_gk': [],
-    #                     'direction_player_1st_half': [],
-    #                     'direction_player_2nd_half': [],
-    #                 },
-    #                 'ball': {
-    #                     'ball_x': None,
-    #                     'ball_y': None,
-    #                     'ball_z': None,
-    #                 },
-    #                 'events': []
-    #             }
-    #         else:
-    #             frames[frame_number] = {
-    #                 'period': group['period'].iloc[0],
-    #                 'players': {
-    #                     'x': group['x'].tolist(),
-    #                     'y': group['y'].tolist(),
-    #                     'player_id': group['player_id'].tolist(),
-    #                     'id': group['id'].tolist(),
-    #                     'short_name': group['short_name'].tolist(),
-    #                     'number': group['number'].tolist(),
-    #                     'team_id': group['team_id'].tolist(),
-    #                     'total_time': group['total_time'].tolist(),
-    #                     'player_role.name': group['player_role.name'].tolist(),
-    #                     'player_role.acronym': group['player_role.acronym'].tolist(),
-    #                     'is_gk': group['is_gk'].tolist(),
-    #                     'direction_player_1st_half': group['direction_player_1st_half'].tolist(),
-    #                     'direction_player_2nd_half': group['direction_player_2nd_half'].tolist(),
-    #                 },
-    #                 'ball': {
-    #                     'ball_x': group['ball_x'].iloc[0],
-    #                     'ball_y': group['ball_y'].iloc[0],
-    #                     'ball_z': group['ball_z'].iloc[0],
-    #                 },
-    #                 'events': []
-    #             }
-            
-    #         # # Adding event data
-    #         while event_idx < n_events and events[event_idx]['frame_start'] <= frame_number:
-    #             active_events.append(events[event_idx])
-    #             event_idx += 1
-            
-    #         active_events = [e for e in active_events if e['frame_start'] <= frame_number <= e['frame_end']]
-            
-    #         frames[frame_number]['events'] = active_events
-            
-    #     return frames
 
     def _get_bronze_event_data(self, match_id) -> pd.DataFrame:
         event_data_github_url = f"https://raw.githubusercontent.com/SkillCorner/opendata/refs/heads/master/data/matches/{match_id}/{match_id}_dynamic_events.csv"
@@ -294,7 +388,7 @@ class SkillCornerDataIngestor:
         return silver_event_data 
     
     def _get_key_moments(self, bronze_event_data):
-        
+
         def _get_lead_to_goals(events_data):
             
             def _sequence_func(df):
@@ -342,59 +436,3 @@ class SkillCornerDataIngestor:
         events_data = bronze_event_data.copy()
         
         return {'goals': _get_lead_to_goals(events_data), 'shots': _get_lead_to_shots(events_data)}
-
-            
-
-    
-    def load_data(self, match_id) -> Dict[str, pd.DataFrame]:
-        bronze_tracking_data = self._get_bronze_tracking_data(match_id)
-        bronze_meta_data = self._get_bronze_meta_data(match_id)
-        silver_tracking_data = self._get_silver_tracking_data(bronze_tracking_data)
-        silver_meta_data = self._get_silver_meta_data(bronze_meta_data)
-        bronze_event_data = self._get_bronze_event_data(match_id)
-        silver_event_data = self._get_silver_event_data(bronze_event_data)
-        # gold_tracking_data = self._get_gold_tracking_data(silver_tracking_data, silver_meta_data, silver_event_data)
-        key_moments = self._get_key_moments(bronze_event_data)
-        enriched_tracking_data = silver_tracking_data.merge(silver_meta_data, left_on=["player_id"], right_on=["id"])
-        
-        enriched_tracking_data.to_parquet(
-            self._data_path("silver_tracking_data.parquet"),
-            engine="pyarrow",
-            index=False,
-        )
-        
-        with self._data_path("bronze_meta_data.json").open("w") as f:
-            json.dump(bronze_meta_data, f)
-
-        with self._data_path("gold_tracking_data.json").open("w") as f:
-            json.dump(
-                {
-                    "match_id": match_id,
-                    "match": bronze_meta_data,
-                    "key_moments": key_moments,
-                },
-                f,
-            )
-        # silver_meta_data.to_parquet(
-        #     self._data_path("silver_meta_data.parquet"),
-        #     engine="pyarrow",
-        #     index=False,
-        # )
-        
-        silver_event_data.to_parquet(
-            self._data_path("silver_event_data.parquet"),
-            engine="pyarrow",
-            index=False,
-        )
-            
-        return enriched_tracking_data
-    
-    def get_frame_data(self, frame_number: int, match_id: str = 1886347):
-        df_dict = self.load_data(match_id)
-        df = df_dict["enriched_tracking_data"]
-
-        if "frame" not in df.columns:
-            raise ValueError("DataFrame must contain a 'frame' column")
-
-        frame_df = df[df["frame"] == frame_number]
-        return frame_df.to_dict(orient="records")

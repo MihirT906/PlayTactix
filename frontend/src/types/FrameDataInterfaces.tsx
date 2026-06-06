@@ -4,8 +4,13 @@ interface FrameData {
     players: Players;
     ball: Ball;
     events: Event[] | [];
-
-}
+    overlays: {
+        pitch_control: {
+            type: string;
+            data: number[][]; // 2D array representing pitch control values
+        } | null;
+    };
+    }
 
 interface Ball {
     ball_x: number | null;
@@ -17,16 +22,10 @@ interface Players {
     x: number[] | [];
     y: number[] | [];
     player_id: number[] | [];
-    id: number[] | [];
-    short_name: string[] | [];
-    number: number[] | [];
-    team_id: number[] | [];
-    total_time: number[] | [];
-    player_role_name: string[] | [];
-    player_role_acronym: string[] | [];
-    is_gk: boolean[] | [];
-    direction_player_1st_half: string[] | [];
-    direction_player_2nd_half: string[] | [];
+    team: string[] | [];
+    vx: (number | null)[] | [];
+    vy: (number | null)[] | [];
+    speed: (number | null)[] | [];
 }
 
 interface Event {

@@ -217,8 +217,22 @@
 .key-moment-filters {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  padding: 0.75rem 0;
+  gap: 0;
+  padding: 0.5rem 0;
+}
+
+.key-moment-filter-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.35rem 0;
+}
+
+.key-moment-filter-section--divided {
+  padding-top: 0.6rem;
+  margin-top: 0.25rem;
+  border-top: 1px solid var(--surface-subtle-border);
+  gap: 0.65rem;
 }
 
 .key-moment-filter-row {
@@ -250,9 +264,9 @@
   border-left: 1px solid var(--surface-subtle-border);
   background: transparent;
   color: var(--color-text-muted);
+  font: inherit;
   font-size: 0.82rem;
   font-weight: 500;
-  font: inherit;
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
 }
@@ -269,6 +283,44 @@
 .key-moment-filter-btn.is-active {
   background: var(--color-accent);
   color: var(--color-text-inverse);
+  font-weight: 600;
+}
+
+.key-moment-filter-chip-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.key-moment-filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.key-moment-chip {
+  padding: 0.22rem 0.62rem;
+  border: 1px solid var(--surface-subtle-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.key-moment-chip:hover:not(.is-active) {
+  background: var(--surface-subtle-background-hover);
+  color: var(--color-text-primary);
+  border-color: var(--surface-subtle-border-hover);
+}
+
+.key-moment-chip.is-active {
+  background: var(--color-accent);
+  color: var(--color-text-inverse);
+  border-color: var(--color-accent);
   font-weight: 600;
 }
 

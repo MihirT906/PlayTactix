@@ -14,16 +14,34 @@ interface KeyMomentFinderComponentProps {
 // type KeyMomentItem = KeyMomentsData['goals'][number] | KeyMomentsData['shots'][number] | KeyMomentsData['pops'][number]
 type KeyMomentItem = KeyMomentsData['pops'][number]
 
-type FilterValue = true | false | 'any'
+type BooleanFilterValue = true | false | 'any'
+type InPossessionPhaseType = 'build_up' | 'create' | 'finish' | 'quick_break' | 'transition' | 'chaotic' | 'direct' | 'set_play' | 'disruption'
+type OutOfPossessionPhaseType = 'chaotic' | 'low_block' | 'medium_block' | 'high_block' | 'defending_transition' | 'defending_quick_break' | 'defending_set_play' | 'disruption' | 'defending_direct'
 
 interface FilterConfig {
-  lead_to_goal: FilterValue
-  lead_to_shot: FilterValue
+  lead_to_goal: BooleanFilterValue
+  lead_to_shot: BooleanFilterValue
+  team_in_possession_phase_type: InPossessionPhaseType[]
+  team_out_of_possession_phase_type: OutOfPossessionPhaseType[]
 }
 
-const FILTER_LABELS: Record<keyof FilterConfig, string> = {
-  lead_to_goal: 'Lead to Goal',
-  lead_to_shot: 'Lead to Shot',
+const IN_POSSESSION_PHASE_TYPES: InPossessionPhaseType[] = [
+  'build_up', 'create', 'finish', 'quick_break', 'transition', 'chaotic', 'direct', 'set_play', 'disruption',
+]
+
+const OUT_OF_POSSESSION_PHASE_TYPES: OutOfPossessionPhaseType[] = [
+  'chaotic', 'low_block', 'medium_block', 'high_block', 'defending_transition',
+  'defending_quick_break', 'defending_set_play', 'disruption', 'defending_direct',
+]
+
+const formatPhaseLabel = (type: string) =>
+  type
+    .replace(/^defending_/, 'Def. ')
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+
+function toggleValue<T>(arr: T[], value: T): T[] {
+  return arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value]
 }
 
 function KeyMomentFinderComponent({ episodeRange, onAddCustomEpisodeRange, keyMomentsData, matchData }: KeyMomentFinderComponentProps) {
@@ -37,6 +55,8 @@ function KeyMomentFinderComponent({ episodeRange, onAddCustomEpisodeRange, keyMo
   const [filters, setFilters] = useState<FilterConfig>({
     lead_to_goal: 'any',
     lead_to_shot: 'any',
+    team_in_possession_phase_type: [],
+    team_out_of_possession_phase_type: [],
   })
 
   const handleAddCustomEpisodeRange = () => {
@@ -54,6 +74,14 @@ function KeyMomentFinderComponent({ episodeRange, onAddCustomEpisodeRange, keyMo
     moments.filter((moment) => {
       if (filters.lead_to_goal !== 'any' && moment.lead_to_goal !== filters.lead_to_goal) return false
       if (filters.lead_to_shot !== 'any' && moment.lead_to_shot !== filters.lead_to_shot) return false
+      if (
+        filters.team_in_possession_phase_type.length > 0 &&
+        !filters.team_in_possession_phase_type.includes(moment.team_in_possession_phase_type as InPossessionPhaseType)
+      ) return false
+      if (
+        filters.team_out_of_possession_phase_type.length > 0 &&
+        !filters.team_out_of_possession_phase_type.includes(moment.team_out_of_possession_phase_type as OutOfPossessionPhaseType)
+      ) return false
       return true
     })
 
@@ -133,23 +161,86 @@ function KeyMomentFinderComponent({ episodeRange, onAddCustomEpisodeRange, keyMo
       {keyMomentsData ? (
         <div className="key-moment-groups">
           <div className="key-moment-filters">
-            {(Object.keys(filters) as (keyof FilterConfig)[]).map((key) => (
-              <div key={key} className="key-moment-filter-row">
-                <span className="key-moment-filter-label">{FILTER_LABELS[key]}</span>
-                <div className="key-moment-filter-group">
-                  {(['any', true, false] as const).map((value) => (
+
+            {/* Boolean filters — label left, toggle right */}
+            <div className="key-moment-filter-section">
+              {([
+                ['lead_to_goal', 'Lead to Goal'],
+                ['lead_to_shot', 'Lead to Shot'],
+              ] as const).map(([key, label]) => (
+                <div key={key} className="key-moment-filter-row">
+                  <span className="key-moment-filter-label">{label}</span>
+                  <div className="key-moment-filter-group">
+                    {(['any', true, false] as const).map((value) => (
+                      <button
+                        key={String(value)}
+                        type="button"
+                        className={`key-moment-filter-btn${filters[key] === value ? ' is-active' : ''}`}
+                        onClick={() => setFilters((f) => ({ ...f, [key]: value }))}
+                      >
+                        {value === 'any' ? 'Any' : value ? 'Yes' : 'No'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Phase type filters — label on top, chips wrap below */}
+            <div className="key-moment-filter-section key-moment-filter-section--divided">
+              <div className="key-moment-filter-chip-row">
+                <span className="key-moment-filter-label">In Possession</span>
+                <div className="key-moment-filter-chips">
+                  <button
+                    type="button"
+                    className={`key-moment-chip${filters.team_in_possession_phase_type.length === 0 ? ' is-active' : ''}`}
+                    onClick={() => setFilters((f) => ({ ...f, team_in_possession_phase_type: [] }))}
+                  >
+                    Any
+                  </button>
+                  {IN_POSSESSION_PHASE_TYPES.map((type) => (
                     <button
-                      key={String(value)}
+                      key={type}
                       type="button"
-                      className={`key-moment-filter-btn${filters[key] === value ? ' is-active' : ''}`}
-                      onClick={() => setFilters((f) => ({ ...f, [key]: value }))}
+                      className={`key-moment-chip${filters.team_in_possession_phase_type.includes(type) ? ' is-active' : ''}`}
+                      onClick={() => setFilters((f) => ({
+                        ...f,
+                        team_in_possession_phase_type: toggleValue(f.team_in_possession_phase_type, type),
+                      }))}
                     >
-                      {value === 'any' ? 'Any' : value ? 'Yes' : 'No'}
+                      {formatPhaseLabel(type)}
                     </button>
                   ))}
                 </div>
               </div>
-            ))}
+
+              <div className="key-moment-filter-chip-row">
+                <span className="key-moment-filter-label">Out of Possession</span>
+                <div className="key-moment-filter-chips">
+                  <button
+                    type="button"
+                    className={`key-moment-chip${filters.team_out_of_possession_phase_type.length === 0 ? ' is-active' : ''}`}
+                    onClick={() => setFilters((f) => ({ ...f, team_out_of_possession_phase_type: [] }))}
+                  >
+                    Any
+                  </button>
+                  {OUT_OF_POSSESSION_PHASE_TYPES.map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      className={`key-moment-chip${filters.team_out_of_possession_phase_type.includes(type) ? ' is-active' : ''}`}
+                      onClick={() => setFilters((f) => ({
+                        ...f,
+                        team_out_of_possession_phase_type: toggleValue(f.team_out_of_possession_phase_type, type),
+                      }))}
+                    >
+                      {formatPhaseLabel(type)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
           </div>
           {/* {renderMomentGroup('Goals', keyMomentsData.goals)}
           {renderMomentGroup('Shots', keyMomentsData.shots)} */}

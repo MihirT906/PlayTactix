@@ -87,6 +87,7 @@ function WorkspaceSidebar({
             episodeRange={episodeRange}
             onAddCustomEpisodeRange={onAddCustomEpisodeRange}
             keyMomentsData={keyMomentsData}
+            matchData={matchData}
           />
         </div>
       ) : null}

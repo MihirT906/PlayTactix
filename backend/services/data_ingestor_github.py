@@ -363,10 +363,10 @@ class SkillCornerDataIngestor:
     
     def _get_silver_event_data(self, bronze_event_data):
         columns_to_keep = [
-            'event_id', 'index', 'phase_index', 'frame_start', 'frame_end', 'time_end', 'attacking_side', 
+            'event_id', 'index', 'phase_index', 'frame_start', 'frame_end', 'time_end', 
+            'team_id', 'attacking_side', 'team_in_possession_phase_type', 'team_out_of_possession_phase_type',
             'event_type_id', 'event_type', 'event_subtype_id', 'event_subtype', 'end_type', 
             'player_id', 'player_name', 'player_position', 'player_in_possession_id',
-            'team_id', 
             'x_start', 'y_start', 'x_end', 'y_end',
             'lead_to_shot', 'lead_to_goal', 'distance_covered', 'speed_avg', 'separation_gain', 'pass_distance_received', 'player_targeted_xpass_completion', 'player_targeted_xthreat', 'xthreat', 'xpass_completion', 'n_opponents_overtaken', 'xloss_player_possession_max', 'xshot_player_possession_max'
         ]

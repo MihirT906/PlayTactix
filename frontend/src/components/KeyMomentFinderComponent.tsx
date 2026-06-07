@@ -1,22 +1,26 @@
 import { useState } from 'react'
 import { FaChevronDown } from 'react-icons/fa'
 import type { KeyMomentsData } from '../types/KeyMomentsDataInterfaces'
+import type { MatchData } from '../types/MatchDataInterfaces'
 import './KeyMomentFinderComponent.css'
 
 interface KeyMomentFinderComponentProps {
   episodeRange: { start: number; end: number }
   onAddCustomEpisodeRange: (start: number, end: number) => void
   keyMomentsData: KeyMomentsData | null
+  matchData: MatchData | null
 }
 
-type KeyMomentItem = KeyMomentsData['goals'][number] | KeyMomentsData['shots'][number]
+// type KeyMomentItem = KeyMomentsData['goals'][number] | KeyMomentsData['shots'][number] | KeyMomentsData['pops'][number]
+type KeyMomentItem = KeyMomentsData['pops'][number]
 
-function KeyMomentFinderComponent({ episodeRange, onAddCustomEpisodeRange, keyMomentsData }: KeyMomentFinderComponentProps) {
+function KeyMomentFinderComponent({ episodeRange, onAddCustomEpisodeRange, keyMomentsData, matchData }: KeyMomentFinderComponentProps) {
   const [startFrame, setStartFrame] = useState(episodeRange.start.toString())
   const [endFrame, setEndFrame] = useState(episodeRange.end.toString())
   const [expandedGroups, setExpandedGroups] = useState({
-    Goals: false,
-    Shots: false,
+    // Goals: false,
+    // Shots: false,
+    PoPs: false,
   })
 
   const handleAddCustomEpisodeRange = () => {
@@ -32,6 +36,10 @@ function KeyMomentFinderComponent({ episodeRange, onAddCustomEpisodeRange, keyMo
 
   const renderMomentGroup = (title: keyof typeof expandedGroups, moments: KeyMomentItem[]) => {
     const isExpanded = expandedGroups[title]
+    const home_team_id = matchData?.home_team.id
+    const home_team_name = matchData?.home_team.short_name
+    const away_team_id = matchData?.away_team.id
+    const away_team_name = matchData?.away_team.short_name
 
     return (
       <section className={`key-moment-group${isExpanded ? ' is-expanded' : ''}`}>
@@ -59,7 +67,7 @@ function KeyMomentFinderComponent({ episodeRange, onAddCustomEpisodeRange, keyMo
             <div className="key-moment-list" id={`key-moment-panel-${title.toLowerCase()}`}>
               {moments.map((moment) => (
                 <button
-                  key={`${title}-${moment.Sequence_ID}-${moment.frame_start}-${moment.frame_end}`}
+                  key={`${title}-${moment.phase_index}-${moment.frame_start}-${moment.frame_end}`}
                   type="button"
                   className="key-moment-button"
                   onClick={() => {
@@ -68,9 +76,11 @@ function KeyMomentFinderComponent({ episodeRange, onAddCustomEpisodeRange, keyMo
                     onAddCustomEpisodeRange(moment.frame_start, moment.frame_end)
                   }}
                 >
-                  <span className="key-moment-primary">Sequence {moment.Sequence_ID}</span>
+                  <span className="key-moment-primary">Phase {moment.phase_index}</span>
                   <span className="key-moment-meta">Time {moment.time_end}</span>
-                  <span className="key-moment-meta">Player {moment.player_name}</span>
+
+                  <span className="key-moment-meta">{home_team_name} : {moment.team_id === home_team_id ? moment.team_in_possession_phase_type : moment.team_out_of_possession_phase_type}</span>
+                  <span className="key-moment-meta">{away_team_name} : {moment.team_id === away_team_id ? moment.team_in_possession_phase_type : moment.team_out_of_possession_phase_type}</span>
                 </button>
               ))}
             </div>
@@ -95,8 +105,9 @@ function KeyMomentFinderComponent({ episodeRange, onAddCustomEpisodeRange, keyMo
 
       {keyMomentsData ? (
         <div className="key-moment-groups">
-          {renderMomentGroup('Goals', keyMomentsData.goals)}
-          {renderMomentGroup('Shots', keyMomentsData.shots)}
+          {/* {renderMomentGroup('Goals', keyMomentsData.goals)}
+          {renderMomentGroup('Shots', keyMomentsData.shots)} */}
+          {renderMomentGroup('PoPs', keyMomentsData.pops)}
         </div>
       ) : (
         <p className="key-moment-empty">No key moments loaded.</p>
@@ -133,22 +144,6 @@ function KeyMomentFinderComponent({ episodeRange, onAddCustomEpisodeRange, keyMo
         </div>
       </section>
     </section>
-    // <section className="key-moment-finder" aria-labelledby="key-moment-finder-heading">
-    //   <h2 id="key-moment-finder-heading">Key Moment Finder</h2>
-    //   <input
-    //     type="number"
-    //     placeholder="Start Frame"
-    //     value={startFrame}
-    //     onChange={(e) => setStartFrame(e.target.value)}
-    //   />
-    //   <input
-    //     type="number"
-    //     placeholder="End Frame"
-    //     value={endFrame}
-    //     onChange={(e) => setEndFrame(e.target.value)}
-    //   />
-    //   <button onClick={handleAddCustomEpisodeRange}>Add Custom Episode Range</button>
-    // </section>
   )
 }
 

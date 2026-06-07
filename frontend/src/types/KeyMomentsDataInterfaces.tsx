@@ -1,6 +1,16 @@
 interface KeyMomentsData {
     goals: Goal[],
     shots: Shot[],
+    pops: PhasesOfPlay[]
+}
+interface PhasesOfPlay {
+    phase_index: number,
+    frame_start: number,
+    frame_end: number,
+    time_end: string,
+    team_id: number,
+    team_in_possession_phase_type: string,
+    team_out_of_possession_phase_type: string,
 }
 
 interface Goal {

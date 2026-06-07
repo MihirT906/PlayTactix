@@ -21,6 +21,7 @@ type OutOfPossessionPhaseType = 'chaotic' | 'low_block' | 'medium_block' | 'high
 interface FilterConfig {
   lead_to_goal: BooleanFilterValue
   lead_to_shot: BooleanFilterValue
+  team_id: number | 'any'
   team_in_possession_phase_type: InPossessionPhaseType[]
   team_out_of_possession_phase_type: OutOfPossessionPhaseType[]
 }
@@ -55,6 +56,7 @@ function KeyMomentFinderComponent({ episodeRange, onAddCustomEpisodeRange, keyMo
   const [filters, setFilters] = useState<FilterConfig>({
     lead_to_goal: 'any',
     lead_to_shot: 'any',
+    team_id: 'any',
     team_in_possession_phase_type: [],
     team_out_of_possession_phase_type: [],
   })
@@ -74,6 +76,7 @@ function KeyMomentFinderComponent({ episodeRange, onAddCustomEpisodeRange, keyMo
     moments.filter((moment) => {
       if (filters.lead_to_goal !== 'any' && moment.lead_to_goal !== filters.lead_to_goal) return false
       if (filters.lead_to_shot !== 'any' && moment.lead_to_shot !== filters.lead_to_shot) return false
+      if (filters.team_id !== 'any' && moment.team_id !== filters.team_id) return false
       if (
         filters.team_in_possession_phase_type.length > 0 &&
         !filters.team_in_possession_phase_type.includes(moment.team_in_possession_phase_type as InPossessionPhaseType)
@@ -184,12 +187,34 @@ function KeyMomentFinderComponent({ episodeRange, onAddCustomEpisodeRange, keyMo
                   </div>
                 </div>
               ))}
+
+              {matchData && (
+                <div className="key-moment-filter-row">
+                  <span className="key-moment-filter-label">Team</span>
+                  <div className="key-moment-filter-group">
+                    {([
+                      ['any', 'Any'] as const,
+                      [matchData.home_team.id, matchData.home_team.short_name] as const,
+                      [matchData.away_team.id, matchData.away_team.short_name] as const,
+                    ]).map(([value, label]) => (
+                      <button
+                        key={String(value)}
+                        type="button"
+                        className={`key-moment-filter-btn${filters.team_id === value ? ' is-active' : ''}`}
+                        onClick={() => setFilters((f) => ({ ...f, team_id: value }))}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Phase type filters — label on top, chips wrap below */}
             <div className="key-moment-filter-section key-moment-filter-section--divided">
               <div className="key-moment-filter-chip-row">
-                <span className="key-moment-filter-label">In Possession</span>
+                <span className="key-moment-filter-label">In Possession Phase Type</span>
                 <div className="key-moment-filter-chips">
                   <button
                     type="button"
@@ -215,7 +240,7 @@ function KeyMomentFinderComponent({ episodeRange, onAddCustomEpisodeRange, keyMo
               </div>
 
               <div className="key-moment-filter-chip-row">
-                <span className="key-moment-filter-label">Out of Possession</span>
+                <span className="key-moment-filter-label">Out of Possession Phase Type</span>
                 <div className="key-moment-filter-chips">
                   <button
                     type="button"

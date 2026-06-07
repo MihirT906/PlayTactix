@@ -14,6 +14,7 @@ except ModuleNotFoundError:
 
 from services.data_ingestor_github import DataIngestor
 from services.frame_data_service import FrameDataService
+from services.key_moments_service import KeyMomentsService
 from services.pitch_control_overlay import PitchControlOverlay
 
 router = APIRouter(prefix="/data", tags=["frames"])
@@ -78,10 +79,9 @@ async def get_match_meta_data(match_id: int = Query(...)):
 async def get_match_key_moments(match_id: int = Query(...)):
     try:
         logger.info("Fetching key moments for match_id=%s", match_id)
-        with (DATA_DIR / "gold_tracking_data.json").open("r") as f:
-            gold_tracking_data = json.load(f)
-        
-        key_moments = gold_tracking_data.get('key_moments', {})
+
+        key_moments_service = KeyMomentsService()
+        key_moments = key_moments_service.get_key_moments(match_id=match_id)
 
         return {
             "requested_match_id": match_id,

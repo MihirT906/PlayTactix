@@ -62,17 +62,6 @@ class DataIngestor:
         with self._data_path("bronze_meta_data.json").open("w") as f:
             json.dump(bronze_meta_data, f)
 
-        logger.info("DEPRECIATED: Writing gold_tracking_data.json")
-        with self._data_path("gold_tracking_data.json").open("w") as f:
-            json.dump(
-                {
-                    "match_id": match_id,
-                    "match": bronze_meta_data,
-                    "key_moments": key_moments,
-                },
-                f,
-            )
-
         logger.info("Writing event data to data store")
         silver_event_data.to_parquet(
             self._data_path("silver_event_data.parquet"),
@@ -374,8 +363,8 @@ class SkillCornerDataIngestor:
     
     def _get_silver_event_data(self, bronze_event_data):
         columns_to_keep = [
-            'event_id', 'index', 'frame_start', 'frame_end', 'attacking_side', 
-            'event_type_id', 'event_type', 'event_subtype_id', 'event_subtype', 
+            'event_id', 'index', 'frame_start', 'frame_end', 'time_end', 'attacking_side', 
+            'event_type_id', 'event_type', 'event_subtype_id', 'event_subtype', 'end_type', 
             'player_id', 'player_name', 'player_position', 'player_in_possession_id',
             'team_id', 
             'x_start', 'y_start', 'x_end', 'y_end',
@@ -402,57 +391,4 @@ class SkillCornerDataIngestor:
         silver_event_data['xshot_player_possession_max'] = silver_event_data['xshot_player_possession_max'].fillna(-1).astype(float)
 
         logger.info("Silver event data transformed rows=%s", len(silver_event_data))
-        return silver_event_data 
-    
-    def _get_key_moments(self, bronze_event_data):
-
-        def _get_lead_to_goals(events_data):
-            
-            def _sequence_func(df):
-                df = df[(df['lead_to_goal'] == True) & (df['event_type'] == 'player_possession')]
-                return (df['end_type'] == 'shot').cumsum().shift(1, fill_value=0) + 1
-        
-            events_data["Sequence_ID"] = _sequence_func(events_data)
-            grouped_data = events_data.groupby("Sequence_ID").agg({'frame_start': 'min', 'frame_end': 'max', 'lead_to_goal': 'first', 'player_name': 'last', 'time_end': 'last'}).reset_index()
-            
-            if "frame_start" in grouped_data.columns:
-                start_buffer = 30  # Buffer of 30 frames before the start of the sequence
-                grouped_data["frame_start"] = (
-                    grouped_data["frame_start"] - start_buffer
-                ).clip(lower=0)
-            
-            if "frame_end" in grouped_data.columns:
-                end_buffer = 30  # Buffer of 30 frames after the end of the sequence
-                grouped_data["frame_end"] = grouped_data["frame_end"] + end_buffer
-            
-            return grouped_data.to_dict("records")
-    
-        events_data = bronze_event_data.copy()
-        
-        def _get_lead_to_shots(events_data):
-            
-            def _sequence_func(df):
-                df = df[(df['lead_to_shot'] == True) & (df['event_type'] == 'player_possession')]
-                return (df['end_type'] == 'shot').cumsum().shift(1, fill_value=0) + 1
-        
-            events_data["Sequence_ID"] = _sequence_func(events_data)
-            grouped_data = events_data.groupby("Sequence_ID").agg({'frame_start': 'min', 'frame_end': 'max', 'lead_to_shot': 'first', 'player_name': 'last', 'time_end': 'last'}).reset_index()
-            
-            if "frame_start" in grouped_data.columns:
-                start_buffer = 30  # Buffer of 30 frames before the start of the sequence
-                grouped_data["frame_start"] = (
-                    grouped_data["frame_start"] - start_buffer
-                ).clip(lower=0)
-            
-            if "frame_end" in grouped_data.columns:
-                end_buffer = 30  # Buffer of 30 frames after the end of the sequence
-                grouped_data["frame_end"] = grouped_data["frame_end"] + end_buffer
-            
-            return grouped_data.to_dict("records")
-    
-        events_data = bronze_event_data.copy()
-
-        goals = _get_lead_to_goals(events_data)
-        shots = _get_lead_to_shots(events_data)
-        logger.info("Key moments computed goals=%s shots=%s", len(goals), len(shots))
-        return {'goals': goals, 'shots': shots}
+        return silver_event_data

@@ -1,10 +1,37 @@
-2026-06-06 16:12:14 | INFO     | playtactix | Log cleared — new data download started
-2026-06-06 16:12:14 | INFO     | playtactix.routes.data_routes | Downloading match data for match_id=1886347
-2026-06-06 16:12:25 | INFO     | playtactix.routes.data_routes | Fetching frames match_id=1886347 start=10 end=310
-2026-06-06 16:12:25 | INFO     | playtactix.services.frame_data_service | Reading data files for match_id=1886347
-2026-06-06 16:12:25 | INFO     | playtactix.services.frame_data_service | Filtering frames for match_id=1886347 to range 10-310
-2026-06-06 16:12:29 | INFO     | playtactix.services.frame_data_service | Returning frames for match_id=1886347
+2026-06-06 21:40:04 | INFO     | playtactix | Log cleared — new data download started
+2026-06-06 21:40:04 | INFO     | playtactix.routes.data_routes | Downloading match data for match_id=1886347
+2026-06-06 21:40:04 | INFO     | playtactix.services.data_ingestor_github | Starting data ingestion pipeline for match_id=1886347
+2026-06-06 21:40:04 | INFO     | playtactix.services.data_ingestor_github | Fetching bronze metadata for match_id=1886347
+2026-06-06 21:40:04 | INFO     | playtactix.services.data_ingestor_github | Fetching metadata from GitHub match_id=1886347
+2026-06-06 21:40:04 | INFO     | playtactix.services.data_ingestor_github | Metadata fetched successfully match_id=1886347
+2026-06-06 21:40:04 | INFO     | playtactix.services.data_ingestor_github | Fetching bronze event data for match_id=1886347
+2026-06-06 21:40:04 | INFO     | playtactix.services.data_ingestor_github | Fetching event data from GitHub match_id=1886347
+2026-06-06 21:40:04 | INFO     | playtactix.services.data_ingestor_github | Event data fetched successfully match_id=1886347 rows=5079
+2026-06-06 21:40:04 | INFO     | playtactix.services.data_ingestor_github | Transforming silver event data for match_id=1886347
+2026-06-06 21:40:04 | INFO     | playtactix.services.data_ingestor_github | Silver event data transformed rows=5079
+2026-06-06 21:40:04 | INFO     | playtactix.services.data_ingestor_github | Computing key moments for match_id=1886347
+2026-06-06 21:40:04 | INFO     | playtactix.services.data_ingestor_github | Key moments computed goals=2 shots=23
+2026-06-06 21:40:04 | INFO     | playtactix.services.data_ingestor_github | Fetching and enriching tracking data for match_id=1886347
+2026-06-06 21:40:04 | INFO     | playtactix.services.data_ingestor_github | Loading tracking data from kloppy for match_id=1886347
+2026-06-06 21:40:14 | INFO     | playtactix.services.data_ingestor_github | Kloppy tracking data loaded rows=43458 cols=125
+2026-06-06 21:40:14 | INFO     | playtactix.services.data_ingestor_github | Silver tracking data enriched rows=43458 players=36
+2026-06-06 21:40:14 | INFO     | playtactix.services.data_ingestor_github | Writing tracking data to data store
+2026-06-06 21:40:15 | INFO     | playtactix.services.data_ingestor_github | Writing metadata to data store
+2026-06-06 21:40:15 | INFO     | playtactix.services.data_ingestor_github | Writing event data to data store
+2026-06-06 21:40:15 | INFO     | playtactix.services.data_ingestor_github | Data ingestion pipeline complete for match_id=1886347
+2026-06-06 21:40:15 | INFO     | playtactix.routes.data_routes | Fetching frames match_id=1886347 start=10 end=310
+2026-06-06 21:40:15 | INFO     | playtactix.services.frame_data_service | Reading data files for match_id=1886347
+2026-06-06 21:40:16 | INFO     | playtactix.services.frame_data_service | Filtering frames for match_id=1886347 to range 10-310
+2026-06-06 21:40:21 | INFO     | playtactix.services.frame_data_service | Returning frames for match_id=1886347
 NoneType: None
-2026-06-06 16:12:30 | INFO     | playtactix.routes.data_routes | Fetching match metadata for match_id=1886347
-2026-06-06 16:12:30 | INFO     | playtactix.services.frame_data_service | Retrieving metadata for match_id=1886347 from stored data
-2026-06-06 16:12:30 | INFO     | playtactix.routes.data_routes | Fetching key moments for match_id=1886347
+2026-06-06 21:40:24 | INFO     | playtactix.routes.data_routes | Fetching match metadata for match_id=1886347
+2026-06-06 21:40:24 | INFO     | playtactix.services.frame_data_service | Retrieving metadata for match_id=1886347 from stored data
+2026-06-06 21:40:24 | INFO     | playtactix.routes.data_routes | Fetching key moments for match_id=1886347
+2026-06-06 21:40:24 | INFO     | playtactix.services.key_moments_service | Fetching key moments for match_id=1886347
+2026-06-06 21:40:24 | INFO     | playtactix.services.key_moments_service | Key moments computed goals=2
+2026-06-06 21:40:24 | INFO     | playtactix.services.key_moments_service | Key moments computed shots=23
+2026-06-06 21:49:21 | INFO     | playtactix.routes.data_routes | Fetching frames match_id=1886347 start=1314 end=1614
+2026-06-06 21:49:21 | INFO     | playtactix.services.frame_data_service | Reading data files for match_id=1886347
+2026-06-06 21:49:22 | INFO     | playtactix.services.frame_data_service | Filtering frames for match_id=1886347 to range 1314-1614
+2026-06-06 21:49:25 | INFO     | playtactix.services.frame_data_service | Returning frames for match_id=1886347
+NoneType: None

@@ -19,12 +19,9 @@ class KeyMomentsService:
         return self.data_dir / filename
     
     def _get_lead_to_goals(self, events_data):
-            
-            def _sequence_func(df):
-                df = df[(df['lead_to_goal'] == True) & (df['event_type'] == 'player_possession')]
-                return (df['end_type'] == 'shot').cumsum().shift(1, fill_value=0) + 1
-        
-            events_data["Sequence_ID"] = _sequence_func(events_data)
+
+            events_data = events_data[(events_data['lead_to_goal'] == True) & (events_data['event_type'] == 'player_possession')]
+            events_data["Sequence_ID"] = events_data['phase_index']
             grouped_data = events_data.groupby("Sequence_ID").agg({'frame_start': 'min', 'frame_end': 'max', 'lead_to_goal': 'first', 'player_name': 'last', 'time_end': 'last'}).reset_index()
             
             if "frame_start" in grouped_data.columns:
@@ -40,12 +37,9 @@ class KeyMomentsService:
             return grouped_data.to_dict("records")
         
     def _get_lead_to_shots(self, events_data):
-            
-            def _sequence_func(df):
-                df = df[(df['lead_to_shot'] == True) & (df['event_type'] == 'player_possession')]
-                return (df['end_type'] == 'shot').cumsum().shift(1, fill_value=0) + 1
         
-            events_data["Sequence_ID"] = _sequence_func(events_data)
+            events_data = events_data[(events_data['lead_to_shot'] == True) & (events_data['event_type'] == 'player_possession')]
+            events_data["Sequence_ID"] = events_data['phase_index']
             grouped_data = events_data.groupby("Sequence_ID").agg({'frame_start': 'min', 'frame_end': 'max', 'lead_to_shot': 'first', 'player_name': 'last', 'time_end': 'last'}).reset_index()
             
             if "frame_start" in grouped_data.columns:

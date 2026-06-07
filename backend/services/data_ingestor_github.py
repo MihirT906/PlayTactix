@@ -1,6 +1,9 @@
 from fileinput import filename
 import json
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import pandas as pd
 import numpy as np
@@ -44,9 +47,6 @@ class DataIngestor:
 
         logger.info("Transforming silver event data for match_id=%s", match_id)
         silver_event_data = self.skillcorner_ingestor._get_silver_event_data(bronze_event_data)
-
-        logger.info("Computing key moments for match_id=%s", match_id)
-        key_moments = self.skillcorner_ingestor._get_key_moments(bronze_event_data)
 
         logger.info("Fetching and enriching tracking data for match_id=%s", match_id)
         enriched_tracking_data = self.kloppy_ingestor._get_silver_tracking_data_from_kloppy(match_id, bronze_meta_data)
@@ -363,7 +363,7 @@ class SkillCornerDataIngestor:
     
     def _get_silver_event_data(self, bronze_event_data):
         columns_to_keep = [
-            'event_id', 'index', 'frame_start', 'frame_end', 'time_end', 'attacking_side', 
+            'event_id', 'index', 'phase_index', 'frame_start', 'frame_end', 'time_end', 'attacking_side', 
             'event_type_id', 'event_type', 'event_subtype_id', 'event_subtype', 'end_type', 
             'player_id', 'player_name', 'player_position', 'player_in_possession_id',
             'team_id', 

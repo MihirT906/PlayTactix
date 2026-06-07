@@ -11,6 +11,8 @@ interface PhasesOfPlay {
     team_id: number,
     team_in_possession_phase_type: string,
     team_out_of_possession_phase_type: string,
+    lead_to_shot: boolean,
+    lead_to_goal: boolean
 }
 
 interface Goal {

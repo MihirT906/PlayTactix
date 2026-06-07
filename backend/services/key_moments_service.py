@@ -53,7 +53,7 @@ class KeyMomentsService:
             return grouped_data.to_dict("records")
     
     def _get_all_pops(self, events_data):
-        grouped_data = events_data.groupby("phase_index").agg({'frame_start': 'min', 'frame_end': 'max', 'time_end': 'last', 'team_id': 'first', 'team_in_possession_phase_type': 'first', 'team_out_of_possession_phase_type': 'first'}).reset_index()
+        grouped_data = events_data.groupby("phase_index").agg({'frame_start': 'min', 'frame_end': 'max', 'time_end': 'last', 'team_id': 'first', 'team_in_possession_phase_type': 'first', 'team_out_of_possession_phase_type': 'first', 'lead_to_goal': 'last', 'lead_to_shot': 'last'}).reset_index()
         
         if "frame_start" in grouped_data.columns:
             start_buffer = 0  # Buffer of 30 frames before the start of the sequence

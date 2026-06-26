@@ -56,13 +56,13 @@ class KeyMomentsService:
         grouped_data = events_data.groupby("phase_index").agg({'frame_start': 'min', 'frame_end': 'max', 'time_end': 'last', 'team_id': 'first', 'team_in_possession_phase_type': 'first', 'team_out_of_possession_phase_type': 'first', 'lead_to_goal': 'last', 'lead_to_shot': 'last'}).reset_index()
         
         if "frame_start" in grouped_data.columns:
-            start_buffer = 0  # Buffer of 30 frames before the start of the sequence
+            start_buffer = 30  # Buffer of 30 frames before the start of the sequence
             grouped_data["frame_start"] = (
                 grouped_data["frame_start"] - start_buffer
             ).clip(lower=0)
         
         if "frame_end" in grouped_data.columns:
-            end_buffer = 0  # Buffer of 30 frames after the end of the sequence
+            end_buffer = 30  # Buffer of 30 frames after the end of the sequence
             grouped_data["frame_end"] = grouped_data["frame_end"] + end_buffer
 
         return grouped_data.to_dict("records")

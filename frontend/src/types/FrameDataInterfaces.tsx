@@ -19,13 +19,13 @@ interface Ball {
 }
 
 interface Players {
-    x: number[] | [];
-    y: number[] | [];
-    player_id: number[] | [];
-    team: string[] | [];
-    vx: (number | null)[] | [];
-    vy: (number | null)[] | [];
-    speed: (number | null)[] | [];
+    x: number[];
+    y: number[];
+    player_id: number[];
+    team: string[];
+    vx: (number | null)[];
+    vy: (number | null)[];
+    speed: (number | null)[];
 }
 
 interface Event {

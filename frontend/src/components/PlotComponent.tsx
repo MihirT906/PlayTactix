@@ -12,8 +12,13 @@ import { useMatchSession } from '../context/MatchSessionContext'
 import { buildPassOptionProbOverlay } from '../plot/overlays/passOptionProbOverlay'
 import { buildPitchControlOverlay } from '../plot/overlays/pitchControlOverlay.ts'
 
+import { getLogger } from "../services/logger";
 
-// const annotationStore = new AnnotationStore()
+const logger = getLogger("PlotComponent");
+
+
+const annotationStore = new AnnotationStore()
+type editMode = 'draw_line' | 'draw_rect' | 'player_focus' | 'draw_line_players'
 
 interface PlotComponentProps {
   currentFrame: number
@@ -31,12 +36,13 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
   const overlay = session.overlays.active
   const [focusPoints, setFocusPoints] = useState<number[]>([]) // Points that are highlighted on click
   const [firstPoint, setFirstPoint] = useState<number | null>(null) // First point selected when drawing a line between two players
-  const [focusEnabled, setFocusEnabled] = useState(false) // 'Player Focus' mode toggled to draw lines
+  // const [focusEnabled, setFocusEnabled] = useState(false) // 'Player Focus' mode toggled to draw lines
   const [lines, setLines] = useState<any[]>([]) // User annotation lines
   const [shapes, setShapes] = useState<any[]>([]) // User annotation shapes
   const [dragMode, setDragMode] = useState<string>('select')
   const [overlayTraces, setOverlayTraces] = useState<any[]>([]); 
   const image_src = backgroundImage; // Set the background image source
+  const [editMode, setEditMode] = useState<editMode | null>(null);
 
   // Utility function to filter arrays based on a boolean mask
   const filterByMask = <T,>(arr: T[], mask: boolean[]) =>
@@ -61,7 +67,9 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
     icon: Plotly.Icons.tooltip_basic,
     click: () => {
         // console.log('event', frameData?.events)
-        setFocusEnabled(prev => !prev)
+        // setFocusEnabled(prev => !prev)
+        setEditMode('draw_line_players')
+        logger.info("Player Focus mode activated")
       },
   }), [])
   
@@ -159,6 +167,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
 
     const build = (mask: boolean[], lineColor: string, lineWidth = 1, sizeMultiplier = 1) => {
       const visiblePlayerIds = filterByMask(players.player_id, mask)
+      const selectedIndices = focusPoints.map((playerId) => visiblePlayerIds.indexOf(playerId)).filter((index) => index !== -1)
 
       return {
         x: filterByMask(players.x, mask),
@@ -185,12 +194,12 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
           },
           opacity: SELECTED_POINTS_OPACITY,
         },
-        selectedpoints: firstPoint !== null || focusPoints.length > 0 ? [firstPoint, ...focusPoints] : undefined,
+        selectedpoints: selectedIndices,
         selected: {
-          marker: { opacity: SELECTED_POINTS_OPACITY },
+          marker: { opacity: SELECTED_POINTS_OPACITY, size: plotConfig.markerSize * 1.2, line: {color: 'white', width: 2} },
         },
         unselected: {
-          marker: { opacity: firstPoint !== null || focusPoints.length > 0 ? UNSELECTED_POINTS_OPACITY : SELECTED_POINTS_OPACITY },
+          marker: { opacity: selectedIndices.length > 0 ? UNSELECTED_POINTS_OPACITY : SELECTED_POINTS_OPACITY },
         },
       }
     }
@@ -202,27 +211,8 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
       build(applyVisibilityMask(playerMasks?.passing_options || EMPTY_MASK.map(() => false)), eventStyles.passingOption.color, eventStyles.passingOption.width),
       build(applyVisibilityMask(playerMasks?.on_ball_engagement || EMPTY_MASK.map(() => false)), eventStyles.onBallEngagement.color, eventStyles.onBallEngagement.width),
     ];
-  }, [awayTeamColor, eventStyles.onBallEngagement.color, eventStyles.onBallEngagement.width, eventStyles.passingOption.color, eventStyles.passingOption.width, eventStyles.playerPossession.color, eventStyles.playerPossession.width, eventVisibility.onBallEngagement, eventVisibility.passingOption, eventVisibility.playerPossession, frameData, homeTeamColor, matchData, playerMasks, teamVisibility.away, teamVisibility.home])
+  }, [awayTeamColor, eventStyles.onBallEngagement.color, eventStyles.onBallEngagement.width, eventStyles.passingOption.color, eventStyles.passingOption.width, eventStyles.playerPossession.color, eventStyles.playerPossession.width, eventVisibility.onBallEngagement, eventVisibility.passingOption, eventVisibility.playerPossession, frameData, homeTeamColor, matchData, playerMasks, teamVisibility.away, teamVisibility.home, focusPoints])
 
-  // const overlayTraces = useMemo(() => {
-  //   if (!overlay) return [];
-
-  //   if (overlay === 'pass_option_prob') {
-  //     return buildPassOptionProbOverlay(frameData) || [];
-  //   }
-
-  //   if (overlay === 'pitch_control') {
-  //     const config = {}
-  //     return buildPitchControlOverlay(frameData, config) || [];
-  //   }
-
-  //   return [];
-  // }, [
-  //   eventStyles.passingOption.color,
-  //   frameData,
-  //   overlay,
-  //   plotConfig.markerSize
-  // ]);
   useEffect(() => {
     let cancelled = false;
 
@@ -266,15 +256,20 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
   // Creates lines to add to Plotly.layout using the player focus lines stored in annotationStore
   const updateLines = () => { 
     setLines([])
-    setFocusPoints([])
-    for (const [firstPoint, secondPoint] of annotationStore.getPlayerFocusLines(currentFrame) as [number, number][]) {
-      setFocusPoints(prev => [...prev, firstPoint, secondPoint]) // Add all players that have lines connected to them to focusPoints
+    // setFocusPoints([])
+    logger.debug("playerLineAnnotations for currentFrame:", currentFrame, annotationStore.getPlayerLineAnnotations(currentFrame))
+    for (const [firstPoint, secondPoint] of annotationStore.getPlayerLineAnnotations(currentFrame) as [number, number][]) {
+      // setFocusPoints(prev => [...prev, firstPoint, secondPoint]) // Add all players that have lines connected to them to focusPoints
+      if (firstPoint === undefined || secondPoint === undefined) {
+        console.warn('Undefined player IDs in annotationStore.getPlayerLineAnnotations:', firstPoint, secondPoint);
+        continue;
+      }
       const newLine = {
         type: 'line',
-        x0: frameData?.players.x[firstPoint], 
-        y0: frameData?.players.y[firstPoint],
-        x1: frameData?.players.x[secondPoint],
-        y1: frameData?.players.y[secondPoint],
+        x0: frameData?.players.x[frameData.players.player_id.indexOf(firstPoint)], 
+        y0: frameData?.players.y[frameData.players.player_id.indexOf(firstPoint)],
+        x1: frameData?.players.x[frameData.players.player_id.indexOf(secondPoint)],
+        y1: frameData?.players.y[frameData.players.player_id.indexOf(secondPoint)],
         line: {
           color: plotConfig.focusLineColor,
           width: plotConfig.focusLineWidth,
@@ -296,32 +291,69 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
     updateLines()
     updateShapes()
     setDragMode('select')
+    setEditMode(null)
     annotationStore.update_active_annotation(currentFrame) // Update active annotations in the store based on the current frame
   }, [frameData]) 
 
   // Allows the user to 'Focus' on a player or draw lines between them
   const handleClick = (event: any) => { 
-    if (!focusEnabled) return
-    if (!event?.points?.length) return
-    const pointIndex = event.points[0].pointIndex
-    console.log('Clicked point index:', pointIndex)
-    if (firstPoint === null) {
-      console.log('Setting first point to index:', event.points[0])
-      setFirstPoint(pointIndex)
-    }
-    else {
-      // Add a line from firstPoint to pointIndex
-      if (firstPoint === pointIndex) {
-        console.log('Clicked the same point again, resetting first point.')
-        setFirstPoint(null)
-        return
+    if (editMode == 'player_focus') {
+      if (!event?.points?.length) return
+      console.log(event.points)
+      const pointIndex = event.points[0].pointIndex
+      const clickedPlayerId = frameData?.players.player_id[pointIndex]
+      if (clickedPlayerId === undefined) return
+      if (focusPoints.includes(clickedPlayerId)) {
+        setFocusPoints(prev => prev.filter(p => p !== clickedPlayerId))
+      }else {
+        setFocusPoints(prev => [...prev, clickedPlayerId])
       }
-      annotationStore.addPlayerFocusAnnotation(firstPoint, pointIndex, currentFrame)
-      updateLines()
-      onAnnotationUpdate?.()
-      setFirstPoint(null) // Reset first point for the next line
+      logger.info("Player focused:", clickedPlayerId)
+
     }
-    return []
+  
+    else if (editMode == 'draw_line_players') {
+      if (!event?.points?.length) return
+      const pointIndex = event.points[0].pointIndex
+      const clickedPlayerId = frameData?.players.player_id[pointIndex]
+      if (clickedPlayerId === undefined) return
+      if (firstPoint === null) {
+        setFirstPoint(clickedPlayerId)
+        logger.info("First point selected for player line annotation:", clickedPlayerId)
+      }
+      else{
+        if (firstPoint === clickedPlayerId) {
+          setFirstPoint(null) // Reset first point if the same player is clicked again
+          return
+        }
+        logger.info("Adding player line annotation between players:", firstPoint, "and", clickedPlayerId)
+        annotationStore.addPlayerLineAnnotation(firstPoint, clickedPlayerId, currentFrame)
+        updateLines()
+        onAnnotationUpdate?.()
+        setFirstPoint(null) // Reset first point for the next line
+      }
+    }
+    // if (editMode !== 'player_focus') return
+    // if (!event?.points?.length) return
+    // const pointIndex = event.points[0].pointIndex
+    // console.log('Clicked point index:', pointIndex)
+    // if (firstPoint === null) {
+    //   console.log('Setting first point to index:', event.points[0])
+    //   setFirstPoint(pointIndex)
+    // }
+    // else {
+    //   // Add a line from firstPoint to pointIndex
+    //   if (firstPoint === pointIndex) {
+    //     console.log('Clicked the same point again, resetting first point.')
+    //     setFirstPoint(null)
+    //     return
+    //   }
+    //   annotationStore.addPlayerLineAnnotation(firstPoint, pointIndex, currentFrame)
+    //   updateLines()
+    //   onAnnotationUpdate?.()
+    //   setFirstPoint(null) // Reset first point for the next line
+    // }
+    // return []
   }
 
   // Handles deletion of lines
@@ -372,7 +404,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
           paper_bgcolor: 'rgba(0, 0, 0, 0.3)',
           plot_bgcolor: 'rgba(0, 0, 0, 0.3)',
           showlegend: false,
-          hovermode: 'x',
+          hovermode: 'closest',
           hoverdistance: 1,
           dragmode: dragMode as any,
           shapes: [...lines, ...shapes], // Contains player focus lines
@@ -386,7 +418,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
               sizex: 113,
               sizey: 76,
               layer: 'below',
-              opacity: 0.6,
+              opacity: 0.4,
               sizing: 'stretch',
             }
           ]

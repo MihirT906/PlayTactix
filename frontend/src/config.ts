@@ -8,15 +8,15 @@ export const APP_CONFIG = {
 	},
 	selection: {
 		selectedPointsOpacity: 1,
-		unselectedPointsOpacity: 0.6,
+		unselectedPointsOpacity: 0.3,
 	},
 	plot: {
 		xAxisRange: [-50, 50] as [number, number],
 		yAxisRange: [-50, 50] as [number, number],
 		markerSize: 15,
 		markerColor: '#d85e1d',
-		focusLineColor: '#2563eb',
-		focusLineWidth: 2,
+		focusLineColor: '#000000',
+		focusLineWidth: 7,
 		paperBackgroundColor: '#ffffff',
 		plotBackgroundColor: '#ffffff',
 		modeBarButtonsToAdd: ['drawline', 'drawrect', 'eraseshape'] as const,

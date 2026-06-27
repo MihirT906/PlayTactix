@@ -1,4 +1,7 @@
 import objectHash from "object-hash";
+import { getLogger } from "../services/logger";
+
+const logger = getLogger("AnnotationStore");
 
 interface Annotation {
     type: string;
@@ -8,8 +11,8 @@ interface Annotation {
 }
 
 function createShapeKey(shape: any, frameStart: number): string {
-    if (shape.points) {
-        return `playerFocus|${frameStart}|${shape.points.sort((a: number, b: number) => a - b).join(',')}`;
+    if (shape.players) {
+        return `playerLine|${frameStart}|${shape.players.sort((a: number, b: number) => a - b).join(',')}`;
     }
     const type = shape.type;
     const x0 = shape.x0;
@@ -67,19 +70,20 @@ export default class AnnotationStore {
 
     }
     
-    addPlayerFocusAnnotation(point1: number, point2: number, currentFrame: number){
-        // Create a player focus annotation and add it to the store
+    addPlayerLineAnnotation(player1: number, player2: number, currentFrame: number){
+        // Create a player line annotation and add it to the store
         const annotation: Annotation = {
-            type: 'playerFocus',
+            type: 'playerLine',
             shape: {
-                points: [point1, point2]
+                players: [player1, player2]
             }
         };
+        logger.info("Add player line annotation called for players:", player1, player2, "at frame:", currentFrame);
         // const uniqueKey = createShapeKey(annotation.shape, currentFrame);
         // if (this.active_annotations.has(uniqueKey)) return;
         // loop through active annotations to check if an identical annotation already exists (to prevent duplicates from relayout events)
         for (const existingAnnotation of this.active_annotations.values()) {
-            if (existingAnnotation.shape.points.sort().toString() === annotation.shape.points.sort().toString()) {
+            if (existingAnnotation.shape.players.sort().toString() === annotation.shape.players.sort().toString()) {
                 return;
             }
         }
@@ -91,11 +95,11 @@ export default class AnnotationStore {
         this.update_active_annotation(currentFrame)
     }
 
-    deletePlayerFocusAnnotation(playerFocusShapes: any, currentFrame: number){
-        // Delete player focus annotations that do not exist anymore
+    deletePlayerLineAnnotations(playerLineShapes: any, currentFrame: number){
+        // Delete player line annotations that do not exist anymore
         for (const [key, annotation] of this.active_annotations.entries()) {
-            if (annotation.type !== 'playerFocus') continue;
-            const isPresent = playerFocusShapes.some((shape: any) => shape.name === `Player1:${annotation.shape.points[0]},Player2:${annotation.shape.points[1]}`);
+            if (annotation.type !== 'playerLine') continue;
+            const isPresent = playerLineShapes.some((shape: any) => shape.name === `Player1:${annotation.shape.players[0]},Player2:${annotation.shape.players[1]}`);
             if (!isPresent) {
                 annotation.frameEnd = currentFrame;
                 this.end_events.set(currentFrame, [...(this.end_events.get(currentFrame) || []), key]);
@@ -133,8 +137,8 @@ export default class AnnotationStore {
 
     }
 
-    getPlayerFocusLines(currentFrame: number) {
-        return Array.from(this.active_annotations.values()).filter(annotation => annotation.type === 'playerFocus').map(annotation => annotation.shape.points);
+    getPlayerLineAnnotations(currentFrame: number) {
+        return Array.from(this.active_annotations.values()).filter(annotation => annotation.type === 'playerLine').map(annotation => annotation.shape.players);
     }
 
     getDrawAnnotations(currentFrame: number) {
@@ -151,8 +155,8 @@ export default class AnnotationStore {
     handleAnnotationRelayout(eventData: any, currentFrame: number) {
         const shapes = eventData["shapes"] || [];
         const drawShapes = shapes.filter((shape: any) => shape.name == undefined);
-        const playerFocusShapes = shapes.filter((shape: any) => !drawShapes.includes(shape));
-        this.deletePlayerFocusAnnotation(playerFocusShapes, currentFrame);
+        const playerLineShapes = shapes.filter((shape: any) => !drawShapes.includes(shape));
+        this.deletePlayerLineAnnotations(playerLineShapes, currentFrame);
         this.addOrDeleteDrawShapes(drawShapes, currentFrame);
     }
 

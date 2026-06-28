@@ -62,46 +62,41 @@
 
 .workspace-sidebar-action--player-focus {
   --pf-color: #C43568;
-  --pf-color-soft: rgba(196, 53, 104, 0.18);
-  --pf-color-glow: rgba(196, 53, 104, 0.35);
+  --pf-color-glow: rgba(196, 53, 104, 0.4);
 
   padding: 7px 12px;
   border-radius: 0;
-  border: 1px solid rgba(196, 53, 104, 0.38);
-  background: var(--pf-color-soft);
-  color: color-mix(in srgb, var(--pf-color) 80%, white);
+  border: 1px solid #C43568;
+  background: transparent;
+  color: #C43568;
   font-size: 1rem;
   font-weight: 600;
   letter-spacing: 0.01em;
   transition:
-    background 0.2s ease,
-    border-color 0.2s ease,
-    color 0.2s ease,
-    box-shadow 0.2s ease;
+    background 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.1s ease;
   width: 100%;
 }
 
 .workspace-sidebar-action--player-focus:hover {
-  background: rgba(196, 53, 104, 0.28);
-  border-color: rgba(196, 53, 104, 0.6);
-  color: color-mix(in srgb, var(--pf-color) 60%, white);
-  box-shadow: 0 0 12px var(--pf-color-glow);
+  color: #C43568;
+  border-color: color-mix(in srgb, #C43568 70%, white);
+}
+
+.workspace-sidebar-action--player-focus:active {
+  color: #C43568;
+  transform: scale(0.97);
 }
 
 .workspace-sidebar-action--player-focus.is-active {
-  background: var(--pf-color);
-  border-color: color-mix(in srgb, var(--pf-color) 70%, white);
-  color: #fff;
-  box-shadow:
-    0 0 16px var(--pf-color-glow),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  color: #C43568;
+  border-color: color-mix(in srgb, #C43568 70%, white);
+  border-width: 2px;
 }
 
 .workspace-sidebar-action--player-focus.is-active:hover {
-  background: color-mix(in srgb, var(--pf-color) 85%, white);
-  box-shadow:
-    0 0 22px rgba(196, 53, 104, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.24);
+  color: #C43568;
 }
 
 .workspace-sidebar-action--player-focus svg {
@@ -110,46 +105,41 @@
 
 .workspace-sidebar-action--draw-line {
   --dl-color: #E8702F;
-  --dl-color-soft: rgba(232, 112, 47, 0.18);
-  --dl-color-glow: rgba(232, 112, 47, 0.35);
+  --dl-color-glow: rgba(232, 112, 47, 0.4);
 
   padding: 7px 12px;
   border-radius: 0;
-  border: 1px solid rgba(232, 112, 47, 0.38);
-  background: var(--dl-color-soft);
-  color: color-mix(in srgb, var(--dl-color) 80%, white);
+  border: 1px solid #E8702F;
+  background: transparent;
+  color: #E8702F;
   font-size: 1rem;
   font-weight: 600;
   letter-spacing: 0.01em;
   transition:
-    background 0.2s ease,
-    border-color 0.2s ease,
-    color 0.2s ease,
-    box-shadow 0.2s ease;
+    background 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.1s ease;
   width: 100%;
 }
 
 .workspace-sidebar-action--draw-line:hover {
-  background: rgba(232, 112, 47, 0.28);
-  border-color: rgba(232, 112, 47, 0.6);
-  color: color-mix(in srgb, var(--dl-color) 60%, white);
-  box-shadow: 0 0 12px var(--dl-color-glow);
+  color: #E8702F;
+  border-color: color-mix(in srgb, #E8702F 70%, white);
+}
+
+.workspace-sidebar-action--draw-line:active {
+  color: #E8702F;
+  transform: scale(0.97);
 }
 
 .workspace-sidebar-action--draw-line.is-active {
-  background: var(--dl-color);
-  border-color: color-mix(in srgb, var(--dl-color) 70%, white);
-  color: #fff;
-  box-shadow:
-    0 0 16px var(--dl-color-glow),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  color: #E8702F;
+  border-color: color-mix(in srgb, #E8702F 70%, white);
+  border-width: 2px;
 }
 
 .workspace-sidebar-action--draw-line.is-active:hover {
-  background: color-mix(in srgb, var(--dl-color) 85%, white);
-  box-shadow:
-    0 0 22px rgba(232, 112, 47, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.24);
+  color: #E8702F;
 }
 
 .workspace-sidebar-action--draw-line svg {

@@ -8,7 +8,7 @@ import { APP_CONFIG, SELECTED_POINTS_OPACITY, UNSELECTED_POINTS_OPACITY } from '
 import backgroundImage from '../../../data/background_image.png';
 import type { MatchData } from '../types/MatchDataInterfaces'
 import { useStyleConfig } from '../context/StyleConfigContext'
-import { useMatchSession } from '../context/MatchSessionContext'
+import { useMatchSession, type EditMode } from '../context/MatchSessionContext'
 import { buildPassOptionProbOverlay } from '../plot/overlays/passOptionProbOverlay'
 import { buildPitchControlOverlay } from '../plot/overlays/pitchControlOverlay.ts'
 
@@ -18,7 +18,6 @@ const logger = getLogger("PlotComponent");
 
 
 const annotationStore = new AnnotationStore()
-type editMode = 'draw_line' | 'draw_rect' | 'player_focus' | 'draw_line_players'
 
 interface PlotComponentProps {
   currentFrame: number
@@ -31,7 +30,7 @@ interface PlotComponentProps {
 const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, frameData, annotationStore, onAnnotationUpdate }) => {
   const plotConfig = APP_CONFIG.plot
   const { homeTeamColor, awayTeamColor, eventStyles, teamVisibility, eventVisibility } = useStyleConfig()
-  const { session, resources } = useMatchSession()
+  const { session, resources, setEditMode } = useMatchSession()
   const overlayManager = resources.overlayManager
   const overlay = session.overlays.active
   const [focusPoints, setFocusPoints] = useState<number[]>([]) // Points that are highlighted on click
@@ -42,7 +41,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
   const [dragMode, setDragMode] = useState<string>('select')
   const [overlayTraces, setOverlayTraces] = useState<any[]>([]); 
   const image_src = backgroundImage; // Set the background image source
-  const [editMode, setEditMode] = useState<editMode | null>(null);
+  const editMode = session.ui.editMode;
 
   // Utility function to filter arrays based on a boolean mask
   const filterByMask = <T,>(arr: T[], mask: boolean[]) =>
@@ -66,12 +65,10 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
     name: 'Player Focus',
     icon: Plotly.Icons.tooltip_basic,
     click: () => {
-        // console.log('event', frameData?.events)
-        // setFocusEnabled(prev => !prev)
         setEditMode('draw_line_players')
         logger.info("Player Focus mode activated")
       },
-  }), [])
+  }), [setEditMode])
   
   // Trace for off-ball runs
   const offBallRunTrace = useMemo(() => {
@@ -266,6 +263,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
       }
       const newLine = {
         type: 'line',
+        layer: 'between',
         x0: frameData?.players.x[frameData.players.player_id.indexOf(firstPoint)], 
         y0: frameData?.players.y[frameData.players.player_id.indexOf(firstPoint)],
         x1: frameData?.players.x[frameData.players.player_id.indexOf(secondPoint)],

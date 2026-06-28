@@ -1,4 +1,5 @@
-import { FaCog, FaSearch, FaStream } from 'react-icons/fa'
+import { FaCog, FaSearch, FaStream, FaStreetView, FaProjectDiagram } from 'react-icons/fa'
+import { FaCircleNodes } from "react-icons/fa6";
 import './WorkspaceSidebar.css'
 import Settings from './Settings.tsx'
 import TimelineTab from './TimelineTab.tsx'
@@ -6,6 +7,7 @@ import type { MatchData } from '../types/MatchDataInterfaces'
 import type { KeyMomentsData } from '../types/KeyMomentsDataInterfaces'
 import TimelineStore from '../services/TimelineStore'
 import KeyMomentFinderComponent from './KeyMomentFinderComponent'
+import { useMatchSession } from '../context/MatchSessionContext'
 
 export type SidebarPanel = 'settings' | 'timeline' | 'search' | null
 
@@ -28,10 +30,13 @@ function WorkspaceSidebar({
   onAddCustomEpisodeRange,
   keyMomentsData,
 }: WorkspaceSidebarProps) {
+  const { session, setEditMode } = useMatchSession()
   const isSettingsPanelOpen = activePanel === 'settings'
   const isTimelinePanelOpen = activePanel === 'timeline'
   const isSearchPanelOpen = activePanel === 'search'
   const isSidebarPanelOpen = activePanel !== null
+  const isPlayerFocusActive = session.ui.editMode === 'player_focus'
+  const isDrawLinePlayersActive = session.ui.editMode === 'draw_line_players'
 
   return (
     <aside className={`left-panel settings-sidebar ${isSidebarPanelOpen ? 'is-open' : ''}`} aria-label="Settings sidebar">
@@ -72,6 +77,27 @@ function WorkspaceSidebar({
             <span>Search</span>
           </button>
         </nav>
+        <span className="app-kicker workspace-sidebar-kicker">Controls</span>
+          <button
+            type="button"
+            className={`app-header-action workspace-sidebar-action workspace-sidebar-action--player-focus ${isPlayerFocusActive ? 'is-active' : ''}`}
+            onClick={() => setEditMode(isPlayerFocusActive ? null : 'player_focus')}
+            aria-pressed={isPlayerFocusActive}
+            aria-label={isPlayerFocusActive ? 'Disable player focus mode' : 'Enable player focus mode'}
+          >
+            <FaStreetView aria-hidden="true" />
+            <span>Player Focus</span>
+          </button>
+          <button
+            type="button"
+            className={`app-header-action workspace-sidebar-action workspace-sidebar-action--draw-line ${isDrawLinePlayersActive ? 'is-active' : ''}`}
+            onClick={() => setEditMode(isDrawLinePlayersActive ? null : 'draw_line_players')}
+            aria-pressed={isDrawLinePlayersActive}
+            aria-label={isDrawLinePlayersActive ? 'Disable link players mode' : 'Enable link players mode'}
+          >
+            <FaProjectDiagram aria-hidden="true" />
+            <span>Link Players</span>
+          </button>
       </div>
       {isSettingsPanelOpen ? (
         <div id="settings-sidebar-panel" className="settings-sidebar-panel">

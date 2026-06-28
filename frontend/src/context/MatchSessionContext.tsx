@@ -11,6 +11,7 @@ import type OverlayManager from '../services/OverlayManager'
 
 export type LoadStatus = 'idle' | 'loading' | 'ready' | 'error'
 export type OverlayKind = 'pass_option_prob' | 'pitch_control'
+export type EditMode = 'draw_line' | 'draw_rect' | 'player_focus' | 'draw_line_players'
 
 export type MatchSessionState = {
   match: {
@@ -33,6 +34,7 @@ export type MatchSessionState = {
   }
   ui: {
     activeSidebarPanel: SidebarPanel
+    editMode: EditMode | null
   }
 }
 
@@ -54,6 +56,8 @@ type MatchSessionContextValue = {
 
   setSidebarPanel: (panel: SidebarPanel) => void
   clearSidebarPanel: () => void
+
+  setEditMode: (mode: EditMode | null) => void
 
   setActiveOverlay: (overlay: OverlayKind | null) => void
 
@@ -96,6 +100,7 @@ export const createInitialMatchSessionState = (): MatchSessionState => ({
   },
   ui: {
     activeSidebarPanel: null,
+    editMode: null,
   },
 })
 
@@ -206,6 +211,16 @@ export function MatchSessionProvider({
                 ui: {
                     ...prev.ui,
                     activeSidebarPanel: null,
+                },
+            }))
+        },
+
+        setEditMode: (mode: EditMode | null) => {
+            setSession((prev) => ({
+                ...prev,
+                ui: {
+                    ...prev.ui,
+                    editMode: mode,
                 },
             }))
         },

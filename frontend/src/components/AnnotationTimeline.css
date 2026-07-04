@@ -1,0 +1,171 @@
+.annotation-timeline {
+  width: 100%;
+  margin-top: 1rem;
+  padding: 16px;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-sizing: border-box;
+}
+
+.annotation-timeline__header {
+  margin-bottom: 12px;
+  color: #f8fafc;
+}
+
+.annotation-timeline__header h3 {
+  margin: 0;
+  font-size: small;
+}
+
+.annotation-timeline__empty {
+  color: rgba(248, 250, 252, 0.6);
+  font-size: 0.85rem;
+}
+
+.annotation-timeline__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: max-content;
+}
+
+.annotation-timeline__scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(139, 92, 246, 0.72) rgba(255, 255, 255, 0.08);
+}
+
+.annotation-timeline__scroll::-webkit-scrollbar {
+  height: 12px;
+}
+
+.annotation-timeline__scroll::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.annotation-timeline__scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, rgba(139, 92, 246, 0.92), rgba(167, 139, 250, 0.78));
+  border-radius: 999px;
+  border: 2px solid rgba(15, 23, 42, 0.16);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.annotation-timeline__scroll::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(90deg, rgba(167, 139, 250, 0.96), rgba(196, 181, 253, 0.84));
+}
+
+.annotation-timeline__scroll::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+.annotation-timeline__row {
+  display: grid;
+  gap: 12px;
+  align-items: start;
+}
+
+.annotation-timeline__label-row {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 12px 0 18px rgba(15, 23, 42, 0.2);
+  box-sizing: border-box;
+  color: #f8fafc;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.annotation-timeline__track {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  background:
+    linear-gradient(90deg, rgba(148, 163, 184, 0.18) 1px, transparent 1px),
+    rgba(15, 23, 42, 0.16);
+  background-size: 10% 100%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  min-height: 22px;
+}
+
+.annotation-timeline__current-frame {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: rgba(248, 250, 252, 0.9);
+  box-shadow: 0 0 12px rgba(248, 250, 252, 0.35);
+  transform: translateX(-1px);
+  z-index: 2;
+}
+
+.annotation-timeline__annotation {
+  position: absolute;
+  height: 18px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(139, 92, 246, 0.88), rgba(124, 58, 237, 0.72));
+  color: #f8fafc;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.annotation-timeline__annotation--ongoing {
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(139, 92, 246, 0.6),
+    rgba(139, 92, 246, 0.6) 6px,
+    rgba(124, 58, 237, 0.35) 6px,
+    rgba(124, 58, 237, 0.35) 12px
+  );
+  border: 1px dashed rgba(216, 180, 254, 0.8);
+}
+
+.annotation-timeline__annotation:hover {
+  overflow: visible;
+  z-index: 5;
+}
+
+.annotation-timeline__annotation-label {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.annotation-timeline__annotation:hover .annotation-timeline__annotation-label {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: max-content;
+  max-width: none;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: inherit;
+  color: inherit;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
+}
+
+@media (max-width: 720px) {
+  .annotation-timeline__row {
+    gap: 8px;
+  }
+}

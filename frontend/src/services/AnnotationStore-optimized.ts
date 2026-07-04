@@ -145,6 +145,17 @@ export default class AnnotationStore {
         return Array.from(this.active_annotations.values()).filter(annotation => annotation.type === 'draw').map(annotation => annotation.shape);
     }
 
+    getAllAnnotations(): Array<{ key: string; type: string; frameStart: number; frameEnd: number | null; shape: any }> {
+        // Returns every annotation ever created (not just the ones active at a given frame), for timeline display
+        return Array.from(this.annotations.entries()).map(([key, annotation]) => ({
+            key,
+            type: annotation.type,
+            frameStart: annotation.frameStart ?? 0,
+            frameEnd: annotation.frameEnd ?? null,
+            shape: annotation.shape,
+        }));
+    }
+
     describeAnnotationStore(){
         console.log('Start Events:', this.start_events)
         console.log('End Events:', this.end_events)

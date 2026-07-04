@@ -6,6 +6,7 @@ import type { FrameData, Event } from '../types/FrameDataInterfaces'
 import type AnnotationStore from '../services/AnnotationStore-optimized'
 import type TimelineStore from '../services/TimelineStore'
 import EventDisplayComponent from './EventDisplayComponent'
+import AnnotationTimeline from './AnnotationTimeline'
 
 type PlotLayoutComponentProps = {
   isPlaying: boolean
@@ -20,6 +21,7 @@ type PlotLayoutComponentProps = {
   annotationStore: AnnotationStore
   timelineStore: TimelineStore
   onAnnotationUpdate: () => void
+  annotationUpdateEvent: boolean
 }
 
 function PlotLayoutComponent({
@@ -35,6 +37,7 @@ function PlotLayoutComponent({
   annotationStore,
   timelineStore,
   onAnnotationUpdate,
+  annotationUpdateEvent,
 }: PlotLayoutComponentProps) {
   return (
     <div className="plot-layout">
@@ -64,6 +67,14 @@ function PlotLayoutComponent({
         currentFrame={currentFrame}
         matchData={matchData}
         timelineStore={timelineStore}
+      />
+
+      <AnnotationTimeline
+        annotationStore={annotationStore}
+        currentFrame={currentFrame}
+        scaleStart={episodeRange.start}
+        scaleEnd={episodeRange.end}
+        annotationUpdateEvent={annotationUpdateEvent}
       />
     </div>
   )

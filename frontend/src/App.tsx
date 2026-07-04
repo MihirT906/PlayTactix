@@ -266,12 +266,10 @@ function AppContent({
                       annotationStore={annotationStore}
                       timelineStore={timelineStore}
                       onAnnotationUpdate={() => setAnnotationUpdateEvent(!annotationUpdateEvent)}
+                      annotationUpdateEvent={annotationUpdateEvent}
                     />
                   </div>
                 </div>
-                {/* <div className="right-panel">
-                  <AnnotationDisplay annotationStore={annotationStore} currentFrame={currentFrame} annotationUpdateEvent={annotationUpdateEvent} />
-                </div> */}
               </div>
             </div>
           ) : null}

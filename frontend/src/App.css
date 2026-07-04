@@ -203,8 +203,7 @@
   color: #ffffff;
 }
 
-.left-panel,
-.right-panel {
+.left-panel {
   display: flex;
   justify-content: center;
   align-items: stretch;
@@ -232,9 +231,5 @@
 
   .main-content {
     grid-column: auto;
-  }
-
-  .right-panel {
-    justify-content: stretch;
   }
 }

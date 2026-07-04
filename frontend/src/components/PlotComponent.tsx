@@ -196,7 +196,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
           marker: { opacity: SELECTED_POINTS_OPACITY, size: plotConfig.markerSize * 1.2, line: {color: 'white', width: 2} },
         },
         unselected: {
-          marker: { opacity: selectedIndices.length > 0 ? UNSELECTED_POINTS_OPACITY : SELECTED_POINTS_OPACITY },
+          marker: { opacity: focusPoints.length > 0 ? UNSELECTED_POINTS_OPACITY : SELECTED_POINTS_OPACITY },
         },
       }
     }
@@ -298,8 +298,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
     if (editMode == 'player_focus') {
       if (!event?.points?.length) return
       console.log(event.points)
-      const pointIndex = event.points[0].pointIndex
-      const clickedPlayerId = frameData?.players.player_id[pointIndex]
+      const clickedPlayerId = event.points[0].customdata?.[0]
       if (clickedPlayerId === undefined) return
       if (focusPoints.includes(clickedPlayerId)) {
         setFocusPoints(prev => prev.filter(p => p !== clickedPlayerId))
@@ -312,8 +311,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
   
     else if (editMode == 'draw_line_players') {
       if (!event?.points?.length) return
-      const pointIndex = event.points[0].pointIndex
-      const clickedPlayerId = frameData?.players.player_id[pointIndex]
+      const clickedPlayerId = event.points[0].customdata?.[0]
       if (clickedPlayerId === undefined) return
       if (firstPoint === null) {
         setFirstPoint(clickedPlayerId)

@@ -11,13 +11,32 @@ type SelectOption = {
 
 const filterColumnOptions: SelectOption[] = [
   { value: 'event_type', label: 'event_type' },
+  { value: 'event_subtype', label: 'event_subtype' },
 ]
 
-const filterValueOptions: SelectOption[] = [
-  { value: 'player_possession', label: 'player_possession' },
-  { value: 'passing_option', label: 'passing_option' },
-  { value: 'on_ball_engagement', label: 'on_ball_engagement' },
-]
+const filterValueOptionsByColumn: Record<string, SelectOption[]> = {
+  event_type: [
+    { value: 'player_possession', label: 'player_possession' },
+    { value: 'passing_option', label: 'passing_option' },
+    { value: 'on_ball_engagement', label: 'on_ball_engagement' },
+  ],
+  event_subtype: [
+    { value: 'behind', label: 'behind' },
+    { value: 'coming_short', label: 'coming_short' },
+    { value: 'cross_receiver', label: 'cross_receiver' },
+    { value: 'dropping_off', label: 'dropping_off' },
+    { value: 'overlap', label: 'overlap' },
+    { value: 'pulling_half_space', label: 'pulling_half_space' },
+    { value: 'run_ahead_of_the_ball', label: 'run_ahead_of_the_ball' },
+    { value: 'support', label: 'support' },
+    { value: 'underlap', label: 'underlap' },
+    { value: 'pressing', label: 'pressing' },
+    { value: 'pressure', label: 'pressure' },
+    { value: 'counter_press', label: 'counter_press' },
+    { value: 'recovery_press', label: 'recovery_press' },
+    { value: 'other', label: 'other' },
+  ],
+}
 
 const metricColumnOptions: SelectOption[] = [
   { value: 'n_opponents_overtaken', label: 'n_opponents_overtaken' },
@@ -93,7 +112,13 @@ function TimelineTab({ timelineStore }: TimelineTabProps) {
         <p className="timeline-option-placeholder">filter option</p>
         <label className="timeline-option-field">
           <span>Column</span>
-          <select value={selectedFilterColumn} onChange={(event) => setSelectedFilterColumn(event.target.value)}>
+          <select
+            value={selectedFilterColumn}
+            onChange={(event) => {
+              setSelectedFilterColumn(event.target.value)
+              setSelectedFilterValue('')
+            }}
+          >
             <option value="" disabled>
               Select column
             </option>
@@ -110,7 +135,7 @@ function TimelineTab({ timelineStore }: TimelineTabProps) {
             <option value="" disabled>
               Select value
             </option>
-            {filterValueOptions.map((option) => (
+            {(filterValueOptionsByColumn[selectedFilterColumn] ?? []).map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>

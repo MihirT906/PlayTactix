@@ -422,6 +422,13 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
           hovermode: 'closest',
           hoverdistance: 1,
           dragmode: dragMode as any,
+          newshape: {
+            line: {
+              color: plotConfig.rectLineColor,
+              width: plotConfig.rectLineWidth,
+            },
+            fillcolor: plotConfig.rectFillColor,
+          } as any,
           shapes: [...lines, ...shapes], // Contains player focus lines
           images: [
             {

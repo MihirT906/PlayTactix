@@ -54,6 +54,16 @@ export default class AnnotationStore {
         }
     }
     
+    private discardAnnotation(key: string, currentFrame: number) {
+        // Annotation was created and deleted on the same frame - never store it
+        this.annotations.delete(key);
+        this.active_annotations.delete(key);
+        const startKeys = this.start_events.get(currentFrame);
+        if (startKeys) {
+            this.start_events.set(currentFrame, startKeys.filter(k => k !== key));
+        }
+    }
+
     update_active_annotation(currentFrame: number) {
         // Keeps active annotations current
         const shapes_to_remove = this.end_events.get(currentFrame) || []
@@ -102,6 +112,10 @@ export default class AnnotationStore {
             if (annotation.type !== 'playerLine') continue;
             const isPresent = playerLineShapes.some((shape: any) => shape.name === `Player1:${annotation.shape.players[0]},Player2:${annotation.shape.players[1]}`);
             if (!isPresent) {
+                if (annotation.frameStart === currentFrame) {
+                    this.discardAnnotation(key, currentFrame);
+                    continue;
+                }
                 annotation.frameEnd = currentFrame;
                 this.end_events.set(currentFrame, [...(this.end_events.get(currentFrame) || []), key]);
             }
@@ -115,8 +129,10 @@ export default class AnnotationStore {
             if (annotation.type !== 'draw') continue;
             const isPresent = drawShapes.some((shape: any) => createShapeKey(shape, currentFrame) === key);
             if (!isPresent) {
-                console.log('Deleting annotation with key:', key);
-                console.log('drawShapes keys:', drawShapes.map((shape: any) => createShapeKey(shape, currentFrame)));
+                if (annotation.frameStart === currentFrame) {
+                    this.discardAnnotation(key, currentFrame);
+                    continue;
+                }
                 annotation.frameEnd = currentFrame;
                 this.end_events.set(currentFrame, [...(this.end_events.get(currentFrame) || []), key]);
             }

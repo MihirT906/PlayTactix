@@ -146,6 +146,92 @@
   color: inherit;
 }
 
+.workspace-sidebar-action--draw-rect {
+  --dr-color: #3F8CE8;
+  --dr-color-glow: rgba(63, 140, 232, 0.4);
+
+  padding: 7px 12px;
+  border-radius: 0;
+  border: 1px solid #3F8CE8;
+  background: transparent;
+  color: #3F8CE8;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.1s ease;
+  width: 100%;
+}
+
+.workspace-sidebar-action--draw-rect:hover {
+  color: #3F8CE8;
+  border-color: color-mix(in srgb, #3F8CE8 70%, white);
+}
+
+.workspace-sidebar-action--draw-rect:active {
+  color: #3F8CE8;
+  transform: scale(0.97);
+}
+
+.workspace-sidebar-action--draw-rect.is-active {
+  color: #3F8CE8;
+  border-color: color-mix(in srgb, #3F8CE8 70%, white);
+  border-width: 2px;
+}
+
+.workspace-sidebar-action--draw-rect.is-active:hover {
+  color: #3F8CE8;
+}
+
+.workspace-sidebar-action--draw-rect svg {
+  color: inherit;
+}
+
+.workspace-sidebar-action--draw-line-shape {
+  --dls-color: #4CAF50;
+  --dls-color-glow: rgba(76, 175, 80, 0.4);
+
+  padding: 7px 12px;
+  border-radius: 0;
+  border: 1px solid #4CAF50;
+  background: transparent;
+  color: #4CAF50;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.1s ease;
+  width: 100%;
+}
+
+.workspace-sidebar-action--draw-line-shape:hover {
+  color: #4CAF50;
+  border-color: color-mix(in srgb, #4CAF50 70%, white);
+}
+
+.workspace-sidebar-action--draw-line-shape:active {
+  color: #4CAF50;
+  transform: scale(0.97);
+}
+
+.workspace-sidebar-action--draw-line-shape.is-active {
+  color: #4CAF50;
+  border-color: color-mix(in srgb, #4CAF50 70%, white);
+  border-width: 2px;
+}
+
+.workspace-sidebar-action--draw-line-shape.is-active:hover {
+  color: #4CAF50;
+}
+
+.workspace-sidebar-action--draw-line-shape svg {
+  color: inherit;
+}
+
 .settings-sidebar-panel {
   width: min(100%, 324px);
   display: flex;

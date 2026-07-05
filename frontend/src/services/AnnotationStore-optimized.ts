@@ -83,6 +83,7 @@ export default class AnnotationStore {
         // if (this.active_annotations.has(uniqueKey)) return;
         // loop through active annotations to check if an identical annotation already exists (to prevent duplicates from relayout events)
         for (const existingAnnotation of this.active_annotations.values()) {
+            if (existingAnnotation.type !== 'playerLine') continue;
             if (existingAnnotation.shape.players.sort().toString() === annotation.shape.players.sort().toString()) {
                 return;
             }

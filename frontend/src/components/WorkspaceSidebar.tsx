@@ -1,4 +1,4 @@
-import { FaCog, FaSearch, FaStream, FaStreetView, FaProjectDiagram } from 'react-icons/fa'
+import { FaCog, FaSearch, FaStream, FaStreetView, FaProjectDiagram, FaVectorSquare, FaSlash } from 'react-icons/fa'
 import { FaCircleNodes } from "react-icons/fa6";
 import './WorkspaceSidebar.css'
 import Settings from './Settings.tsx'
@@ -37,6 +37,8 @@ function WorkspaceSidebar({
   const isSidebarPanelOpen = activePanel !== null
   const isPlayerFocusActive = session.ui.editMode === 'player_focus'
   const isDrawLinePlayersActive = session.ui.editMode === 'draw_line_players'
+  const isDrawRectActive = session.ui.editMode === 'draw_rect'
+  const isDrawLineActive = session.ui.editMode === 'draw_line'
 
   return (
     <aside className={`left-panel settings-sidebar ${isSidebarPanelOpen ? 'is-open' : ''}`} aria-label="Settings sidebar">
@@ -97,6 +99,26 @@ function WorkspaceSidebar({
           >
             <FaProjectDiagram aria-hidden="true" />
             <span>Link Players</span>
+          </button>
+          <button
+            type="button"
+            className={`app-header-action workspace-sidebar-action workspace-sidebar-action--draw-rect ${isDrawRectActive ? 'is-active' : ''}`}
+            onClick={() => setEditMode(isDrawRectActive ? null : 'draw_rect')}
+            aria-pressed={isDrawRectActive}
+            aria-label={isDrawRectActive ? 'Disable draw rectangle mode' : 'Enable draw rectangle mode'}
+          >
+            <FaVectorSquare aria-hidden="true" />
+            <span>Draw Rectangle</span>
+          </button>
+          <button
+            type="button"
+            className={`app-header-action workspace-sidebar-action workspace-sidebar-action--draw-line-shape ${isDrawLineActive ? 'is-active' : ''}`}
+            onClick={() => setEditMode(isDrawLineActive ? null : 'draw_line')}
+            aria-pressed={isDrawLineActive}
+            aria-label={isDrawLineActive ? 'Disable draw line mode' : 'Enable draw line mode'}
+          >
+            <FaSlash aria-hidden="true" />
+            <span>Draw Line</span>
           </button>
       </div>
       {isSettingsPanelOpen ? (

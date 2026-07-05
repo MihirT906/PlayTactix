@@ -285,13 +285,29 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
   }
 
   // Lines have to be recreated every frame as player positions move
-  useEffect(() => { 
+  useEffect(() => {
     updateLines()
     updateShapes()
     setDragMode('select')
     setEditMode(null)
     annotationStore.update_active_annotation(currentFrame) // Update active annotations in the store based on the current frame
-  }, [frameData]) 
+  }, [frameData])
+
+  // Syncs Plotly's dragmode with the sidebar's 'Draw Rectangle' toggle
+  useEffect(() => {
+    if (editMode === 'draw_rect') {
+      setDragMode('drawrect')
+    } 
+    else if (editMode === 'draw_line'){
+      setDragMode('drawline')
+    }
+    // else if (dragMode === 'drawrect') {
+    //   setDragMode('select')
+    // }
+    else {
+      setDragMode('select')
+    }
+  }, [editMode])
 
   // Allows the user to 'Focus' on a player or draw lines between them
   const handleClick = (event: any) => { 
@@ -355,10 +371,13 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
   // Handles deletion of lines
   const handleRelayout = (eventData: any) => {
     console.log('Relayout event data:', eventData)
-    if ('dragmode' in eventData) {
-      setDragMode(eventData['dragmode'])
-    }
-    else if ('shapes' in eventData) {
+    // if ('dragmode' in eventData) {
+    //   setDragMode(eventData['dragmode'])
+    //   if (editMode === 'draw_rect' && eventData['dragmode'] !== 'drawrect') {
+    //     setEditMode(null)
+    //   }
+    // }
+    if ('shapes' in eventData) {
       annotationStore.handleAnnotationRelayout(eventData, currentFrame)
       updateLines()
       updateShapes()

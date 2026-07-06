@@ -21,12 +21,14 @@ export interface FilterTimelineOption {
   condition: TimelineCondition
 }
 
+export type AggregationMethod = 'max' | 'average' | 'latest' | 'band'
+
 export interface MetricTimelineOption {
   id: string
   label: string
   kind: 'metric'
   column: string
-  aggregation: string
+  aggregation: AggregationMethod
 }
 
 export type TimelineOption = FilterTimelineOption | MetricTimelineOption

@@ -191,6 +191,40 @@
   pointer-events: none;
 }
 
+.event-display__band-wick {
+  stroke: rgba(139, 92, 246, 0.9);
+  stroke-dasharray: 2 2;
+}
+
+.event-display__band-line {
+  stroke: rgba(139, 92, 246, 0.9);
+  stroke-linecap: round;
+}
+
+.event-display__band-max-dot {
+  fill: rgba(139, 92, 246, 0.9);
+  stroke: #f8fafc;
+  stroke-width: 1;
+}
+
+.event-display__band-line.event-display__band--signal {
+  stroke-width: 3;
+}
+
+.event-display__band--signal .event-display__band-wick {
+  stroke-width: 2;
+}
+
+.event-display__band-line.event-display__band--flat {
+  stroke-width: 1;
+  opacity: 0.35;
+}
+
+.event-display__band--flat .event-display__band-wick {
+  stroke-width: 1.5;
+  opacity: 0.35;
+}
+
 @media (max-width: 720px) {
   .event-display__row {
     gap: 8px;

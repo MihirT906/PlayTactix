@@ -1,4 +1,5 @@
 import type {
+    AggregationMethod,
     TimelineCondition,
     TimelineFilterOperator,
     TimelineFilterValue,
@@ -17,7 +18,7 @@ type CreateMetricTimelineInput = {
     kind: 'metric'
     label: string
     column: string
-    aggregation: string
+    aggregation: AggregationMethod
 }
 
 type CreateTimelineInput = CreateFilterTimelineInput | CreateMetricTimelineInput

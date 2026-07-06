@@ -368,27 +368,31 @@ class SkillCornerDataIngestor:
             'event_type_id', 'event_type', 'event_subtype_id', 'event_subtype', 'end_type', 
             'player_id', 'player_name', 'player_position', 'player_in_possession_id',
             'x_start', 'y_start', 'x_end', 'y_end',
-            'lead_to_shot', 'lead_to_goal', 'distance_covered', 'speed_avg', 'separation_gain', 'pass_distance_received', 'player_targeted_xpass_completion', 'player_targeted_xthreat', 'xthreat', 'xpass_completion', 'n_opponents_overtaken', 'xloss_player_possession_max', 'xshot_player_possession_max'
+            'lead_to_shot', 'lead_to_goal', 'distance_covered', 'speed_avg', 'separation_gain', 'pass_distance_received', 'player_targeted_xpass_completion', 'player_targeted_xthreat', 'xthreat', 'xpass_completion', 'n_opponents_overtaken', 'xloss_player_possession_start', 'xloss_player_possession_end', 'xloss_player_possession_max', 'xshot_player_possession_start', 'xshot_player_possession_end', 'xshot_player_possession_max'
         ]
         
         silver_event_data = bronze_event_data[columns_to_keep]
-        silver_event_data['event_subtype_id'] = silver_event_data['event_subtype_id'].fillna(0).astype(int)
-        silver_event_data['event_subtype'] = silver_event_data['event_subtype'].fillna('Unknown') 
-        silver_event_data['player_position'] = silver_event_data['player_position'].fillna('Unknown')
-        silver_event_data['player_in_possession_id'] = silver_event_data['player_in_possession_id'].fillna(-1).astype(int)
-        silver_event_data['player_targeted_xthreat'] = silver_event_data['player_targeted_xthreat'].fillna(-1).astype(float)
-        silver_event_data['lead_to_shot'] = silver_event_data['lead_to_shot'].fillna(False).astype(bool)
-        silver_event_data['lead_to_goal'] = silver_event_data['lead_to_goal'].fillna(False).astype(bool)
-        silver_event_data['distance_covered'] = silver_event_data['distance_covered'].fillna(0).astype(float)
-        silver_event_data['speed_avg'] = silver_event_data['speed_avg'].fillna(0).astype(float)
-        silver_event_data['separation_gain'] = silver_event_data['separation_gain'].fillna(0).astype(float)
-        silver_event_data['pass_distance_received'] = silver_event_data['pass_distance_received'].fillna(0).astype(float)
-        silver_event_data['player_targeted_xpass_completion'] = silver_event_data['player_targeted_xpass_completion'].fillna(-1).astype(float)
-        silver_event_data['xthreat'] = silver_event_data['xthreat'].fillna(-1).astype(float)
-        silver_event_data['xpass_completion'] = silver_event_data['xpass_completion'].fillna(-1).astype(float)
-        silver_event_data['n_opponents_overtaken'] = silver_event_data['n_opponents_overtaken'].fillna(0).astype(int)
-        silver_event_data['xloss_player_possession_max'] = silver_event_data['xloss_player_possession_max'].fillna(-1).astype(float)
-        silver_event_data['xshot_player_possession_max'] = silver_event_data['xshot_player_possession_max'].fillna(-1).astype(float)
+        # silver_event_data['event_subtype_id'] = silver_event_data['event_subtype_id'].fillna(0).astype(int)
+        # silver_event_data['event_subtype'] = silver_event_data['event_subtype'].fillna('Unknown') 
+        # silver_event_data['player_position'] = silver_event_data['player_position'].fillna('Unknown')
+        # silver_event_data['player_in_possession_id'] = silver_event_data['player_in_possession_id'].fillna(-1).astype(int)
+        # silver_event_data['player_targeted_xthreat'] = silver_event_data['player_targeted_xthreat'].fillna(-1).astype(float)
+        # silver_event_data['lead_to_shot'] = silver_event_data['lead_to_shot'].fillna(False).astype(bool)
+        # silver_event_data['lead_to_goal'] = silver_event_data['lead_to_goal'].fillna(False).astype(bool)
+        # silver_event_data['distance_covered'] = silver_event_data['distance_covered'].fillna(0).astype(float)
+        # silver_event_data['speed_avg'] = silver_event_data['speed_avg'].fillna(0).astype(float)
+        # silver_event_data['separation_gain'] = silver_event_data['separation_gain'].fillna(0).astype(float)
+        # silver_event_data['pass_distance_received'] = silver_event_data['pass_distance_received'].fillna(0).astype(float)
+        # silver_event_data['player_targeted_xpass_completion'] = silver_event_data['player_targeted_xpass_completion'].fillna(-1).astype(float)
+        # silver_event_data['xthreat'] = silver_event_data['xthreat'].fillna(-1).astype(float)
+        # silver_event_data['xpass_completion'] = silver_event_data['xpass_completion'].fillna(-1).astype(float)
+        # silver_event_data['n_opponents_overtaken'] = silver_event_data['n_opponents_overtaken'].fillna(0).astype(int)
+        # silver_event_data['xloss_player_possession_start'] = silver_event_data['xloss_player_possession_start'].fillna(-1).astype(float)
+        # silver_event_data['xloss_player_possession_end'] = silver_event_data['xloss_player_possession_end'].fillna(-1).astype(float)
+        # silver_event_data['xloss_player_possession_max'] = silver_event_data['xloss_player_possession_max'].fillna(-1).astype(float)
+        # silver_event_data['xshot_player_possession_start'] = silver_event_data['xshot_player_possession_start'].fillna(-1).astype(float)
+        # silver_event_data['xshot_player_possession_end'] = silver_event_data['xshot_player_possession_end'].fillna(-1).astype(float)
+        # silver_event_data['xshot_player_possession_max'] = silver_event_data['xshot_player_possession_max'].fillna(-1).astype(float)
 
         logger.info("Silver event data transformed rows=%s", len(silver_event_data))
         return silver_event_data

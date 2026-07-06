@@ -14,6 +14,14 @@ type TimelineEvent = Event & {
 
 type MetricPoint = { frame: number; value: number | null }
 
+type PossessionBand = {
+  frameStart: number
+  frameEnd: number
+  start: number
+  end: number
+  max: number
+}
+
 type FilterTimelineRow = {
   kind: 'filter'
   timeline: TimelineOption
@@ -29,7 +37,17 @@ type MetricTimelineRow = {
   max: number
 }
 
-type TimelineRow = FilterTimelineRow | MetricTimelineRow
+type PossessionBandRow = {
+  kind: 'possessionBand'
+  timeline: TimelineOption
+  bands: PossessionBand[]
+  min: number
+  max: number
+}
+
+type TimelineRow = FilterTimelineRow | MetricTimelineRow | PossessionBandRow
+
+const POSSESSION_BAND_MIN_WIDTH = 6
 
 const TIMELINE_LANE_HEIGHT = 22
 const TIMELINE_LABEL_WIDTH = 220
@@ -131,6 +149,129 @@ const MetricTrack: React.FC<MetricTrackProps> = ({ row, scaleStart, visibleFrame
           <rect x={tooltipX} y={TIMELINE_METRIC_PADDING} width={TOOLTIP_W} height={18} rx={4} className="event-display__metric-tooltip-bg" />
           <text x={tooltipX + TOOLTIP_W / 2} y={TIMELINE_METRIC_PADDING + 13} textAnchor="middle" className="event-display__metric-tooltip">
             {hover.value.toFixed(3)}
+          </text>
+        </>
+      )}
+    </svg>
+  )
+}
+
+type PossessionBandTrackProps = {
+  row: PossessionBandRow
+  scaleStart: number
+  visibleFrameSpan: number
+  timelineTrackWidth: number
+}
+
+const PossessionBandTrack: React.FC<PossessionBandTrackProps> = ({
+  row,
+  scaleStart,
+  visibleFrameSpan,
+  timelineTrackWidth,
+}) => {
+  const [hover, setHover] = useState<{ x: number; band: PossessionBand } | null>(null)
+
+  const { bands, min, max } = row
+  const range = max - min || 1
+  const innerHeight = TIMELINE_METRIC_TRACK_HEIGHT - TIMELINE_METRIC_PADDING * 2
+  const yFor = (value: number) => TIMELINE_METRIC_PADDING + innerHeight - ((value - min) / range) * innerHeight
+  const yZero = yFor(0)
+
+  const bars = bands.map((band) => {
+    const xStart = ((band.frameStart - scaleStart) / visibleFrameSpan) * timelineTrackWidth
+    const xEndRaw = ((band.frameEnd - scaleStart) / visibleFrameSpan) * timelineTrackWidth
+    const xEnd = Math.max(xEndRaw, xStart + POSSESSION_BAND_MIN_WIDTH)
+    const centerX = (xStart + xEnd) / 2
+    const yStart = yFor(band.start)
+    const yEnd = yFor(band.end)
+    const wickTop = yFor(band.max)
+    const wickBottom = Math.min(yStart, yEnd)
+    const hasSignal = band.start !== 0 || band.end !== 0 || band.max !== 0
+
+    return { band, xStart, xEnd, centerX, yStart, yEnd, wickTop, wickBottom, hasSignal }
+  })
+
+  type LineSegment = { x1: number; y1: number; x2: number; y2: number; hasSignal: boolean }
+  const segments: LineSegment[] = []
+
+  bars.forEach((bar, index) => {
+    segments.push({ x1: bar.xStart, y1: bar.yStart, x2: bar.xEnd, y2: bar.yEnd, hasSignal: bar.hasSignal })
+
+    const next = bars[index + 1]
+    if (next) {
+      segments.push({ x1: bar.xEnd, y1: bar.yEnd, x2: bar.xEnd, y2: yZero, hasSignal: false })
+      segments.push({ x1: bar.xEnd, y1: yZero, x2: next.xStart, y2: yZero, hasSignal: false })
+      segments.push({ x1: next.xStart, y1: yZero, x2: next.xStart, y2: next.yStart, hasSignal: false })
+    }
+  })
+
+  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (bars.length === 0) return
+    const mouseX = e.clientX - e.currentTarget.getBoundingClientRect().left
+
+    let nearest = bars[0]
+    let nearestDistance = Math.abs(bars[0].centerX - mouseX)
+    for (const bar of bars) {
+      const distance = Math.abs(bar.centerX - mouseX)
+      if (distance < nearestDistance) {
+        nearest = bar
+        nearestDistance = distance
+      }
+    }
+
+    setHover({ x: nearest.centerX, band: nearest.band })
+  }
+
+  const TOOLTIP_W = 96
+  const TOOLTIP_H = 44
+  const tooltipX = hover != null
+    ? (hover.x + 8 + TOOLTIP_W > timelineTrackWidth ? hover.x - 8 - TOOLTIP_W : hover.x + 8)
+    : 0
+
+  return (
+    <svg
+      width={timelineTrackWidth}
+      height={TIMELINE_METRIC_TRACK_HEIGHT}
+      className="event-display__metric-svg"
+      onMouseMove={handleMouseMove}
+      onMouseLeave={() => setHover(null)}
+    >
+      {segments.map((segment, index) => (
+        <line
+          key={index}
+          x1={segment.x1} y1={segment.y1}
+          x2={segment.x2} y2={segment.y2}
+          className={[
+            'event-display__band-line',
+            segment.hasSignal ? 'event-display__band--signal' : 'event-display__band--flat',
+          ].join(' ')}
+        />
+      ))}
+      {bars.map((bar, index) => (
+        <g key={index} className={bar.hasSignal ? 'event-display__band--signal' : 'event-display__band--flat'}>
+          <line
+            x1={bar.centerX} y1={bar.wickTop}
+            x2={bar.centerX} y2={bar.wickBottom}
+            className="event-display__band-wick"
+          />
+          <circle cx={bar.centerX} cy={bar.wickTop} r={bar.hasSignal ? 2.5 : 1.5} className="event-display__band-max-dot" />
+        </g>
+      ))}
+      {hover != null && (
+        <>
+          <rect
+            x={tooltipX} y={TIMELINE_METRIC_PADDING}
+            width={TOOLTIP_W} height={TOOLTIP_H}
+            rx={4} className="event-display__metric-tooltip-bg"
+          />
+          <text x={tooltipX + TOOLTIP_W / 2} y={TIMELINE_METRIC_PADDING + 13} textAnchor="middle" className="event-display__metric-tooltip">
+            start {hover.band.start.toFixed(2)}
+          </text>
+          <text x={tooltipX + TOOLTIP_W / 2} y={TIMELINE_METRIC_PADDING + 26} textAnchor="middle" className="event-display__metric-tooltip">
+            end {hover.band.end.toFixed(2)}
+          </text>
+          <text x={tooltipX + TOOLTIP_W / 2} y={TIMELINE_METRIC_PADDING + 39} textAnchor="middle" className="event-display__metric-tooltip">
+            max {hover.band.max.toFixed(2)}
           </text>
         </>
       )}
@@ -241,7 +382,9 @@ const EventDisplayComponent: React.FC<EventDisplayProps> = ({
     sourceEvents: Event[],
   ): { points: MetricPoint[]; min: number; max: number } => {
     const column = timeline.column as keyof Event
-    const eventsWithValue = sourceEvents.filter((e) => e[column] != null && typeof e[column] === 'number')
+    const eventsWithValue = sourceEvents.filter(
+      (e) => e[column] != null && typeof e[column] === 'number' && e[column] !== -1,
+    )
 
     if (eventsWithValue.length === 0) return { points: [], min: 0, max: 1 }
 
@@ -255,28 +398,56 @@ const EventDisplayComponent: React.FC<EventDisplayProps> = ({
       .sort((a, b) => a - b)
       .map((frame) => {
         const active = eventsWithValue.filter((e) => e.frame_start <= frame && e.frame_end >= frame)
+
+        if (active.length === 0) return { frame, value: null }
+
         const values = active.map((e) => e[column] as number)
-
-        if (values.length === 0) return { frame, value: null }
-
-        let value: number
-        if (timeline.aggregation === 'max') {
-          value = Math.max(...values)
-        } else if (timeline.aggregation === 'average') {
-          value = values.reduce((sum, v) => sum + v, 0) / values.length
-        } else {
-          value = active.sort((a, b) => b.frame_start - a.frame_start)[0][column] as number
-        }
+        const value =
+          timeline.aggregation === 'max'
+            ? Math.max(...values)
+            : timeline.aggregation === 'latest'
+              ? values[values.length - 1]
+              : values.reduce((sum, v) => sum + v, 0) / values.length
 
         return { frame, value }
       })
 
-    const nonNull = points.filter((p) => p.value != null).map((p) => p.value as number)
-    return { points, min: Math.min(...nonNull), max: Math.max(...nonNull) }
+    return { points, min: 0, max: 1 }
+  }
+
+  const computePossessionBands = (
+    column: string,
+    sourceEvents: Event[],
+  ): { bands: PossessionBand[]; min: number; max: number } => {
+    const startKey = `${column}_start` as keyof Event
+    const endKey = `${column}_end` as keyof Event
+    const maxKey = `${column}_max` as keyof Event
+    const bands: PossessionBand[] = []
+
+    for (const event of sourceEvents) {
+      const start = event[startKey]
+      const end = event[endKey]
+      const max = event[maxKey]
+
+      if (typeof start !== 'number' || typeof end !== 'number' || typeof max !== 'number') continue
+      if (start === -1 || end === -1 || max === -1) continue
+
+      bands.push({ frameStart: event.frame_start, frameEnd: event.frame_end, start, end, max })
+    }
+
+    if (bands.length === 0) return { bands: [], min: 0, max: 1 }
+
+    return { bands, min: 0, max: 1 }
   }
 
   const timelineRows = useMemo<TimelineRow[]>(() => {
     return timelines.map((timeline) => {
+      if (timeline.kind === 'metric' && timeline.aggregation === 'band') {
+        if (!eventsData) return { kind: 'possessionBand', timeline, bands: [], min: 0, max: 1 }
+        const { bands, min, max } = computePossessionBands(timeline.column, visibleEvents)
+        return { kind: 'possessionBand', timeline, bands, min, max }
+      }
+
       if (timeline.kind === 'metric') {
         if (!eventsData) return { kind: 'metric', timeline, points: [], min: 0, max: 1 }
         const { points, min, max } = computeMetricPoints(timeline, visibleEvents)
@@ -338,6 +509,8 @@ const EventDisplayComponent: React.FC<EventDisplayProps> = ({
                           </div>
                         )
                       })
+                    : row.kind === 'possessionBand'
+                    ? <PossessionBandTrack row={row} scaleStart={scaleStart} visibleFrameSpan={visibleFrameSpan} timelineTrackWidth={timelineTrackWidth} />
                     : <MetricTrack row={row} scaleStart={scaleStart} visibleFrameSpan={visibleFrameSpan} timelineTrackWidth={timelineTrackWidth} />
                   }
                 </div>

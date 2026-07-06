@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { FaChartLine, FaFilter, FaPlus } from 'react-icons/fa'
 import TimelineStore from '../services/TimelineStore'
-import type { TimelineOption } from '../types/TimelineOption'
+import type { AggregationMethod, TimelineOption } from '../types/TimelineOption'
 import './TimelineTab.css'
 
 type SelectOption = {
@@ -38,17 +38,13 @@ const filterValueOptionsByColumn: Record<string, SelectOption[]> = {
   ],
 }
 
-const metricColumnOptions: SelectOption[] = [
-  { value: 'n_opponents_overtaken', label: 'n_opponents_overtaken' },
-  { value: 'xpass_completion', label: 'xpass_completion' },
-  { value: 'xthreat', label: 'xthreat' },
-  { value: 'xloss_player_possession_max', label: 'xloss_player_possession_max' },
-]
+type MetricColumnOption = SelectOption & { aggregation: AggregationMethod }
 
-const metricValueOptions: SelectOption[] = [
-  { value: 'latest', label: 'latest' },
-  { value: 'average', label: 'average' },
-  { value: 'max', label: 'max' },
+const metricColumnOptions: MetricColumnOption[] = [
+  { value: 'xpass_completion', label: 'xpass_completion', aggregation: 'average' },
+  { value: 'xthreat', label: 'xthreat', aggregation: 'max' },
+  { value: 'xloss_player_possession', label: 'xloss_player_possession', aggregation: 'band' },
+  { value: 'xshot_player_possession', label: 'xshot_player_possession', aggregation: 'band' },
 ]
 
 type TimelineTabProps = {
@@ -61,7 +57,6 @@ function TimelineTab({ timelineStore }: TimelineTabProps) {
   const [selectedFilterColumn, setSelectedFilterColumn] = useState('')
   const [selectedFilterValue, setSelectedFilterValue] = useState('')
   const [selectedMetricColumn, setSelectedMetricColumn] = useState('')
-  const [selectedMetricValue, setSelectedMetricValue] = useState('')
   const [savedTimelines, setSavedTimelines] = useState<TimelineOption[]>(timelineStore.getAll())
 
   useEffect(() => timelineStore.subscribe(setSavedTimelines), [timelineStore])
@@ -89,18 +84,18 @@ function TimelineTab({ timelineStore }: TimelineTabProps) {
   }
 
   const handleSaveMetricTimeline = () => {
-    if (!selectedMetricColumn || !selectedMetricValue) {
+    const metricColumn = metricColumnOptions.find((option) => option.value === selectedMetricColumn)
+    if (!metricColumn) {
       return
     }
 
     timelineStore.add({
       kind: 'metric',
-      label: `${selectedMetricColumn} (${selectedMetricValue})`,
-      column: selectedMetricColumn,
-      aggregation: selectedMetricValue,
+      label: metricColumn.label,
+      column: metricColumn.value,
+      aggregation: metricColumn.aggregation,
     })
     setSelectedMetricColumn('')
-    setSelectedMetricValue('')
     setActiveOptionView(null)
   }
 
@@ -160,19 +155,6 @@ function TimelineTab({ timelineStore }: TimelineTabProps) {
               Select column
             </option>
             {metricColumnOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="timeline-option-field">
-          <span>Value</span>
-          <select value={selectedMetricValue} onChange={(event) => setSelectedMetricValue(event.target.value)}>
-            <option value="" disabled>
-              Select value
-            </option>
-            {metricValueOptions.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>

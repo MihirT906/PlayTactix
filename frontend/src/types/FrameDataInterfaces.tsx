@@ -58,7 +58,11 @@ interface Event {
     xthreat: number;
     xpass_completion: number;
     n_opponents_overtaken: number;
+    xloss_player_possession_start: number;
+    xloss_player_possession_end: number;
     xloss_player_possession_max: number;
+    xshot_player_possession_start: number;
+    xshot_player_possession_end: number;
     xshot_player_possession_max: number;
 }
 

@@ -11,6 +11,9 @@ import AnnotationTimeline from './AnnotationTimeline'
 type PlotLayoutComponentProps = {
   isPlaying: boolean
   onPlayPause: () => void
+  playbackSpeed: number
+  onDoubleSpeed: () => void
+  onHalveSpeed: () => void
   currentFrame: number
   onFrameChange: (frame: number) => void
   episodeRange: { start: number; end: number }
@@ -27,6 +30,9 @@ type PlotLayoutComponentProps = {
 function PlotLayoutComponent({
   isPlaying,
   onPlayPause,
+  playbackSpeed,
+  onDoubleSpeed,
+  onHalveSpeed,
   currentFrame,
   onFrameChange,
   episodeRange,
@@ -44,6 +50,9 @@ function PlotLayoutComponent({
       <Controls
         isPlaying={isPlaying}
         onPlayPause={onPlayPause}
+        playbackSpeed={playbackSpeed}
+        onDoubleSpeed={onDoubleSpeed}
+        onHalveSpeed={onHalveSpeed}
         currentFrame={currentFrame}
         episodeRange={episodeRange}
         onFrameChange={onFrameChange}

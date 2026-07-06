@@ -54,6 +54,8 @@ function AppContent({
       setEpisodeRange,
       togglePlayback,
       stopPlayback,
+      doublePlaybackSpeed,
+      halvePlaybackSpeed,
       setSidebarPanel,
       clearSidebarPanel,
       setActiveOverlay,
@@ -68,6 +70,7 @@ function AppContent({
     const currentFrame = session.playback.currentFrame
     const episodeRange = session.playback.episodeRange
     const isPlaying = session.playback.isPlaying
+    const playbackSpeed = session.playback.playbackSpeed
     const isFetching = session.playback.isFrameLoading
     const activeSidebarPanel = session.ui.activeSidebarPanel
     const chunkRange = session.rawData.loadedFrameRange ?? { start: 0, end: 0 }
@@ -172,10 +175,10 @@ function AppContent({
 
       const interval = setInterval(() => {
         advanceFrame()
-      }, SLEEP_INTERVAL)
+      }, SLEEP_INTERVAL / playbackSpeed)
 
       return () => clearInterval(interval)
-    }, [isPlaying, isFetching])
+    }, [isPlaying, isFetching, playbackSpeed])
 
     const handlePlayPause = () => {
       togglePlayback()
@@ -256,6 +259,9 @@ function AppContent({
                     <PlotLayoutComponent
                       isPlaying={isPlaying}
                       onPlayPause={handlePlayPause}
+                      playbackSpeed={playbackSpeed}
+                      onDoubleSpeed={doublePlaybackSpeed}
+                      onHalveSpeed={halvePlaybackSpeed}
                       currentFrame={currentFrame}
                       onFrameChange={handleFrameChange}
                       episodeRange={episodeRange}

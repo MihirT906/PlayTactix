@@ -24,6 +24,7 @@ export type MatchSessionState = {
     episodeRange: { start: number; end: number }
     isPlaying: boolean
     isFrameLoading: boolean
+    playbackSpeed: number
   }
   rawData: {
     loadedFrameRange: { start: number; end: number } | null
@@ -53,6 +54,8 @@ type MatchSessionContextValue = {
   setEpisodeRange: (start: number, end: number) => void
   togglePlayback: () => void
   stopPlayback: () => void
+  doublePlaybackSpeed: () => void
+  halvePlaybackSpeed: () => void
 
   setSidebarPanel: (panel: SidebarPanel) => void
   clearSidebarPanel: () => void
@@ -75,6 +78,8 @@ type MatchSessionProviderProps = {
 }
 
 const DEFAULT_EPISODE_RANGE = { start: 10, end: 1000 }
+const MIN_PLAYBACK_SPEED = 0.125
+const MAX_PLAYBACK_SPEED = 8
 
 export const createInitialMatchSessionState = (): MatchSessionState => ({
   match: {
@@ -87,6 +92,7 @@ export const createInitialMatchSessionState = (): MatchSessionState => ({
     episodeRange: { ...DEFAULT_EPISODE_RANGE },
     isPlaying: false,
     isFrameLoading: false,
+    playbackSpeed: 1,
   },
   rawData: {
     loadedFrameRange: null,
@@ -191,6 +197,26 @@ export function MatchSessionProvider({
                 playback: {
                     ...prev.playback,
                     isPlaying: false
+                },
+            }))
+        },
+
+        doublePlaybackSpeed: () => {
+            setSession((prev) => ({
+                ...prev,
+                playback: {
+                    ...prev.playback,
+                    playbackSpeed: Math.min(prev.playback.playbackSpeed * 2, MAX_PLAYBACK_SPEED),
+                },
+            }))
+        },
+
+        halvePlaybackSpeed: () => {
+            setSession((prev) => ({
+                ...prev,
+                playback: {
+                    ...prev.playback,
+                    playbackSpeed: Math.max(prev.playback.playbackSpeed / 2, MIN_PLAYBACK_SPEED),
                 },
             }))
         },

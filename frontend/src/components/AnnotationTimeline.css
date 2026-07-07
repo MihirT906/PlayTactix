@@ -123,6 +123,17 @@
   font-weight: 600;
 }
 
+.annotation-timeline__annotation--overlay {
+  background: repeating-linear-gradient(
+    90deg,
+    #4fae23,
+    #4fae23 6px,
+    #1c7a1c 6px,
+    #1c7a1c 12px
+  );
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
 .annotation-timeline__annotation--ongoing {
   background: repeating-linear-gradient(
     90deg,
@@ -137,6 +148,44 @@
 .annotation-timeline__annotation:hover {
   overflow: visible;
   z-index: 5;
+}
+
+.annotation-timeline__annotation--croppable {
+  cursor: grab;
+}
+
+.annotation-timeline__annotation-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: ew-resize;
+  z-index: 6;
+  touch-action: none;
+}
+
+.annotation-timeline__annotation-handle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 3px;
+  height: 60%;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+  background: rgba(248, 250, 252, 0.6);
+}
+
+.annotation-timeline__annotation-handle:hover::after {
+  background: rgba(248, 250, 252, 0.95);
+}
+
+.annotation-timeline__annotation-handle--start {
+  left: 0;
+}
+
+.annotation-timeline__annotation-handle--end {
+  right: 0;
 }
 
 .annotation-timeline__annotation-label {

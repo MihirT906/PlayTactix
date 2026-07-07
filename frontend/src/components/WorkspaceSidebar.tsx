@@ -1,15 +1,18 @@
 import { FaCog, FaSearch, FaStream, FaStreetView, FaProjectDiagram, FaVectorSquare, FaSlash } from 'react-icons/fa'
 import { FaCircleNodes } from "react-icons/fa6";
+import { BiAddToQueue } from "react-icons/bi";
 import './WorkspaceSidebar.css'
 import Settings from './Settings.tsx'
 import TimelineTab from './TimelineTab.tsx'
+import OverlaysTab from './OverlaysTab.tsx'
 import type { MatchData } from '../types/MatchDataInterfaces'
 import type { KeyMomentsData } from '../types/KeyMomentsDataInterfaces'
 import TimelineStore from '../services/TimelineStore'
 import KeyMomentFinderComponent from './KeyMomentFinderComponent'
 import { useMatchSession } from '../context/MatchSessionContext'
+import type AnnotationStore from '../services/AnnotationStore-optimized'
 
-export type SidebarPanel = 'settings' | 'timeline' | 'search' | null
+export type SidebarPanel = 'settings' | 'timeline' | 'search' | 'overlays' | null
 
 type WorkspaceSidebarProps = {
   activePanel: SidebarPanel
@@ -19,6 +22,8 @@ type WorkspaceSidebarProps = {
   episodeRange: { start: number; end: number }
   onAddCustomEpisodeRange: (start: number, end: number) => void
   keyMomentsData: KeyMomentsData | null
+  annotationStore: AnnotationStore
+  onAnnotationUpdate: () => void
 }
 
 function WorkspaceSidebar({
@@ -29,11 +34,14 @@ function WorkspaceSidebar({
   episodeRange,
   onAddCustomEpisodeRange,
   keyMomentsData,
+  annotationStore,
+  onAnnotationUpdate,
 }: WorkspaceSidebarProps) {
   const { session, setEditMode } = useMatchSession()
   const isSettingsPanelOpen = activePanel === 'settings'
   const isTimelinePanelOpen = activePanel === 'timeline'
   const isSearchPanelOpen = activePanel === 'search'
+  const isOverlaysPanelOpen = activePanel === 'overlays'
   const isSidebarPanelOpen = activePanel !== null
   const isPlayerFocusActive = session.ui.editMode === 'player_focus'
   const isDrawLinePlayersActive = session.ui.editMode === 'draw_line_players'
@@ -77,6 +85,17 @@ function WorkspaceSidebar({
           >
             <FaSearch aria-hidden="true" />
             <span>Search</span>
+          </button>
+          <button
+            type="button"
+            className={`app-header-action workspace-sidebar-action ${isOverlaysPanelOpen ? 'is-active' : ''}`}
+            onClick={() => onActivePanelChange(isOverlaysPanelOpen ? null : 'overlays')}
+            aria-expanded={isOverlaysPanelOpen}
+            aria-controls="overlays-sidebar-panel"
+            aria-label={isOverlaysPanelOpen ? 'Close overlays panel' : 'Open overlays panel'}
+          >
+            <BiAddToQueue aria-hidden="true" />
+            <span>Overlays</span>
           </button>
         </nav>
         <span className="app-kicker workspace-sidebar-kicker">Controls</span>
@@ -136,6 +155,14 @@ function WorkspaceSidebar({
             onAddCustomEpisodeRange={onAddCustomEpisodeRange}
             keyMomentsData={keyMomentsData}
             matchData={matchData}
+          />
+        </div>
+      ) : isOverlaysPanelOpen ? (
+        <div id="overlays-sidebar-panel" className="settings-sidebar-panel">
+          <OverlaysTab
+            episodeRange={episodeRange}
+            annotationStore={annotationStore}
+            onAnnotationUpdate={onAnnotationUpdate}
           />
         </div>
       ) : null}

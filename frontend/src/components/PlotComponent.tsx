@@ -41,6 +41,8 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
   const [dragMode, setDragMode] = useState<string>('select')
   const [overlayTraces, setOverlayTraces] = useState<any[]>([]); 
   const image_src = backgroundImage; // Set the background image source
+  const isPitchBackgroundActive =
+    session.background.active === 'pitch' && annotationStore.isOverlayActiveAtFrame('Pitch', currentFrame)
   const editMode = session.ui.editMode;
 
   // Utility function to filter arrays based on a boolean mask
@@ -430,20 +432,22 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
             fillcolor: plotConfig.rectFillColor,
           } as any,
           shapes: [...lines, ...shapes], // Contains player focus lines
-          images: [
-            {
-              source: image_src,
-              xref: 'x',
-              yref: 'y',
-              x: -56.5,
-              y: 38,
-              sizex: 113,
-              sizey: 76,
-              layer: 'below',
-              opacity: 0.4,
-              sizing: 'stretch',
-            }
-          ]
+          images: isPitchBackgroundActive
+            ? [
+                {
+                  source: image_src,
+                  xref: 'x',
+                  yref: 'y',
+                  x: -56.5,
+                  y: 38,
+                  sizex: 113,
+                  sizey: 76,
+                  layer: 'below',
+                  opacity: 0.4,
+                  sizing: 'stretch',
+                },
+              ]
+            : [],
         }}
 
         config={{

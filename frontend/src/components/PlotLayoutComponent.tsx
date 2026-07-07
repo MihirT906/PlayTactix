@@ -24,7 +24,7 @@ type PlotLayoutComponentProps = {
   annotationStore: AnnotationStore
   timelineStore: TimelineStore
   onAnnotationUpdate: () => void
-  annotationUpdateEvent: boolean
+  annotationVersion: number
 }
 
 function PlotLayoutComponent({
@@ -43,7 +43,7 @@ function PlotLayoutComponent({
   annotationStore,
   timelineStore,
   onAnnotationUpdate,
-  annotationUpdateEvent,
+  annotationVersion,
 }: PlotLayoutComponentProps) {
   return (
     <div className="plot-layout">
@@ -83,7 +83,8 @@ function PlotLayoutComponent({
         currentFrame={currentFrame}
         scaleStart={episodeRange.start}
         scaleEnd={episodeRange.end}
-        annotationUpdateEvent={annotationUpdateEvent}
+        annotationVersion={annotationVersion}
+        onAnnotationUpdate={onAnnotationUpdate}
       />
     </div>
   )

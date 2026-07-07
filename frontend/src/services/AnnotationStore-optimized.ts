@@ -162,6 +162,37 @@ export default class AnnotationStore {
         return Array.from(this.active_annotations.values()).filter(annotation => annotation.type === 'draw').map(annotation => annotation.shape);
     }
 
+    addOverlayAnnotation(label: string, frameStart: number, frameEnd: number) {
+        // Overlays span a fixed frame range and aren't tracked by the sweep-line active_annotations logic
+        const key = `overlay|${label}`;
+        this.annotations.set(key, {
+            type: 'overlay',
+            frameStart,
+            frameEnd,
+            shape: { label },
+        });
+    }
+
+    removeOverlayAnnotation(label: string) {
+        this.annotations.delete(`overlay|${label}`);
+    }
+
+    updateOverlayAnnotationRange(label: string, frameStart: number, frameEnd: number) {
+        const key = `overlay|${label}`;
+        const annotation = this.annotations.get(key);
+        if (!annotation) return;
+        annotation.frameStart = frameStart;
+        annotation.frameEnd = frameEnd;
+    }
+
+    isOverlayActiveAtFrame(label: string, currentFrame: number): boolean {
+        const annotation = this.annotations.get(`overlay|${label}`);
+        if (!annotation) return false;
+        const frameStart = annotation.frameStart ?? -Infinity;
+        const frameEnd = annotation.frameEnd ?? Infinity;
+        return currentFrame >= frameStart && currentFrame <= frameEnd;
+    }
+
     getAllAnnotations(): Array<{ key: string; type: string; frameStart: number; frameEnd: number | null; shape: any }> {
         // Returns every annotation ever created (not just the ones active at a given frame), for timeline display
         return Array.from(this.annotations.entries()).map(([key, annotation]) => ({

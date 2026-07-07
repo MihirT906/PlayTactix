@@ -12,6 +12,7 @@ import type OverlayManager from '../services/OverlayManager'
 export type LoadStatus = 'idle' | 'loading' | 'ready' | 'error'
 export type OverlayKind = 'pass_option_prob' | 'pitch_control'
 export type EditMode = 'draw_line' | 'draw_rect' | 'player_focus' | 'draw_line_players'
+export type BackgroundKind = 'pitch'
 
 export type MatchSessionState = {
   match: {
@@ -36,6 +37,9 @@ export type MatchSessionState = {
   ui: {
     activeSidebarPanel: SidebarPanel
     editMode: EditMode | null
+  }
+  background: {
+    active: BackgroundKind | null
   }
 }
 
@@ -63,6 +67,8 @@ type MatchSessionContextValue = {
   setEditMode: (mode: EditMode | null) => void
 
   setActiveOverlay: (overlay: OverlayKind | null) => void
+
+  setActiveBackground: (background: BackgroundKind | null) => void
 
   setFrameLoading: (isLoading: boolean) => void
   setLoadedFrameRange: (range: { start: number; end: number } | null) => void
@@ -107,6 +113,9 @@ export const createInitialMatchSessionState = (): MatchSessionState => ({
   ui: {
     activeSidebarPanel: null,
     editMode: null,
+  },
+  background: {
+    active: null,
   },
 })
 
@@ -257,6 +266,16 @@ export function MatchSessionProvider({
                 overlays: {
                     ...prev.overlays,
                     active: prev.overlays.active === overlay ? null : overlay,
+                },
+            }))
+        },
+
+        setActiveBackground: (background: BackgroundKind | null) => {
+            setSession((prev) => ({
+                ...prev,
+                background: {
+                    ...prev.background,
+                    active: background,
                 },
             }))
         },

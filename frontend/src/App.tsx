@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import './App.css'
 import DataManager from './services/DataManager'
 import AnnotationStore from './services/AnnotationStore-optimized'
@@ -80,7 +80,8 @@ function AppContent({
     const [keyMomentsData, setKeyMomentsData] = useState<KeyMomentsData | null>(null)
     const [eventsData, setEventsData] = useState<Map<number, Event[]>>(new Map()) // State to hold events data
     const [currentFrameData, setCurrentFrameData] = useState<FrameData | null>(null)
-    const [annotationUpdateEvent, setAnnotationUpdateEvent] = useState(false)
+    const [annotationVersion, setAnnotationVersion] = useState(0)
+    const handleAnnotationUpdate = useCallback(() => setAnnotationVersion((version) => version + 1), [])
     const [appView, setAppView] = useState<AppView>('idle')
 
     useEffect(() => {
@@ -253,6 +254,8 @@ function AppContent({
                   episodeRange={episodeRange}
                   onAddCustomEpisodeRange={addCustomEpisodeRange}
                   keyMomentsData={keyMomentsData}
+                  annotationStore={annotationStore}
+                  onAnnotationUpdate={handleAnnotationUpdate}
                 />
                 <div className="main-content">
                   <div style={{ width: '100%' }}>
@@ -271,8 +274,8 @@ function AppContent({
                       eventsData={eventsData}
                       annotationStore={annotationStore}
                       timelineStore={timelineStore}
-                      onAnnotationUpdate={() => setAnnotationUpdateEvent(!annotationUpdateEvent)}
-                      annotationUpdateEvent={annotationUpdateEvent}
+                      onAnnotationUpdate={handleAnnotationUpdate}
+                      annotationVersion={annotationVersion}
                     />
                   </div>
                 </div>

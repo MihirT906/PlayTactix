@@ -14,8 +14,10 @@ type PlotLayoutComponentProps = {
   playbackSpeed: number
   onDoubleSpeed: () => void
   onHalveSpeed: () => void
-  currentFrame: number
-  onFrameChange: (frame: number) => void
+  currentMatchFrame: number
+  clipFrame: number
+  onClipFrameChange: (clipFrame: number) => void
+  clipRange: { start: number; end: number }
   episodeRange: { start: number; end: number }
   chunkRange: { start: number; end: number }
   matchData: MatchData | null
@@ -33,8 +35,10 @@ function PlotLayoutComponent({
   playbackSpeed,
   onDoubleSpeed,
   onHalveSpeed,
-  currentFrame,
-  onFrameChange,
+  currentMatchFrame,
+  clipFrame,
+  onClipFrameChange,
+  clipRange,
   episodeRange,
   chunkRange,
   matchData,
@@ -53,15 +57,18 @@ function PlotLayoutComponent({
         playbackSpeed={playbackSpeed}
         onDoubleSpeed={onDoubleSpeed}
         onHalveSpeed={onHalveSpeed}
-        currentFrame={currentFrame}
-        episodeRange={episodeRange}
-        onFrameChange={onFrameChange}
+        currentMatchFrame={currentMatchFrame}
+        clipFrame={clipFrame}
+        clipRange={clipRange}
+        onClipFrameChange={onClipFrameChange}
         chunkRange={chunkRange}
+        episodeStart={episodeRange.start}
         annotationStore={annotationStore}
       />
       <div className="plot-layout__plot">
         <PlotComponent
-          currentFrame={currentFrame}
+          currentFrame={currentMatchFrame}
+          clipFrame={clipFrame}
           matchData={matchData}
           frameData={frameData}
           annotationStore={annotationStore}
@@ -71,18 +78,18 @@ function PlotLayoutComponent({
 
       <EventDisplayComponent
         eventsData={eventsData}
-        scaleStart={episodeRange.start}
-        scaleEnd={episodeRange.end}
-        currentFrame={currentFrame}
+        clipRange={clipRange}
+        episodeStart={episodeRange.start}
+        clipFrame={clipFrame}
         matchData={matchData}
         timelineStore={timelineStore}
       />
 
       <AnnotationTimeline
         annotationStore={annotationStore}
-        currentFrame={currentFrame}
-        scaleStart={episodeRange.start}
-        scaleEnd={episodeRange.end}
+        clipFrame={clipFrame}
+        clipRange={clipRange}
+        episodeLength={episodeRange.end - episodeRange.start}
         annotationVersion={annotationVersion}
         onAnnotationUpdate={onAnnotationUpdate}
       />

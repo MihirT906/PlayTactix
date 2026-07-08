@@ -22,7 +22,9 @@ export type MatchSessionState = {
     keyMomentStatus: LoadStatus
   }
   playback: {
-    currentFrame: number
+    currentClipFrame: number
+    currentMatchFrame: number
+    clipRange: { start: number; end: number }
     episodeRange: { start: number; end: number }
     isPlaying: boolean
     isFrameLoading: boolean
@@ -56,7 +58,7 @@ type MatchSessionContextValue = {
   resources: MatchSessionResources
 
   selectMatch: (matchId: number) => void
-  setCurrentFrame: (frame: number) => void
+  setCurrentMatchFrame: (frame: number) => void
   advanceFrame: () => void
   setEpisodeRange: (start: number, end: number) => void
   togglePlayback: () => void
@@ -89,6 +91,7 @@ type MatchSessionProviderProps = {
     overlayManager: OverlayManager
 }
 
+const DEFAULT_CLIP_RANGE = { start: 0, end: 1000 }
 const DEFAULT_EPISODE_RANGE = { start: 10, end: 1000 }
 const MIN_PLAYBACK_SPEED = 0.125
 const MAX_PLAYBACK_SPEED = 8
@@ -100,7 +103,9 @@ export const createInitialMatchSessionState = (): MatchSessionState => ({
     keyMomentStatus: 'idle',
   },
   playback: {
-    currentFrame: DEFAULT_EPISODE_RANGE.start,
+    currentClipFrame: DEFAULT_CLIP_RANGE.start,
+    currentMatchFrame: DEFAULT_EPISODE_RANGE.start,
+    clipRange: { ...DEFAULT_CLIP_RANGE },
     episodeRange: { ...DEFAULT_EPISODE_RANGE },
     isPlaying: false,
     isFrameLoading: false,
@@ -164,25 +169,40 @@ export function MatchSessionProvider({
             })
         },
 
-        setCurrentFrame: (frame: number) => {
+        setCurrentMatchFrame: (frame: number) => {
             setSession((prev) => ({
                 ...prev,
                 playback: {
                     ...prev.playback,
-                    currentFrame: frame,
+                    currentMatchFrame: frame,
+                    currentClipFrame: frame - prev.playback.episodeRange.start,
                 },
             }))
         },
 
         advanceFrame: () => {
+            setSession((prev) => {
+                const { currentMatchFrame, episodeRange, clipRange } = prev.playback
+                const clipFrame = currentMatchFrame - episodeRange.start
+                const nextClipFrame = clipFrame >= clipRange.end ? clipRange.start : clipFrame + 1
+
+                return {
+                    ...prev,
+                    playback: {
+                        ...prev.playback,
+                        currentMatchFrame: episodeRange.start + nextClipFrame,
+                        currentClipFrame: nextClipFrame,
+                    },
+                }
+            })
+        },
+
+        setClipRange: (start: number, end: number) => {
             setSession((prev) => ({
                 ...prev,
                 playback: {
                     ...prev.playback,
-                    currentFrame:
-                    prev.playback.currentFrame >= prev.playback.episodeRange.end
-                        ? prev.playback.episodeRange.start
-                        : prev.playback.currentFrame + 1,
+                    clipRange: { start, end },
                 },
             }))
         },
@@ -193,7 +213,9 @@ export function MatchSessionProvider({
                 playback: {
                     ...prev.playback,
                     episodeRange: { start, end },
-                    currentFrame: start,
+                    clipRange: { ...DEFAULT_CLIP_RANGE },
+                    currentMatchFrame: start,
+                    currentClipFrame: DEFAULT_CLIP_RANGE.start,
                     isPlaying: false,
                 },
             }))

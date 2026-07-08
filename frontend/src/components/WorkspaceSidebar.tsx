@@ -20,6 +20,7 @@ type WorkspaceSidebarProps = {
   matchData: MatchData | null
   timelineStore: TimelineStore
   episodeRange: { start: number; end: number }
+  clipRange: { start: number; end: number }
   onAddCustomEpisodeRange: (start: number, end: number) => void
   keyMomentsData: KeyMomentsData | null
   annotationStore: AnnotationStore
@@ -32,6 +33,7 @@ function WorkspaceSidebar({
   matchData,
   timelineStore,
   episodeRange,
+  clipRange,
   onAddCustomEpisodeRange,
   keyMomentsData,
   annotationStore,
@@ -160,7 +162,7 @@ function WorkspaceSidebar({
       ) : isOverlaysPanelOpen ? (
         <div id="overlays-sidebar-panel" className="settings-sidebar-panel">
           <OverlaysTab
-            episodeRange={episodeRange}
+            clipRange={clipRange}
             annotationStore={annotationStore}
             onAnnotationUpdate={onAnnotationUpdate}
             keyMomentsData={keyMomentsData}

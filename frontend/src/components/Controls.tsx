@@ -10,10 +10,12 @@ interface ControlsProps {
   playbackSpeed: number
   onDoubleSpeed: () => void
   onHalveSpeed: () => void
-  currentFrame: number
-  episodeRange: { start: number; end: number }
-  onFrameChange: (frame: number) => void
+  currentMatchFrame: number
+  clipFrame: number
+  clipRange: { start: number; end: number }
+  onClipFrameChange: (clipFrame: number) => void
   chunkRange: { start: number; end: number }
+  episodeStart: number
   annotationStore: AnnotationStore
 }
 
@@ -22,15 +24,16 @@ const formatSpeed = (speed: number) => {
   return `${formatted}x`
 }
 
-const Controls: React.FC<ControlsProps> = ({ isPlaying, onPlayPause, playbackSpeed, onDoubleSpeed, onHalveSpeed, currentFrame, episodeRange, onFrameChange, chunkRange, annotationStore }) => {
+const Controls: React.FC<ControlsProps> = ({ isPlaying, onPlayPause, playbackSpeed, onDoubleSpeed, onHalveSpeed, currentMatchFrame, clipFrame, clipRange, onClipFrameChange, chunkRange, episodeStart, annotationStore }) => {
   const handleSliderChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const frame = parseInt(event.target.value, 10)
-    onFrameChange(frame)
+    onClipFrameChange(frame)
   }
 
   const handleSliderDragEnd = (event: React.MouseEvent<HTMLInputElement>) => {
-    console.log('Slider changed, new frame:', event.currentTarget.value)
-    annotationStore.reconstruct_active_annotations(parseInt(event.currentTarget.value, 10))
+    const clipFrame = parseInt(event.currentTarget.value, 10)
+    console.log('Slider changed, new clip frame:', clipFrame)
+    annotationStore.reconstruct_active_annotations(clipFrame)
   }
 
   return (
@@ -52,19 +55,19 @@ const Controls: React.FC<ControlsProps> = ({ isPlaying, onPlayPause, playbackSpe
             <span className="speed-button-label">2x</span>
           </button>
         </div>
-        <span className="frame-label">Frame: {currentFrame}</span>
+        <span className="frame-label">Match Frame: {currentMatchFrame} | Clip Frame: {clipFrame}</span>
       </div>
       <input
         className="frame-slider"
         type="range"
-        min={episodeRange.start}
-        max={episodeRange.end}
-        value={currentFrame}
+        min={clipRange.start}
+        max={clipRange.end}
+        value={clipFrame}
         onChange={handleSliderChange}
         onMouseUp={handleSliderDragEnd}
         style={{
-          '--progress': `${((currentFrame - episodeRange.start) / (episodeRange.end - episodeRange.start)) * 100}%`,
-          '--cache-progress': `${((chunkRange.end - episodeRange.start) / (episodeRange.end - episodeRange.start)) * 100}%`,
+          '--progress': `${((clipFrame - clipRange.start) / (clipRange.end - clipRange.start)) * 100}%`,
+          '--cache-progress': `${(((chunkRange.end - episodeStart) - clipRange.start) / (clipRange.end - clipRange.start)) * 100}%`,
         } as React.CSSProperties}
       />
     </div>

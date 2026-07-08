@@ -11,7 +11,7 @@ import './TimelineTab.css'
 const PITCH_OVERLAY_LABEL = 'Pitch'
 
 type OverlaysTabProps = {
-  episodeRange: { start: number; end: number }
+  clipRange: { start: number; end: number }
   annotationStore: AnnotationStore
   onAnnotationUpdate: () => void
   keyMomentsData: KeyMomentsData | null
@@ -19,7 +19,7 @@ type OverlaysTabProps = {
 }
 
 function OverlaysTab({
-  episodeRange,
+  clipRange,
   annotationStore,
   onAnnotationUpdate,
   keyMomentsData,
@@ -40,7 +40,7 @@ function OverlaysTab({
       annotationStore.removeOverlayAnnotation(PITCH_OVERLAY_LABEL)
       setActiveBackground(null)
     } else {
-      annotationStore.addOverlayAnnotation(PITCH_OVERLAY_LABEL, episodeRange.start, episodeRange.end)
+      annotationStore.addOverlayAnnotation(PITCH_OVERLAY_LABEL, clipRange.start, clipRange.end)
       setActiveBackground('pitch')
     }
     onAnnotationUpdate()

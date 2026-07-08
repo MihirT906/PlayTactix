@@ -48,9 +48,9 @@ const getAnnotationLabel = (annotation: { type: string; shape: any }) => {
 
 type AnnotationTimelineProps = {
   annotationStore: AnnotationStore
-  currentFrame: number
-  scaleStart: number
-  scaleEnd: number
+  clipFrame: number
+  clipRange: { start: number; end: number }
+  episodeLength: number
   annotationVersion: number
   onAnnotationUpdate: () => void
 }
@@ -75,19 +75,22 @@ type LiveRange = {
 
 const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
   annotationStore,
-  currentFrame,
-  scaleStart,
-  scaleEnd,
+  clipFrame,
+  clipRange,
+  episodeLength,
   annotationVersion,
   onAnnotationUpdate,
 }) => {
   const [dragState, setDragState] = useState<DragState | null>(null)
   const [liveRange, setLiveRange] = useState<LiveRange | null>(null)
+  const scaleStart = clipRange.start
+  const scaleEnd = clipRange.end
   const visibleFrameSpan = Math.max(scaleEnd - scaleStart, 1)
   const timelineTrackWidth = Math.max(visibleFrameSpan * TIMELINE_PIXELS_PER_FRAME, TIMELINE_MIN_TRACK_WIDTH)
   const timelineContentWidth = TIMELINE_LABEL_WIDTH + TIMELINE_ROW_GAP + timelineTrackWidth
-  const currentFrameOffset = ((currentFrame - scaleStart) / visibleFrameSpan) * 100
+  const currentFrameOffset = ((clipFrame - scaleStart) / visibleFrameSpan) * 100
   const clampedFrameOffset = Math.min(Math.max(currentFrameOffset, 0), 100)
+  const matchWidthPercent = Math.min(Math.max((episodeLength / visibleFrameSpan) * 100, 0), 100)
 
   const rows = useMemo<AnnotationRow[]>(() => {
     const allAnnotations = annotationStore.getAllAnnotations()
@@ -240,12 +243,32 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
         <h3>Annotations</h3>
       </div>
 
-      {rows.length === 0 && <div className="annotation-timeline__empty">No annotations</div>}
+      <div className="annotation-timeline__scroll">
+        <div className="annotation-timeline__body" style={{ minWidth: `${timelineContentWidth}px` }}>
+          <div
+            className="annotation-timeline__row"
+            style={{ gridTemplateColumns: `${TIMELINE_LABEL_WIDTH}px ${timelineTrackWidth}px` }}
+          >
+            <div className="annotation-timeline__label-row">Match</div>
+            <div className="annotation-timeline__track" style={{ height: `${TIMELINE_LANE_HEIGHT}px` }}>
+              <div
+                className="annotation-timeline__current-frame"
+                style={{ left: `${clampedFrameOffset}%` }}
+                aria-hidden="true"
+              />
+              <div
+                className="annotation-timeline__annotation annotation-timeline__annotation--match"
+                style={{ left: '0%', width: `${matchWidthPercent}%` }}
+                title="Match episode"
+              >
+                <span className="annotation-timeline__annotation-label">Match</span>
+              </div>
+            </div>
+          </div>
 
-      {rows.length > 0 && (
-        <div className="annotation-timeline__scroll">
-          <div className="annotation-timeline__body" style={{ minWidth: `${timelineContentWidth}px` }}>
-            {rows.map((row) => {
+          {rows.length === 0 && <div className="annotation-timeline__empty">No annotations</div>}
+
+          {rows.map((row) => {
               const trackHeight = row.laneCount * TIMELINE_LANE_HEIGHT
 
               return (
@@ -296,10 +319,9 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
                   </div>
                 </div>
               )
-            })}
-          </div>
+          })}
         </div>
-      )}
+      </div>
     </section>
   )
 }

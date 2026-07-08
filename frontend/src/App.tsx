@@ -49,7 +49,7 @@ function AppContent({
       session,
       resources,
       selectMatch,
-      setCurrentFrame,
+      setCurrentMatchFrame,
       advanceFrame,
       setEpisodeRange,
       togglePlayback,
@@ -67,8 +67,10 @@ function AppContent({
 
     const dataManager = resources.dataManager
     const selectedMatchId = session.match.id
-    const currentFrame = session.playback.currentFrame
+    const currentMatchFrame = session.playback.currentMatchFrame
+    const clipRange = session.playback.clipRange
     const episodeRange = session.playback.episodeRange
+    const clipFrame = currentMatchFrame - episodeRange.start
     const isPlaying = session.playback.isPlaying
     const playbackSpeed = session.playback.playbackSpeed
     const isFetching = session.playback.isFrameLoading
@@ -95,7 +97,7 @@ function AppContent({
     }, [])
 
 
-    useEffect(() => { // Fetch frame data when currentFrame changes
+    useEffect(() => { // Fetch frame data when currentMatchFrame changes
       if (selectedMatchId === null) return
 
       const fetchFrameData = async () => {
@@ -103,12 +105,12 @@ function AppContent({
         setFrameLoading(true)
 
         // Collect frame data from dataManager
-        const result = await dataManager.getFrameData(currentFrame)
+        const result = await dataManager.getFrameData(currentMatchFrame)
 
         if (result.frameData) {
           setCurrentFrameData(result.frameData)
         } else {
-          console.warn(`No data available for frame ${currentFrame}`)
+          console.warn(`No data available for frame ${currentMatchFrame}`)
           setCurrentFrameData(null)
         }
 
@@ -123,7 +125,7 @@ function AppContent({
       }
 
       fetchFrameData()
-    }, [currentFrame, selectedMatchId, dataManager])
+    }, [currentMatchFrame, selectedMatchId, dataManager])
 
     useEffect(() => { // Fetch match metadata when a match is selected
       if (selectedMatchId === null) return
@@ -185,14 +187,14 @@ function AppContent({
       togglePlayback()
     }
 
-    const handleFrameChange = (frame: number) => {
-      setCurrentFrame(frame)
+    const handleClipFrameChange = (clipFrame: number) => {
+      setCurrentMatchFrame(episodeRange.start + clipFrame)
       stopPlayback() // Pause playback when user manually changes frame
     }
 
     const addCustomEpisodeRange = (start: number, end: number) => {
       setEpisodeRange(start, end)
-      setCurrentFrame(start) // Reset to the start of the new range
+      setCurrentMatchFrame(start) // Reset to the start of the new range
       stopPlayback() // Pause playback when a new range is added
     }
 
@@ -252,6 +254,7 @@ function AppContent({
                   matchData={matchMetaData}
                   timelineStore={timelineStore}
                   episodeRange={episodeRange}
+                  clipRange={clipRange}
                   onAddCustomEpisodeRange={addCustomEpisodeRange}
                   keyMomentsData={keyMomentsData}
                   annotationStore={annotationStore}
@@ -265,8 +268,10 @@ function AppContent({
                       playbackSpeed={playbackSpeed}
                       onDoubleSpeed={doublePlaybackSpeed}
                       onHalveSpeed={halvePlaybackSpeed}
-                      currentFrame={currentFrame}
-                      onFrameChange={handleFrameChange}
+                      currentMatchFrame={currentMatchFrame}
+                      clipFrame={clipFrame}
+                      onClipFrameChange={handleClipFrameChange}
+                      clipRange={clipRange}
                       episodeRange={episodeRange}
                       chunkRange={chunkRange}
                       matchData={matchMetaData}

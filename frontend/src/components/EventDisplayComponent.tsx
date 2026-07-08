@@ -281,23 +281,25 @@ const PossessionBandTrack: React.FC<PossessionBandTrackProps> = ({
 
 type EventDisplayProps = {
   eventsData: Map<number, Event[]> | null
-  scaleStart: number
-  scaleEnd: number
-  currentFrame: number
+  clipRange: { start: number; end: number }
+  episodeStart: number
+  clipFrame: number
   matchData: MatchData | null
   timelineStore: TimelineStore
 }
 
 const EventDisplayComponent: React.FC<EventDisplayProps> = ({
   eventsData,
-  scaleStart,
-  scaleEnd,
-  currentFrame,
+  clipRange,
+  episodeStart,
+  clipFrame,
   matchData,
   timelineStore,
 }) => {
   const [timelines, setTimelines] = useState<TimelineOption[]>(timelineStore.getAll())
   const { homeTeamColor, awayTeamColor } = useStyleConfig()
+  const scaleStart = clipRange.start
+  const scaleEnd = clipRange.end
   const visibleFrameSpan = Math.max(scaleEnd - scaleStart, 1)
   const timelineTrackWidth = Math.max(visibleFrameSpan * TIMELINE_PIXELS_PER_FRAME, TIMELINE_MIN_TRACK_WIDTH)
   const timelineContentWidth = TIMELINE_LABEL_WIDTH + TIMELINE_ROW_GAP + timelineTrackWidth
@@ -329,7 +331,11 @@ const EventDisplayComponent: React.FC<EventDisplayProps> = ({
 
     for (const frameEvents of eventsData.values()) {
       for (const event of frameEvents) {
-        uniqueEvents.set(event.event_id, event)
+        uniqueEvents.set(event.event_id, {
+          ...event,
+          frame_start: event.frame_start - episodeStart,
+          frame_end: event.frame_end - episodeStart,
+        })
       }
     }
 
@@ -342,7 +348,7 @@ const EventDisplayComponent: React.FC<EventDisplayProps> = ({
 
         return left.frame_end - right.frame_end
       })
-  }, [eventsData, scaleEnd, scaleStart])
+  }, [eventsData, scaleEnd, scaleStart, episodeStart])
 
   const computeTimelineEvents = (timeline: TimelineOption, sourceEvents: Event[]): TimelineEvent[] => {
     if (timeline.kind !== 'filter') {
@@ -461,7 +467,7 @@ const EventDisplayComponent: React.FC<EventDisplayProps> = ({
     })
   }, [eventsData, timelines, visibleEvents])
 
-  const currentFrameOffset = ((currentFrame - scaleStart) / visibleFrameSpan) * 100
+  const currentFrameOffset = ((clipFrame - scaleStart) / visibleFrameSpan) * 100
 
 
   return (

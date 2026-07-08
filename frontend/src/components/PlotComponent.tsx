@@ -22,13 +22,14 @@ const annotationStore = new AnnotationStore()
 
 interface PlotComponentProps {
   currentFrame: number
+  clipFrame: number
   frameData: FrameData | null
   matchData: MatchData | null
   annotationStore: AnnotationStore
   onAnnotationUpdate?: () => void // Optional callback to trigger when annotations are updated
 }
 
-const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, frameData, annotationStore, onAnnotationUpdate }) => {
+const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, matchData, frameData, annotationStore, onAnnotationUpdate }) => {
   const plotConfig = APP_CONFIG.plot
   const { homeTeamColor, awayTeamColor, eventStyles, teamVisibility, eventVisibility } = useStyleConfig()
   const { session, resources, setEditMode } = useMatchSession()
@@ -43,7 +44,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
   const [overlayTraces, setOverlayTraces] = useState<any[]>([]); 
   const image_src = backgroundImage; // Set the background image source
   const isPitchBackgroundActive =
-    session.background.active === 'pitch' && annotationStore.isOverlayActiveAtFrame('Pitch', currentFrame)
+    session.background.active === 'pitch' && annotationStore.isOverlayActiveAtFrame('Pitch', clipFrame)
   const editMode = session.ui.editMode;
 
   // Utility function to filter arrays based on a boolean mask
@@ -272,8 +273,8 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
   const updateLines = () => { 
     setLines([])
     // setFocusPoints([])
-    logger.debug("playerLineAnnotations for currentFrame:", currentFrame, annotationStore.getPlayerLineAnnotations(currentFrame))
-    for (const [firstPoint, secondPoint] of annotationStore.getPlayerLineAnnotations(currentFrame) as [number, number][]) {
+    logger.debug("playerLineAnnotations for clipFrame:", clipFrame, annotationStore.getPlayerLineAnnotations(clipFrame))
+    for (const [firstPoint, secondPoint] of annotationStore.getPlayerLineAnnotations(clipFrame) as [number, number][]) {
       // setFocusPoints(prev => [...prev, firstPoint, secondPoint]) // Add all players that have lines connected to them to focusPoints
       if (firstPoint === undefined || secondPoint === undefined) {
         console.warn('Undefined player IDs in annotationStore.getPlayerLineAnnotations:', firstPoint, secondPoint);
@@ -298,7 +299,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
   }
 
   const updateShapes = () => {
-    const drawShapes = annotationStore.getDrawAnnotations(currentFrame)
+    const drawShapes = annotationStore.getDrawAnnotations(clipFrame)
     setShapes(Array.from(drawShapes)) // Update shapes based on the draw annotations in the store
   }
 
@@ -308,7 +309,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
     updateShapes()
     setDragMode('select')
     setEditMode(null)
-    annotationStore.update_active_annotation(currentFrame) // Update active annotations in the store based on the current frame
+    annotationStore.update_active_annotation(clipFrame) // Update active annotations in the store based on the current clip frame
   }, [frameData])
 
   // Syncs Plotly's dragmode with the sidebar's 'Draw Rectangle' toggle
@@ -357,7 +358,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
           return
         }
         logger.info("Adding player line annotation between players:", firstPoint, "and", clickedPlayerId)
-        annotationStore.addPlayerLineAnnotation(firstPoint, clickedPlayerId, currentFrame)
+        annotationStore.addPlayerLineAnnotation(firstPoint, clickedPlayerId, clipFrame)
         updateLines()
         onAnnotationUpdate?.()
         setFirstPoint(null) // Reset first point for the next line
@@ -396,7 +397,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
     //   }
     // }
     if ('shapes' in eventData) {
-      annotationStore.handleAnnotationRelayout(eventData, currentFrame)
+      annotationStore.handleAnnotationRelayout(eventData, clipFrame)
       updateLines()
       updateShapes()
       onAnnotationUpdate?.() 

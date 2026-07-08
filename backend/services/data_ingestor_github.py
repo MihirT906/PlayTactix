@@ -371,7 +371,14 @@ class SkillCornerDataIngestor:
             'lead_to_shot', 'lead_to_goal', 'distance_covered', 'speed_avg', 'separation_gain', 'pass_distance_received', 'player_targeted_xpass_completion', 'player_targeted_xthreat', 'xthreat', 'xpass_completion', 'n_opponents_overtaken', 'xloss_player_possession_start', 'xloss_player_possession_end', 'xloss_player_possession_max', 'xshot_player_possession_start', 'xshot_player_possession_end', 'xshot_player_possession_max'
         ]
         
-        silver_event_data = bronze_event_data[columns_to_keep]
+        silver_event_data = bronze_event_data[columns_to_keep].copy()
+
+        # Normalize all event coordinates to a single attacking direction (left_to_right),
+        # so downstream consumers never need to branch on attacking_side.
+        invert_mask = silver_event_data["attacking_side"] != "left_to_right"
+        for col in ["x_start", "y_start", "x_end", "y_end"]:
+            silver_event_data.loc[invert_mask, col] = -silver_event_data.loc[invert_mask, col]
+
         # silver_event_data['event_subtype_id'] = silver_event_data['event_subtype_id'].fillna(0).astype(int)
         # silver_event_data['event_subtype'] = silver_event_data['event_subtype'].fillna('Unknown') 
         # silver_event_data['player_position'] = silver_event_data['player_position'].fillna('Unknown')

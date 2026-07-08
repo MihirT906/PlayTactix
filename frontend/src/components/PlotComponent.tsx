@@ -11,6 +11,7 @@ import { useStyleConfig } from '../context/StyleConfigContext'
 import { useMatchSession, type EditMode } from '../context/MatchSessionContext'
 import { buildPassOptionProbOverlay } from '../plot/overlays/passOptionProbOverlay'
 import { buildPitchControlOverlay } from '../plot/overlays/pitchControlOverlay.ts'
+import { buildEventVisualisationOverlay } from '../plot/overlays/eventVisualisationOverlay'
 
 import { getLogger } from "../services/logger";
 
@@ -90,8 +91,8 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
     const y: (number | null)[] = [];
 
     for (const e of events) {
-      x.push(e.attacking_side == 'left_to_right' ? e.x_start : -e.x_start, e.attacking_side == 'left_to_right' ? e.x_end : -e.x_end, null);
-      y.push(e.attacking_side == 'left_to_right' ? e.y_start : -e.y_start, e.attacking_side == 'left_to_right' ? e.y_end : -e.y_end, null);
+      x.push(e.x_start, e.x_end, null);
+      y.push(e.y_start, e.y_end, null);
     }
 
     return {
@@ -242,6 +243,14 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
         return;
       }
 
+      if (overlay === 'event_visualisation') {
+        const visibleEvents = session.overlays.autoDisappearEvents
+          ? session.overlays.selectedEvents.filter((event) => currentFrame <= event.frame_end)
+          : session.overlays.selectedEvents;
+        setOverlayTraces(buildEventVisualisationOverlay(visibleEvents, eventStyles.playerPossession.color) || []);
+        return;
+      }
+
       setOverlayTraces([]);
     }
 
@@ -250,7 +259,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
     return () => {
       cancelled = true;
     };
-  }, [overlay, frameData, currentFrame, overlayManager, eventStyles.passingOption.color, homeTeamColor, awayTeamColor, matchData]);
+  }, [overlay, frameData, currentFrame, overlayManager, eventStyles.passingOption.color, eventStyles.playerPossession.color, homeTeamColor, awayTeamColor, matchData, session.overlays.selectedEvents, session.overlays.autoDisappearEvents]);
 
   // Creates lines to add to Plotly.layout using the player focus lines stored in annotationStore
   const updateLines = () => { 

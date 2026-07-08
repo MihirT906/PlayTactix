@@ -1,7 +1,10 @@
+import type { Event } from './FrameDataInterfaces'
+
 interface KeyMomentsData {
     goals: Goal[],
     shots: Shot[],
-    pops: PhasesOfPlay[]
+    pops: PhasesOfPlay[],
+    events: Event[]
 }
 interface PhasesOfPlay {
     phase_index: number,

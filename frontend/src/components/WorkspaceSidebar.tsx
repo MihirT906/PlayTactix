@@ -163,6 +163,8 @@ function WorkspaceSidebar({
             episodeRange={episodeRange}
             annotationStore={annotationStore}
             onAnnotationUpdate={onAnnotationUpdate}
+            keyMomentsData={keyMomentsData}
+            matchData={matchData}
           />
         </div>
       ) : null}

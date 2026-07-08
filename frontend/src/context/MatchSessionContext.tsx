@@ -8,9 +8,10 @@ import {
 import type DataManager from '../services/DataManager'
 import type { SidebarPanel } from '../components/WorkspaceSidebar'
 import type OverlayManager from '../services/OverlayManager'
+import type { Event } from '../types/FrameDataInterfaces'
 
 export type LoadStatus = 'idle' | 'loading' | 'ready' | 'error'
-export type OverlayKind = 'pass_option_prob' | 'pitch_control'
+export type OverlayKind = 'pass_option_prob' | 'pitch_control' | 'event_visualisation'
 export type EditMode = 'draw_line' | 'draw_rect' | 'player_focus' | 'draw_line_players'
 export type BackgroundKind = 'pitch'
 
@@ -33,6 +34,8 @@ export type MatchSessionState = {
   overlays: {
     active: OverlayKind | null
     status: Record<OverlayKind, LoadStatus>
+    selectedEvents: Event[]
+    autoDisappearEvents: boolean
   }
   ui: {
     activeSidebarPanel: SidebarPanel
@@ -67,6 +70,9 @@ type MatchSessionContextValue = {
   setEditMode: (mode: EditMode | null) => void
 
   setActiveOverlay: (overlay: OverlayKind | null) => void
+  toggleSelectedEvent: (event: Event) => void
+  setSelectedEvents: (events: Event[]) => void
+  setAutoDisappearEvents: (autoDisappear: boolean) => void
 
   setActiveBackground: (background: BackgroundKind | null) => void
 
@@ -108,7 +114,10 @@ export const createInitialMatchSessionState = (): MatchSessionState => ({
     status: {
       pass_option_prob: 'idle',
       pitch_control: 'idle',
+      event_visualisation: 'idle',
     },
+    selectedEvents: [],
+    autoDisappearEvents: false,
   },
   ui: {
     activeSidebarPanel: null,
@@ -266,6 +275,45 @@ export function MatchSessionProvider({
                 overlays: {
                     ...prev.overlays,
                     active: prev.overlays.active === overlay ? null : overlay,
+                },
+            }))
+        },
+
+        toggleSelectedEvent: (event: Event) => {
+            setSession((prev) => {
+                const isSelected = prev.overlays.selectedEvents.some((e) => e.event_id === event.event_id)
+                const selectedEvents = isSelected
+                    ? prev.overlays.selectedEvents.filter((e) => e.event_id !== event.event_id)
+                    : [...prev.overlays.selectedEvents, event]
+
+                return {
+                    ...prev,
+                    overlays: {
+                        ...prev.overlays,
+                        selectedEvents,
+                        active: selectedEvents.length > 0 ? 'event_visualisation' : prev.overlays.active,
+                    },
+                }
+            })
+        },
+
+        setSelectedEvents: (events: Event[]) => {
+            setSession((prev) => ({
+                ...prev,
+                overlays: {
+                    ...prev.overlays,
+                    selectedEvents: events,
+                    active: events.length > 0 ? 'event_visualisation' : prev.overlays.active,
+                },
+            }))
+        },
+
+        setAutoDisappearEvents: (autoDisappear: boolean) => {
+            setSession((prev) => ({
+                ...prev,
+                overlays: {
+                    ...prev.overlays,
+                    autoDisappearEvents: autoDisappear,
                 },
             }))
         },

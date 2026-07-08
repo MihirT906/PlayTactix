@@ -1,8 +1,11 @@
 import { useState } from 'react'
-import { FaPlus } from 'react-icons/fa'
+import { FaPlus, FaCalendarAlt } from 'react-icons/fa'
 import { GiSoccerField } from 'react-icons/gi'
 import { useMatchSession } from '../context/MatchSessionContext'
 import type AnnotationStore from '../services/AnnotationStore-optimized'
+import type { KeyMomentsData } from '../types/KeyMomentsDataInterfaces'
+import type { MatchData } from '../types/MatchDataInterfaces'
+import EventVisualisationTab from './EventVisualisationTab'
 import './TimelineTab.css'
 
 const PITCH_OVERLAY_LABEL = 'Pitch'
@@ -11,12 +14,26 @@ type OverlaysTabProps = {
   episodeRange: { start: number; end: number }
   annotationStore: AnnotationStore
   onAnnotationUpdate: () => void
+  keyMomentsData: KeyMomentsData | null
+  matchData: MatchData | null
 }
 
-function OverlaysTab({ episodeRange, annotationStore, onAnnotationUpdate }: OverlaysTabProps) {
+function OverlaysTab({
+  episodeRange,
+  annotationStore,
+  onAnnotationUpdate,
+  keyMomentsData,
+  matchData,
+}: OverlaysTabProps) {
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false)
-  const { session, setActiveBackground } = useMatchSession()
+  const [isEventsDropdownOpen, setIsEventsDropdownOpen] = useState(false)
+  const { session, setActiveBackground, toggleSelectedEvent, setSelectedEvents, setAutoDisappearEvents } = useMatchSession()
   const isPitchBackgroundActive = session.background.active === 'pitch'
+
+  const handleEventsSelect = () => {
+    setIsEventsDropdownOpen((previousValue) => !previousValue)
+    setIsAddMenuOpen(false)
+  }
 
   const handlePitchSelect = () => {
     if (isPitchBackgroundActive) {
@@ -56,7 +73,29 @@ function OverlaysTab({ episodeRange, annotationStore, onAnnotationUpdate }: Over
               <GiSoccerField aria-hidden="true" />
               <span>Pitch</span>
             </button>
+            <button
+              type="button"
+              className={`app-header-action workspace-sidebar-action timeline-add-option ${isEventsDropdownOpen ? 'is-active' : ''}`}
+              aria-expanded={isEventsDropdownOpen}
+              aria-controls="events-overlay-panel"
+              onClick={handleEventsSelect}
+            >
+              <FaCalendarAlt aria-hidden="true" />
+              <span>Events</span>
+            </button>
           </div>
+        ) : null}
+
+        {isEventsDropdownOpen ? (
+          <EventVisualisationTab
+            keyMomentsData={keyMomentsData}
+            matchData={matchData}
+            selectedEvents={session.overlays.selectedEvents}
+            onToggleEvent={toggleSelectedEvent}
+            onSetSelectedEvents={setSelectedEvents}
+            autoDisappearEvents={session.overlays.autoDisappearEvents}
+            onToggleAutoDisappearEvents={setAutoDisappearEvents}
+          />
         ) : null}
       </div>
     </div>

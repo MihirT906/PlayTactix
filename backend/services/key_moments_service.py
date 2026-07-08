@@ -3,6 +3,7 @@ from pathlib import Path
 
 logger = get_logger(__name__)
 
+import json
 import pandas as pd
 
 try:
@@ -66,6 +67,9 @@ class KeyMomentsService:
             grouped_data["frame_end"] = grouped_data["frame_end"] + end_buffer
 
         return grouped_data.to_dict("records")
+    
+    def _get_all_events(self, events_data):
+        return json.loads(events_data.to_json(orient="records"))
 
     def get_key_moments(self, match_id: int):
         
@@ -78,11 +82,14 @@ class KeyMomentsService:
         logger.info("Key moments computed shots=%s", len(shots))
         pops = self._get_all_pops(events_df)
         logger.info("Key moments computed pops=%s", len(pops))
+        events = self._get_all_events(events_df)
+        logger.info("Key moments computed events=%s", len(events))
         
         return {
             "pops": pops,
             "goals": goals,
             "shots": shots,
+            "events": events,
         }
         
         

@@ -207,6 +207,27 @@
   color: var(--color-text-muted);
 }
 
+.key-moment-checkbox-row {
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.key-moment-checkbox-row input[type='checkbox'] {
+  cursor: pointer;
+}
+
+.key-moment-select-all-row {
+  border-bottom: 1px solid var(--color-border, rgba(255, 255, 255, 0.12));
+  font-weight: 600;
+}
+
+.key-moment-auto-disappear-row {
+  margin-bottom: 0.6rem;
+  font-weight: 600;
+}
+
 .key-moment-empty {
   margin: 0;
   padding: 0.85rem 1rem;

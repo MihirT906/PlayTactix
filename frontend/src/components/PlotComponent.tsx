@@ -247,7 +247,14 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, matchData, 
         const visibleEvents = session.overlays.autoDisappearEvents
           ? session.overlays.selectedEvents.filter((event) => currentFrame <= event.frame_end)
           : session.overlays.selectedEvents;
-        setOverlayTraces(buildEventVisualisationOverlay(visibleEvents, eventStyles.playerPossession.color) || []);
+        setOverlayTraces(
+          buildEventVisualisationOverlay(visibleEvents, eventStyles.playerPossession.color, {
+            homeTeamId: matchData?.home_team.id,
+            awayTeamId: matchData?.away_team.id,
+            homeTeamColor,
+            awayTeamColor,
+          }) || [],
+        );
         return;
       }
 

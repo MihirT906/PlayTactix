@@ -6,6 +6,8 @@ import type { Event } from '../types/FrameDataInterfaces'
 import {
   EVENT_TYPES,
   EVENT_SUBTYPES,
+  START_TYPES,
+  END_TYPES,
   LEAD_TO_GOAL_VALUES,
   LEAD_TO_SHOT_VALUES,
   formatEventValue,
@@ -41,6 +43,8 @@ function EventVisualisationTab({
   const [isExpanded, setIsExpanded] = useState(false)
   const [eventTypeFilter, setEventTypeFilter] = useState<EventType[]>([])
   const [eventSubtypeFilter, setEventSubtypeFilter] = useState<string[]>([])
+  const [startTypeFilter, setStartTypeFilter] = useState<string[]>([])
+  const [endTypeFilter, setEndTypeFilter] = useState<string[]>([])
   const [playerPositionFilter, setPlayerPositionFilter] = useState<string[]>([])
   const [teamIdFilter, setTeamIdFilter] = useState<number[]>([])
   const [leadToShotFilter, setLeadToShotFilter] = useState<boolean[]>([])
@@ -60,6 +64,8 @@ function EventVisualisationTab({
     (event) =>
       (eventTypeFilter.length === 0 || eventTypeFilter.includes(event.event_type as EventType)) &&
       (eventSubtypeFilter.length === 0 || eventSubtypeFilter.includes(event.event_subtype)) &&
+      (startTypeFilter.length === 0 || startTypeFilter.includes(event.start_type)) &&
+      (endTypeFilter.length === 0 || endTypeFilter.includes(event.end_type)) &&
       (playerPositionFilter.length === 0 || playerPositionFilter.includes(event.player_position)) &&
       (teamIdFilter.length === 0 || teamIdFilter.includes(event.team_id)) &&
       (leadToShotFilter.length === 0 || leadToShotFilter.includes(event.lead_to_shot)) &&
@@ -137,6 +143,52 @@ function EventVisualisationTab({
                 type="button"
                 className={`key-moment-chip${eventSubtypeFilter.includes(value) ? ' is-active' : ''}`}
                 onClick={() => setEventSubtypeFilter((current) => toggleValue(current, value))}
+              >
+                {formatEventValue(value)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="key-moment-filter-chip-row">
+          <span className="key-moment-filter-label">Start Type</span>
+          <div className="key-moment-filter-chips">
+            <button
+              type="button"
+              className={`key-moment-chip${startTypeFilter.length === 0 ? ' is-active' : ''}`}
+              onClick={() => setStartTypeFilter([])}
+            >
+              Any
+            </button>
+            {START_TYPES.map((value) => (
+              <button
+                key={value}
+                type="button"
+                className={`key-moment-chip${startTypeFilter.includes(value) ? ' is-active' : ''}`}
+                onClick={() => setStartTypeFilter((current) => toggleValue(current, value))}
+              >
+                {formatEventValue(value)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="key-moment-filter-chip-row">
+          <span className="key-moment-filter-label">End Type</span>
+          <div className="key-moment-filter-chips">
+            <button
+              type="button"
+              className={`key-moment-chip${endTypeFilter.length === 0 ? ' is-active' : ''}`}
+              onClick={() => setEndTypeFilter([])}
+            >
+              Any
+            </button>
+            {END_TYPES.map((value) => (
+              <button
+                key={value}
+                type="button"
+                className={`key-moment-chip${endTypeFilter.includes(value) ? ' is-active' : ''}`}
+                onClick={() => setEndTypeFilter((current) => toggleValue(current, value))}
               >
                 {formatEventValue(value)}
               </button>

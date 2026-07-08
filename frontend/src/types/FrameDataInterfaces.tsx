@@ -47,6 +47,8 @@ interface Event {
     y_start: number;
     x_end: number;
     y_end: number;
+    start_type: string;
+    end_type: string;
     lead_to_shot: boolean;
     lead_to_goal: boolean;
     distance_covered: number;

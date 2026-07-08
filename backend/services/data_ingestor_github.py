@@ -367,7 +367,7 @@ class SkillCornerDataIngestor:
             'team_id', 'attacking_side', 'team_in_possession_phase_type', 'team_out_of_possession_phase_type',
             'event_type_id', 'event_type', 'event_subtype_id', 'event_subtype', 'end_type', 
             'player_id', 'player_name', 'player_position', 'player_in_possession_id',
-            'x_start', 'y_start', 'x_end', 'y_end',
+            'x_start', 'y_start', 'x_end', 'y_end', 'start_type', 'end_type',
             'lead_to_shot', 'lead_to_goal', 'distance_covered', 'speed_avg', 'separation_gain', 'pass_distance_received', 'player_targeted_xpass_completion', 'player_targeted_xthreat', 'xthreat', 'xpass_completion', 'n_opponents_overtaken', 'xloss_player_possession_start', 'xloss_player_possession_end', 'xloss_player_possession_max', 'xshot_player_possession_start', 'xshot_player_possession_end', 'xshot_player_possession_max'
         ]
         

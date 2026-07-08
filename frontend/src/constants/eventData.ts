@@ -73,6 +73,37 @@ export const EVENT_SUBTYPES: string[] = [
   'other',
 ]
 
+export const START_TYPES: string[] = [
+  'pass_reception',
+  'pass_interception',
+  'keep_possession',
+  'recovery',
+  'free_kick_reception',
+  'free_kick_interception',
+  'throw_in_reception',
+  'throw_in_interception',
+  'goal_kick_reception',
+  'goal_kick_interception',
+  'corner_reception',
+  'corner_interception',
+  'unknown'
+]
+
+export const END_TYPES: string[] = [
+  'pass',
+  'shot',
+  'clearance',
+  'foul_suffered',
+  'possession_loss',
+  'unknown',
+  'direct_regain',
+  'indirect_regain',
+  'direct_disruption',
+  'indirect_disruption',
+  'foul_committed',
+  'None'
+]
+
 export const formatEventValue = (value: string | boolean): string => {
   if (typeof value === 'boolean') return value ? 'Yes' : 'No'
   return value

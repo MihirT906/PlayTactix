@@ -15,7 +15,7 @@ interface ControlsProps {
   clipRange: { start: number; end: number }
   onClipFrameChange: (clipFrame: number) => void
   chunkRange: { start: number; end: number }
-  episodeStart: number
+  segmentStart: number
   annotationStore: AnnotationStore
 }
 
@@ -24,7 +24,7 @@ const formatSpeed = (speed: number) => {
   return `${formatted}x`
 }
 
-const Controls: React.FC<ControlsProps> = ({ isPlaying, onPlayPause, playbackSpeed, onDoubleSpeed, onHalveSpeed, currentMatchFrame, clipFrame, clipRange, onClipFrameChange, chunkRange, episodeStart, annotationStore }) => {
+const Controls: React.FC<ControlsProps> = ({ isPlaying, onPlayPause, playbackSpeed, onDoubleSpeed, onHalveSpeed, currentMatchFrame, clipFrame, clipRange, onClipFrameChange, chunkRange, segmentStart, annotationStore }) => {
   const handleSliderChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const frame = parseInt(event.target.value, 10)
     onClipFrameChange(frame)
@@ -67,7 +67,7 @@ const Controls: React.FC<ControlsProps> = ({ isPlaying, onPlayPause, playbackSpe
         onMouseUp={handleSliderDragEnd}
         style={{
           '--progress': `${((clipFrame - clipRange.start) / (clipRange.end - clipRange.start)) * 100}%`,
-          '--cache-progress': `${(((chunkRange.end - episodeStart) - clipRange.start) / (clipRange.end - clipRange.start)) * 100}%`,
+          '--cache-progress': `${(((chunkRange.end - segmentStart) - clipRange.start) / (clipRange.end - clipRange.start)) * 100}%`,
         } as React.CSSProperties}
       />
     </div>

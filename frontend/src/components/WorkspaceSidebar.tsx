@@ -10,7 +10,6 @@ import type { KeyMomentsData } from '../types/KeyMomentsDataInterfaces'
 import TimelineStore from '../services/TimelineStore'
 import KeyMomentFinderComponent from './KeyMomentFinderComponent'
 import { useMatchSession } from '../context/MatchSessionContext'
-import type AnnotationStore from '../services/AnnotationStore-optimized'
 
 export type SidebarPanel = 'settings' | 'timeline' | 'search' | 'overlays' | null
 
@@ -19,12 +18,9 @@ type WorkspaceSidebarProps = {
   onActivePanelChange: (panel: SidebarPanel) => void
   matchData: MatchData | null
   timelineStore: TimelineStore
-  episodeRange: { start: number; end: number }
-  clipRange: { start: number; end: number }
-  onAddCustomEpisodeRange: (start: number, end: number) => void
+  segmentRange: { start: number; end: number }
+  onAddSegment: (start: number, end: number) => void
   keyMomentsData: KeyMomentsData | null
-  annotationStore: AnnotationStore
-  onAnnotationUpdate: () => void
 }
 
 function WorkspaceSidebar({
@@ -32,12 +28,9 @@ function WorkspaceSidebar({
   onActivePanelChange,
   matchData,
   timelineStore,
-  episodeRange,
-  clipRange,
-  onAddCustomEpisodeRange,
+  segmentRange,
+  onAddSegment,
   keyMomentsData,
-  annotationStore,
-  onAnnotationUpdate,
 }: WorkspaceSidebarProps) {
   const { session, setEditMode } = useMatchSession()
   const isSettingsPanelOpen = activePanel === 'settings'
@@ -153,8 +146,8 @@ function WorkspaceSidebar({
       ) : isSearchPanelOpen ? (
         <div id="search-sidebar-panel" className="settings-sidebar-panel">
           <KeyMomentFinderComponent
-            episodeRange={episodeRange}
-            onAddCustomEpisodeRange={onAddCustomEpisodeRange}
+            segmentRange={segmentRange}
+            onAddSegment={onAddSegment}
             keyMomentsData={keyMomentsData}
             matchData={matchData}
           />
@@ -162,9 +155,6 @@ function WorkspaceSidebar({
       ) : isOverlaysPanelOpen ? (
         <div id="overlays-sidebar-panel" className="settings-sidebar-panel">
           <OverlaysTab
-            clipRange={clipRange}
-            annotationStore={annotationStore}
-            onAnnotationUpdate={onAnnotationUpdate}
             keyMomentsData={keyMomentsData}
             matchData={matchData}
           />

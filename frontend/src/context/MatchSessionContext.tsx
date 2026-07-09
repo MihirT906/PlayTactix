@@ -9,11 +9,16 @@ import type DataManager from '../services/DataManager'
 import type { SidebarPanel } from '../components/WorkspaceSidebar'
 import type OverlayManager from '../services/OverlayManager'
 import type { Event } from '../types/FrameDataInterfaces'
+import type { BackgroundKind, Clip } from '../types/ClipInterfaces'
+import * as clipManager from '../services/clipManager'
+import { getLogger } from '../services/logger'
+
+const logger = getLogger('Clip')
 
 export type LoadStatus = 'idle' | 'loading' | 'ready' | 'error'
 export type OverlayKind = 'pass_option_prob' | 'pitch_control' | 'event_visualisation'
 export type EditMode = 'draw_line' | 'draw_rect' | 'player_focus' | 'draw_line_players'
-export type BackgroundKind = 'pitch'
+export type { BackgroundKind }
 
 export type MatchSessionState = {
   match: {
@@ -24,8 +29,7 @@ export type MatchSessionState = {
   playback: {
     currentClipFrame: number
     currentMatchFrame: number
-    clipRange: { start: number; end: number }
-    episodeRange: { start: number; end: number }
+    clip: Clip
     isPlaying: boolean
     isFrameLoading: boolean
     playbackSpeed: number
@@ -43,9 +47,6 @@ export type MatchSessionState = {
     activeSidebarPanel: SidebarPanel
     editMode: EditMode | null
   }
-  background: {
-    active: BackgroundKind | null
-  }
 }
 
 type MatchSessionResources = {
@@ -60,7 +61,7 @@ type MatchSessionContextValue = {
   selectMatch: (matchId: number) => void
   setCurrentMatchFrame: (frame: number) => void
   advanceFrame: () => void
-  setEpisodeRange: (start: number, end: number) => void
+  addSegment: (sourceFrameStart: number, sourceFrameEnd: number) => void
   togglePlayback: () => void
   stopPlayback: () => void
   doublePlaybackSpeed: () => void
@@ -77,6 +78,7 @@ type MatchSessionContextValue = {
   setAutoDisappearEvents: (autoDisappear: boolean) => void
 
   setActiveBackground: (background: BackgroundKind | null) => void
+  setBackgroundRange: (clipStart: number, clipEnd: number) => void
 
   setFrameLoading: (isLoading: boolean) => void
   setLoadedFrameRange: (range: { start: number; end: number } | null) => void
@@ -91,22 +93,19 @@ type MatchSessionProviderProps = {
     overlayManager: OverlayManager
 }
 
-const DEFAULT_CLIP_RANGE = { start: 0, end: 1000 }
-const DEFAULT_EPISODE_RANGE = { start: 10, end: 1000 }
 const MIN_PLAYBACK_SPEED = 0.125
 const MAX_PLAYBACK_SPEED = 8
 
-export const createInitialMatchSessionState = (): MatchSessionState => ({
+export const createInitialMatchSessionState = (matchId: number | null = null): MatchSessionState => ({
   match: {
-    id: null,
+    id: matchId,
     metaStatus: 'idle',
     keyMomentStatus: 'idle',
   },
   playback: {
-    currentClipFrame: DEFAULT_CLIP_RANGE.start,
-    currentMatchFrame: DEFAULT_EPISODE_RANGE.start,
-    clipRange: { ...DEFAULT_CLIP_RANGE },
-    episodeRange: { ...DEFAULT_EPISODE_RANGE },
+    currentClipFrame: 0,
+    currentMatchFrame: clipManager.DEFAULT_SEGMENT_SOURCE_RANGE.start,
+    clip: clipManager.createDefaultClip(matchId),
     isPlaying: false,
     isFrameLoading: false,
     playbackSpeed: 1,
@@ -127,9 +126,6 @@ export const createInitialMatchSessionState = (): MatchSessionState => ({
   ui: {
     activeSidebarPanel: null,
     editMode: null,
-  },
-  background: {
-    active: null,
   },
 })
 
@@ -159,66 +155,60 @@ export function MatchSessionProvider({
             dataManager.setMatchId(matchId)
             overlayManager.setMatchId(matchId)
 
-            setSession({
-                ...createInitialMatchSessionState(),
-                match: {
-                    id: matchId,
-                    metaStatus: 'idle',
-                    keyMomentStatus: 'idle',
-                },
-            })
+            logger.info('Clip reset for new match', { matchId })
+            setSession(createInitialMatchSessionState(matchId))
         },
 
         setCurrentMatchFrame: (frame: number) => {
-            setSession((prev) => ({
-                ...prev,
-                playback: {
-                    ...prev.playback,
-                    currentMatchFrame: frame,
-                    currentClipFrame: frame - prev.playback.episodeRange.start,
-                },
-            }))
-        },
-
-        advanceFrame: () => {
             setSession((prev) => {
-                const { currentMatchFrame, episodeRange, clipRange } = prev.playback
-                const clipFrame = currentMatchFrame - episodeRange.start
-                const nextClipFrame = clipFrame >= clipRange.end ? clipRange.start : clipFrame + 1
+                const segment = prev.playback.clip.matchSegments[0]
+                const clipFrame = segment ? frame - segment.sourceFrameStart + segment.clipStart : frame
 
                 return {
                     ...prev,
                     playback: {
                         ...prev.playback,
-                        currentMatchFrame: episodeRange.start + nextClipFrame,
+                        currentMatchFrame: frame,
+                        currentClipFrame: clipFrame,
+                    },
+                }
+            })
+        },
+
+        advanceFrame: () => {
+            setSession((prev) => {
+                const { currentClipFrame, clip } = prev.playback
+                const nextClipFrame = currentClipFrame >= clip.length ? 0 : currentClipFrame + 1
+                const resolved = clipManager.resolveClipFrame(clip, nextClipFrame)
+
+                return {
+                    ...prev,
+                    playback: {
+                        ...prev.playback,
+                        currentMatchFrame: resolved ? resolved.sourceFrame : prev.playback.currentMatchFrame,
                         currentClipFrame: nextClipFrame,
                     },
                 }
             })
         },
 
-        setClipRange: (start: number, end: number) => {
-            setSession((prev) => ({
-                ...prev,
-                playback: {
-                    ...prev.playback,
-                    clipRange: { start, end },
-                },
-            }))
-        },
+        addSegment: (sourceFrameStart: number, sourceFrameEnd: number) => {
+            setSession((prev) => {
+                const clip = clipManager.addSegment(prev.playback.clip, prev.match.id, sourceFrameStart, sourceFrameEnd)
 
-        setEpisodeRange: (start: number, end: number) => {
-            setSession((prev) => ({
-                ...prev,
-                playback: {
-                    ...prev.playback,
-                    episodeRange: { start, end },
-                    clipRange: { ...DEFAULT_CLIP_RANGE },
-                    currentMatchFrame: start,
-                    currentClipFrame: DEFAULT_CLIP_RANGE.start,
-                    isPlaying: false,
-                },
-            }))
+                logger.info('Clip segment changed', clip.matchSegments[0])
+
+                return {
+                    ...prev,
+                    playback: {
+                        ...prev.playback,
+                        clip,
+                        currentMatchFrame: sourceFrameStart,
+                        currentClipFrame: 0,
+                        isPlaying: false,
+                    },
+                }
+            })
         },
 
         togglePlayback: () => {
@@ -292,13 +282,18 @@ export function MatchSessionProvider({
         },
 
         setActiveOverlay: (overlay: OverlayKind | null) => {
-            setSession((prev) => ({
-                ...prev,
-                overlays: {
-                    ...prev.overlays,
-                    active: prev.overlays.active === overlay ? null : overlay,
-                },
-            }))
+            setSession((prev) => {
+                const active = prev.overlays.active === overlay ? null : overlay
+                logger.info('Clip overlay changed', { active })
+
+                return {
+                    ...prev,
+                    overlays: {
+                        ...prev.overlays,
+                        active,
+                    },
+                }
+            })
         },
 
         toggleSelectedEvent: (event: Event) => {
@@ -307,6 +302,8 @@ export function MatchSessionProvider({
                 const selectedEvents = isSelected
                     ? prev.overlays.selectedEvents.filter((e) => e.event_id !== event.event_id)
                     : [...prev.overlays.selectedEvents, event]
+
+                logger.info('Clip overlay event selection changed', { eventId: event.event_id, selected: !isSelected })
 
                 return {
                     ...prev,
@@ -320,6 +317,7 @@ export function MatchSessionProvider({
         },
 
         setSelectedEvents: (events: Event[]) => {
+            logger.info('Clip overlay events replaced', { count: events.length })
             setSession((prev) => ({
                 ...prev,
                 overlays: {
@@ -331,6 +329,7 @@ export function MatchSessionProvider({
         },
 
         setAutoDisappearEvents: (autoDisappear: boolean) => {
+            logger.info('Clip overlay auto-disappear events changed', { autoDisappear })
             setSession((prev) => ({
                 ...prev,
                 overlays: {
@@ -341,13 +340,38 @@ export function MatchSessionProvider({
         },
 
         setActiveBackground: (background: BackgroundKind | null) => {
-            setSession((prev) => ({
-                ...prev,
-                background: {
-                    ...prev.background,
-                    active: background,
-                },
-            }))
+            setSession((prev) => {
+                const clip = background
+                    ? clipManager.addOverlay(prev.playback.clip, background)
+                    : { ...prev.playback.clip, overlaySegments: [] }
+
+                logger.info('Clip background overlay changed', { background, overlay: clip.overlaySegments[0] })
+
+                return {
+                    ...prev,
+                    playback: {
+                        ...prev.playback,
+                        clip,
+                    },
+                }
+            })
+        },
+
+        setBackgroundRange: (clipStart: number, clipEnd: number) => {
+            setSession((prev) => {
+                const activeType = prev.playback.clip.overlaySegments[0]?.type
+                if (!activeType) return prev
+
+                logger.info('Clip background overlay range changed', { clipStart, clipEnd })
+
+                return {
+                    ...prev,
+                    playback: {
+                        ...prev.playback,
+                        clip: clipManager.setOverlayRange(prev.playback.clip, activeType, clipStart, clipEnd),
+                    },
+                }
+            })
         },
 
         setFrameLoading: (isLoading: boolean) => {

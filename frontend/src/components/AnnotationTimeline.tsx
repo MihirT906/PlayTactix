@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import type AnnotationStore from '../services/AnnotationStore-optimized'
+import { useMatchSession } from '../context/MatchSessionContext'
 import './AnnotationTimeline.css'
 
 type TimelineAnnotation = {
@@ -30,17 +31,14 @@ const TIMELINE_PIXELS_PER_FRAME = 2
 const ROW_LABELS: Record<string, string> = {
   playerLine: 'Player Lines',
   draw: 'Draw Shapes',
-  overlay: 'Overlays',
 }
+
+const BACKGROUND_KEY = 'background'
 
 const getAnnotationLabel = (annotation: { type: string; shape: any }) => {
   if (annotation.type === 'playerLine') {
     const [player1, player2] = annotation.shape.players ?? []
     return `P${player1 ?? '?'} ↔ P${player2 ?? '?'}`
-  }
-
-  if (annotation.type === 'overlay') {
-    return annotation.shape?.label ?? 'Overlay'
   }
 
   return annotation.shape?.type ? `Draw (${annotation.shape.type})` : 'Draw'
@@ -50,7 +48,7 @@ type AnnotationTimelineProps = {
   annotationStore: AnnotationStore
   clipFrame: number
   clipRange: { start: number; end: number }
-  episodeLength: number
+  segmentLength: number
   annotationVersion: number
   onAnnotationUpdate: () => void
 }
@@ -59,6 +57,7 @@ const MIN_OVERLAY_FRAME_SPAN = 1
 
 type DragState = {
   key: string
+  source: 'annotation' | 'background'
   edge: 'start' | 'end' | 'move'
   trackLeft: number
   trackWidth: number
@@ -77,10 +76,11 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
   annotationStore,
   clipFrame,
   clipRange,
-  episodeLength,
+  segmentLength,
   annotationVersion,
   onAnnotationUpdate,
 }) => {
+  const { session, setBackgroundRange } = useMatchSession()
   const [dragState, setDragState] = useState<DragState | null>(null)
   const [liveRange, setLiveRange] = useState<LiveRange | null>(null)
   const scaleStart = clipRange.start
@@ -90,7 +90,32 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
   const timelineContentWidth = TIMELINE_LABEL_WIDTH + TIMELINE_ROW_GAP + timelineTrackWidth
   const currentFrameOffset = ((clipFrame - scaleStart) / visibleFrameSpan) * 100
   const clampedFrameOffset = Math.min(Math.max(currentFrameOffset, 0), 100)
-  const matchWidthPercent = Math.min(Math.max((episodeLength / visibleFrameSpan) * 100, 0), 100)
+  const segmentWidthPercent = Math.min(Math.max((segmentLength / visibleFrameSpan) * 100, 0), 100)
+
+  const activeOverlay = session.playback.clip.overlaySegments[0] ?? null
+
+  const background = activeOverlay
+    ? liveRange && liveRange.key === BACKGROUND_KEY
+      ? { frameStart: liveRange.frameStart, frameEnd: liveRange.frameEnd }
+      : { frameStart: activeOverlay.clipStart, frameEnd: activeOverlay.clipEnd }
+    : null
+
+  const backgroundAnnotation: TimelineAnnotation | null = background
+    ? {
+        key: BACKGROUND_KEY,
+        type: 'background',
+        frameStart: background.frameStart,
+        frameEnd: background.frameEnd,
+        shape: { label: activeOverlay?.type },
+        laneIndex: 0,
+        leftPercent: ((Math.max(background.frameStart, scaleStart) - scaleStart) / visibleFrameSpan) * 100,
+        widthPercent: Math.max(
+          ((Math.min(background.frameEnd, scaleEnd) - Math.max(background.frameStart, scaleStart)) / visibleFrameSpan) * 100,
+          0.6
+        ),
+        isOngoing: false,
+      }
+    : null
 
   const rows = useMemo<AnnotationRow[]>(() => {
     const allAnnotations = annotationStore.getAllAnnotations()
@@ -153,7 +178,8 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
   const beginDrag = (
     event: React.PointerEvent<HTMLDivElement>,
     annotation: TimelineAnnotation,
-    edge: 'start' | 'end' | 'move'
+    edge: 'start' | 'end' | 'move',
+    source: 'annotation' | 'background' = 'annotation'
   ) => {
     event.preventDefault()
     event.stopPropagation()
@@ -164,6 +190,7 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
 
     setDragState({
       key: annotation.key,
+      source,
       edge,
       trackLeft: trackRect.left,
       trackWidth: trackRect.width,
@@ -219,9 +246,11 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
     const handlePointerUp = () => {
       setLiveRange((current) => {
         if (current && current.key === dragState.key) {
-          const label = current.key.replace(/^overlay\|/, '')
-          annotationStore.updateOverlayAnnotationRange(label, current.frameStart, current.frameEnd)
-          onAnnotationUpdate()
+          if (dragState.source === 'background') {
+            setBackgroundRange(current.frameStart, current.frameEnd)
+          } else {
+            onAnnotationUpdate()
+          }
         }
         return null
       })
@@ -235,7 +264,7 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
       window.removeEventListener('pointermove', handlePointerMove)
       window.removeEventListener('pointerup', handlePointerUp)
     }
-  }, [dragState, scaleStart, scaleEnd, visibleFrameSpan, annotationStore, onAnnotationUpdate])
+  }, [dragState, scaleStart, scaleEnd, visibleFrameSpan, onAnnotationUpdate, setBackgroundRange])
 
   return (
     <section className="annotation-timeline">
@@ -249,7 +278,7 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
             className="annotation-timeline__row"
             style={{ gridTemplateColumns: `${TIMELINE_LABEL_WIDTH}px ${timelineTrackWidth}px` }}
           >
-            <div className="annotation-timeline__label-row">Match</div>
+            <div className="annotation-timeline__label-row">Segment</div>
             <div className="annotation-timeline__track" style={{ height: `${TIMELINE_LANE_HEIGHT}px` }}>
               <div
                 className="annotation-timeline__current-frame"
@@ -258,13 +287,50 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
               />
               <div
                 className="annotation-timeline__annotation annotation-timeline__annotation--match"
-                style={{ left: '0%', width: `${matchWidthPercent}%` }}
-                title="Match episode"
+                style={{ left: '0%', width: `${segmentWidthPercent}%` }}
+                title="Segment"
               >
-                <span className="annotation-timeline__annotation-label">Match</span>
+                <span className="annotation-timeline__annotation-label">Segment</span>
               </div>
             </div>
           </div>
+
+          {backgroundAnnotation && (
+            <div
+              className="annotation-timeline__row"
+              style={{ gridTemplateColumns: `${TIMELINE_LABEL_WIDTH}px ${timelineTrackWidth}px` }}
+            >
+              <div className="annotation-timeline__label-row">Background</div>
+              <div className="annotation-timeline__track" style={{ height: `${TIMELINE_LANE_HEIGHT}px` }}>
+                <div
+                  className="annotation-timeline__current-frame"
+                  style={{ left: `${clampedFrameOffset}%` }}
+                  aria-hidden="true"
+                />
+                <div
+                  className="annotation-timeline__annotation annotation-timeline__annotation--croppable annotation-timeline__annotation--overlay"
+                  data-label={activeOverlay?.type}
+                  style={{
+                    left: `${backgroundAnnotation.leftPercent}%`,
+                    width: `${backgroundAnnotation.widthPercent}%`,
+                    top: '2px',
+                  }}
+                  title={activeOverlay?.type ?? undefined}
+                  onPointerDown={(event) => beginDrag(event, backgroundAnnotation, 'move', 'background')}
+                >
+                  <div
+                    className="annotation-timeline__annotation-handle annotation-timeline__annotation-handle--start"
+                    onPointerDown={(event) => beginDrag(event, backgroundAnnotation, 'start', 'background')}
+                  />
+                  <span className="annotation-timeline__annotation-label">{activeOverlay?.type}</span>
+                  <div
+                    className="annotation-timeline__annotation-handle annotation-timeline__annotation-handle--end"
+                    onPointerDown={(event) => beginDrag(event, backgroundAnnotation, 'end', 'background')}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           {rows.length === 0 && <div className="annotation-timeline__empty">No annotations</div>}
 
@@ -286,11 +352,10 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
                     />
                     {row.annotations.map((annotation) => {
                       const label = getAnnotationLabel(annotation)
-                      const isCroppable = annotation.type === 'overlay'
                       return (
                         <div
                           key={annotation.key}
-                          className={`annotation-timeline__annotation ${annotation.isOngoing ? 'annotation-timeline__annotation--ongoing' : ''} ${isCroppable ? 'annotation-timeline__annotation--croppable annotation-timeline__annotation--overlay' : ''}`}
+                          className={`annotation-timeline__annotation ${annotation.isOngoing ? 'annotation-timeline__annotation--ongoing' : ''}`}
                           data-label={label}
                           style={{
                             left: `${annotation.leftPercent}%`,
@@ -298,21 +363,8 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
                             top: `${annotation.laneIndex * TIMELINE_LANE_HEIGHT + 2}px`,
                           }}
                           title={label}
-                          onPointerDown={isCroppable ? (event) => beginDrag(event, annotation, 'move') : undefined}
                         >
-                          {isCroppable && (
-                            <div
-                              className="annotation-timeline__annotation-handle annotation-timeline__annotation-handle--start"
-                              onPointerDown={(event) => beginDrag(event, annotation, 'start')}
-                            />
-                          )}
                           <span className="annotation-timeline__annotation-label">{label}</span>
-                          {isCroppable && (
-                            <div
-                              className="annotation-timeline__annotation-handle annotation-timeline__annotation-handle--end"
-                              onPointerDown={(event) => beginDrag(event, annotation, 'end')}
-                            />
-                          )}
                         </div>
                       )
                     })}

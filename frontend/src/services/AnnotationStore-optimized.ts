@@ -112,6 +112,7 @@ export default class AnnotationStore {
             if (annotation.type !== 'playerLine') continue;
             const isPresent = playerLineShapes.some((shape: any) => shape.name === `Player1:${annotation.shape.players[0]},Player2:${annotation.shape.players[1]}`);
             if (!isPresent) {
+                logger.info("Removed player line annotation for players:", annotation.shape.players, "at frame:", currentFrame);
                 if (annotation.frameStart === currentFrame) {
                     this.discardAnnotation(key, currentFrame);
                     continue;
@@ -129,6 +130,7 @@ export default class AnnotationStore {
             if (annotation.type !== 'draw') continue;
             const isPresent = drawShapes.some((shape: any) => createShapeKey(shape, currentFrame) === key);
             if (!isPresent) {
+                logger.info("Removed draw annotation at frame:", currentFrame);
                 if (annotation.frameStart === currentFrame) {
                     this.discardAnnotation(key, currentFrame);
                     continue;
@@ -142,6 +144,7 @@ export default class AnnotationStore {
         for (const shape of drawShapes) {
             const uniqueKey = createShapeKey(shape, currentFrame);
             if (this.active_annotations.has(uniqueKey)) continue;
+            logger.info("Added draw annotation at frame:", currentFrame);
             this.start_events.set(currentFrame, [...(this.start_events.get(currentFrame) || []), uniqueKey]);
             const annotation: Annotation = {
                 type: 'draw',
@@ -162,37 +165,6 @@ export default class AnnotationStore {
         return Array.from(this.active_annotations.values()).filter(annotation => annotation.type === 'draw').map(annotation => annotation.shape);
     }
 
-    addOverlayAnnotation(label: string, frameStart: number, frameEnd: number) {
-        // Overlays span a fixed frame range and aren't tracked by the sweep-line active_annotations logic
-        const key = `overlay|${label}`;
-        this.annotations.set(key, {
-            type: 'overlay',
-            frameStart,
-            frameEnd,
-            shape: { label },
-        });
-    }
-
-    removeOverlayAnnotation(label: string) {
-        this.annotations.delete(`overlay|${label}`);
-    }
-
-    updateOverlayAnnotationRange(label: string, frameStart: number, frameEnd: number) {
-        const key = `overlay|${label}`;
-        const annotation = this.annotations.get(key);
-        if (!annotation) return;
-        annotation.frameStart = frameStart;
-        annotation.frameEnd = frameEnd;
-    }
-
-    isOverlayActiveAtFrame(label: string, currentFrame: number): boolean {
-        const annotation = this.annotations.get(`overlay|${label}`);
-        if (!annotation) return false;
-        const frameStart = annotation.frameStart ?? -Infinity;
-        const frameEnd = annotation.frameEnd ?? Infinity;
-        return currentFrame >= frameStart && currentFrame <= frameEnd;
-    }
-
     getAllAnnotations(): Array<{ key: string; type: string; frameStart: number; frameEnd: number | null; shape: any }> {
         // Returns every annotation ever created (not just the ones active at a given frame), for timeline display
         return Array.from(this.annotations.entries()).map(([key, annotation]) => ({
@@ -202,6 +174,16 @@ export default class AnnotationStore {
             frameEnd: annotation.frameEnd ?? null,
             shape: annotation.shape,
         }));
+    }
+
+    clear() {
+        // Discards every annotation, e.g. when the clip's segment changes and old
+        // clip-relative frame numbers no longer refer to the same footage.
+        logger.info("Clip annotations cleared");
+        this.start_events.clear();
+        this.end_events.clear();
+        this.active_annotations.clear();
+        this.annotations.clear();
     }
 
     describeAnnotationStore(){

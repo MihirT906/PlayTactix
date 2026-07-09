@@ -51,7 +51,7 @@ function AppContent({
       selectMatch,
       setCurrentMatchFrame,
       advanceFrame,
-      setEpisodeRange,
+      addSegment,
       togglePlayback,
       stopPlayback,
       doublePlaybackSpeed,
@@ -68,9 +68,11 @@ function AppContent({
     const dataManager = resources.dataManager
     const selectedMatchId = session.match.id
     const currentMatchFrame = session.playback.currentMatchFrame
-    const clipRange = session.playback.clipRange
-    const episodeRange = session.playback.episodeRange
-    const clipFrame = currentMatchFrame - episodeRange.start
+    const clipFrame = session.playback.currentClipFrame
+    const clip = session.playback.clip
+    const clipRange = { start: 0, end: clip.length }
+    const segment = clip.matchSegments[0]
+    const segmentRange = { start: segment.sourceFrameStart, end: segment.sourceFrameEnd }
     const isPlaying = session.playback.isPlaying
     const playbackSpeed = session.playback.playbackSpeed
     const isFetching = session.playback.isFrameLoading
@@ -188,14 +190,17 @@ function AppContent({
     }
 
     const handleClipFrameChange = (clipFrame: number) => {
-      setCurrentMatchFrame(episodeRange.start + clipFrame)
+      setCurrentMatchFrame(segment.sourceFrameStart + clipFrame)
       stopPlayback() // Pause playback when user manually changes frame
     }
 
-    const addCustomEpisodeRange = (start: number, end: number) => {
-      setEpisodeRange(start, end)
-      setCurrentMatchFrame(start) // Reset to the start of the new range
-      stopPlayback() // Pause playback when a new range is added
+    const handleAddSegment = (start: number, end: number) => {
+      // Annotations are stored in clip-relative frame numbers, so they no
+      // longer refer to the right footage once the segment underneath changes.
+      annotationStore.clear()
+      handleAnnotationUpdate()
+      addSegment(start, end)
+      stopPlayback() // Pause playback when a new segment is added
     }
 
     return (
@@ -253,12 +258,9 @@ function AppContent({
                   }
                   matchData={matchMetaData}
                   timelineStore={timelineStore}
-                  episodeRange={episodeRange}
-                  clipRange={clipRange}
-                  onAddCustomEpisodeRange={addCustomEpisodeRange}
+                  segmentRange={segmentRange}
+                  onAddSegment={handleAddSegment}
                   keyMomentsData={keyMomentsData}
-                  annotationStore={annotationStore}
-                  onAnnotationUpdate={handleAnnotationUpdate}
                 />
                 <div className="main-content">
                   <div style={{ width: '100%' }}>
@@ -272,7 +274,7 @@ function AppContent({
                       clipFrame={clipFrame}
                       onClipFrameChange={handleClipFrameChange}
                       clipRange={clipRange}
-                      episodeRange={episodeRange}
+                      segmentRange={segmentRange}
                       chunkRange={chunkRange}
                       matchData={matchMetaData}
                       frameData={currentFrameData}

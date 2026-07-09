@@ -18,7 +18,7 @@ type PlotLayoutComponentProps = {
   clipFrame: number
   onClipFrameChange: (clipFrame: number) => void
   clipRange: { start: number; end: number }
-  episodeRange: { start: number; end: number }
+  segmentRange: { start: number; end: number }
   chunkRange: { start: number; end: number }
   matchData: MatchData | null
   frameData: FrameData | null
@@ -39,7 +39,7 @@ function PlotLayoutComponent({
   clipFrame,
   onClipFrameChange,
   clipRange,
-  episodeRange,
+  segmentRange,
   chunkRange,
   matchData,
   frameData,
@@ -62,7 +62,7 @@ function PlotLayoutComponent({
         clipRange={clipRange}
         onClipFrameChange={onClipFrameChange}
         chunkRange={chunkRange}
-        episodeStart={episodeRange.start}
+        segmentStart={segmentRange.start}
         annotationStore={annotationStore}
       />
       <div className="plot-layout__plot">
@@ -79,7 +79,7 @@ function PlotLayoutComponent({
       <EventDisplayComponent
         eventsData={eventsData}
         clipRange={clipRange}
-        episodeStart={episodeRange.start}
+        segmentStart={segmentRange.start}
         clipFrame={clipFrame}
         matchData={matchData}
         timelineStore={timelineStore}
@@ -89,7 +89,7 @@ function PlotLayoutComponent({
         annotationStore={annotationStore}
         clipFrame={clipFrame}
         clipRange={clipRange}
-        episodeLength={episodeRange.end - episodeRange.start}
+        segmentLength={segmentRange.end - segmentRange.start}
         annotationVersion={annotationVersion}
         onAnnotationUpdate={onAnnotationUpdate}
       />

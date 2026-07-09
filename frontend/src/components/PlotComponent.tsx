@@ -43,8 +43,11 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
   const [dragMode, setDragMode] = useState<string>('select')
   const [overlayTraces, setOverlayTraces] = useState<any[]>([]); 
   const image_src = backgroundImage; // Set the background image source
+  const pitchOverlay = session.playback.clip.overlaySegments.find((overlay) => overlay.type === 'pitch')
   const isPitchBackgroundActive =
-    session.background.active === 'pitch' && annotationStore.isOverlayActiveAtFrame('Pitch', clipFrame)
+    pitchOverlay !== undefined &&
+    clipFrame >= pitchOverlay.clipStart &&
+    clipFrame <= pitchOverlay.clipEnd
   const editMode = session.ui.editMode;
 
   // Utility function to filter arrays based on a boolean mask

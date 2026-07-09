@@ -2,33 +2,24 @@ import { useState } from 'react'
 import { FaPlus, FaCalendarAlt } from 'react-icons/fa'
 import { GiSoccerField } from 'react-icons/gi'
 import { useMatchSession } from '../context/MatchSessionContext'
-import type AnnotationStore from '../services/AnnotationStore-optimized'
 import type { KeyMomentsData } from '../types/KeyMomentsDataInterfaces'
 import type { MatchData } from '../types/MatchDataInterfaces'
 import EventVisualisationTab from './EventVisualisationTab'
 import './TimelineTab.css'
 
-const PITCH_OVERLAY_LABEL = 'Pitch'
-
 type OverlaysTabProps = {
-  clipRange: { start: number; end: number }
-  annotationStore: AnnotationStore
-  onAnnotationUpdate: () => void
   keyMomentsData: KeyMomentsData | null
   matchData: MatchData | null
 }
 
 function OverlaysTab({
-  clipRange,
-  annotationStore,
-  onAnnotationUpdate,
   keyMomentsData,
   matchData,
 }: OverlaysTabProps) {
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false)
   const [isEventsDropdownOpen, setIsEventsDropdownOpen] = useState(false)
   const { session, setActiveBackground, toggleSelectedEvent, setSelectedEvents, setAutoDisappearEvents } = useMatchSession()
-  const isPitchBackgroundActive = session.background.active === 'pitch'
+  const isPitchBackgroundActive = session.playback.clip.overlaySegments.some((overlay) => overlay.type === 'pitch')
 
   const handleEventsSelect = () => {
     setIsEventsDropdownOpen((previousValue) => !previousValue)
@@ -36,14 +27,7 @@ function OverlaysTab({
   }
 
   const handlePitchSelect = () => {
-    if (isPitchBackgroundActive) {
-      annotationStore.removeOverlayAnnotation(PITCH_OVERLAY_LABEL)
-      setActiveBackground(null)
-    } else {
-      annotationStore.addOverlayAnnotation(PITCH_OVERLAY_LABEL, clipRange.start, clipRange.end)
-      setActiveBackground('pitch')
-    }
-    onAnnotationUpdate()
+    setActiveBackground(isPitchBackgroundActive ? null : 'pitch')
     setIsAddMenuOpen(false)
   }
 

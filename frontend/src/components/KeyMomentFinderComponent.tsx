@@ -13,8 +13,8 @@ import type { InPossessionPhaseType, OutOfPossessionPhaseType } from '../constan
 import './KeyMomentFinderComponent.css'
 
 interface KeyMomentFinderComponentProps {
-  episodeRange: { start: number; end: number }
-  onAddCustomEpisodeRange: (start: number, end: number) => void
+  segmentRange: { start: number; end: number }
+  onAddSegment: (start: number, end: number) => void
   keyMomentsData: KeyMomentsData | null
   matchData: MatchData | null
 }
@@ -45,9 +45,9 @@ function toggleValue<T>(arr: T[], value: T): T[] {
   return arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value]
 }
 
-function KeyMomentFinderComponent({ episodeRange, onAddCustomEpisodeRange, keyMomentsData, matchData }: KeyMomentFinderComponentProps) {
-  const [startFrame, setStartFrame] = useState(episodeRange.start.toString())
-  const [endFrame, setEndFrame] = useState(episodeRange.end.toString())
+function KeyMomentFinderComponent({ segmentRange, onAddSegment, keyMomentsData, matchData }: KeyMomentFinderComponentProps) {
+  const [startFrame, setStartFrame] = useState(segmentRange.start.toString())
+  const [endFrame, setEndFrame] = useState(segmentRange.end.toString())
   const [expandedGroups, setExpandedGroups] = useState({
     // Goals: false,
     // Shots: false,
@@ -61,7 +61,7 @@ function KeyMomentFinderComponent({ episodeRange, onAddCustomEpisodeRange, keyMo
     team_out_of_possession_phase_type: [],
   })
 
-  const handleAddCustomEpisodeRange = () => {
+  const handleAddSegment = () => {
     const start = Number.parseInt(startFrame, 10)
     const end = Number.parseInt(endFrame, 10)
 
@@ -69,7 +69,7 @@ function KeyMomentFinderComponent({ episodeRange, onAddCustomEpisodeRange, keyMo
       return
     }
 
-    onAddCustomEpisodeRange(start, end)
+    onAddSegment(start, end)
   }
 
   const applyFilters = (moments: KeyMomentItem[]) =>
@@ -130,7 +130,7 @@ function KeyMomentFinderComponent({ episodeRange, onAddCustomEpisodeRange, keyMo
                     onClick={() => {
                       console.log('frame_start', moment.frame_start)
                       console.log('frame_end', moment.frame_end)
-                      onAddCustomEpisodeRange(moment.frame_start, moment.frame_end)
+                      onAddSegment(moment.frame_start, moment.frame_end)
                     }}
                   >
                     <span className="key-moment-primary">Phase {moment.phase_index}</span>
@@ -251,7 +251,7 @@ function KeyMomentFinderComponent({ episodeRange, onAddCustomEpisodeRange, keyMo
               onChange={(e) => setEndFrame(e.target.value)}
             />
           </label>
-          <button type="button" className="key-moment-submit" onClick={handleAddCustomEpisodeRange}>
+          <button type="button" className="key-moment-submit" onClick={handleAddSegment}>
             Submit
           </button>
         </div>

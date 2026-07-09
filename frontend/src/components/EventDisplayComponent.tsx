@@ -282,7 +282,7 @@ const PossessionBandTrack: React.FC<PossessionBandTrackProps> = ({
 type EventDisplayProps = {
   eventsData: Map<number, Event[]> | null
   clipRange: { start: number; end: number }
-  episodeStart: number
+  segmentStart: number
   clipFrame: number
   matchData: MatchData | null
   timelineStore: TimelineStore
@@ -291,7 +291,7 @@ type EventDisplayProps = {
 const EventDisplayComponent: React.FC<EventDisplayProps> = ({
   eventsData,
   clipRange,
-  episodeStart,
+  segmentStart,
   clipFrame,
   matchData,
   timelineStore,
@@ -333,8 +333,8 @@ const EventDisplayComponent: React.FC<EventDisplayProps> = ({
       for (const event of frameEvents) {
         uniqueEvents.set(event.event_id, {
           ...event,
-          frame_start: event.frame_start - episodeStart,
-          frame_end: event.frame_end - episodeStart,
+          frame_start: event.frame_start - segmentStart,
+          frame_end: event.frame_end - segmentStart,
         })
       }
     }
@@ -348,7 +348,7 @@ const EventDisplayComponent: React.FC<EventDisplayProps> = ({
 
         return left.frame_end - right.frame_end
       })
-  }, [eventsData, scaleEnd, scaleStart, episodeStart])
+  }, [eventsData, scaleEnd, scaleStart, segmentStart])
 
   const computeTimelineEvents = (timeline: TimelineOption, sourceEvents: Event[]): TimelineEvent[] => {
     if (timeline.kind !== 'filter') {

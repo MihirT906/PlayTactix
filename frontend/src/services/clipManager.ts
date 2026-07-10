@@ -47,9 +47,12 @@ export function resolveClipFrame(clip: Clip, clipFrame: number): ResolvedClipFra
 
   if (!segment) return null
 
+  const clipLen = segment.clipEnd - segment.clipStart
+  const offset = Math.min(Math.max(clipFrame - segment.clipStart, 0), clipLen)
+
   return {
     matchId: segment.matchId,
-    sourceFrame: segment.sourceFrameStart + (clipFrame - segment.clipStart),
+    sourceFrame: segment.sourceFrameStart + offset,
   }
 }
 
@@ -79,5 +82,31 @@ export function setOverlayRange(clip: Clip, type: BackgroundKind, clipStart: num
     overlaySegments: clip.overlaySegments.map((overlay) =>
       overlay.type === type ? { ...overlay, clipStart, clipEnd } : overlay
     ),
+  }
+}
+
+// Moves/resizes the clip's match segment to the given clip-relative range. A 'move' relocates
+// the same fixed source footage to a different spot on the clip timeline, so the source frame
+// range is left untouched. A 'resize' trims/extends which source footage is included, so the
+// corresponding source edge shifts by the same delta as the clip edge that moved.
+export function setSegmentRange(clip: Clip, clipStart: number, clipEnd: number, kind: 'move' | 'resize'): Clip {
+  const segment = clip.matchSegments[0]
+  if (!segment) return clip
+
+  const startDelta = kind === 'move' ? 0 : clipStart - segment.clipStart
+  const endDelta = kind === 'move' ? 0 : clipEnd - segment.clipEnd
+
+  return {
+    ...clip,
+    matchSegments: [
+      {
+        ...segment,
+        clipStart,
+        clipEnd,
+        sourceFrameStart: segment.sourceFrameStart + startDelta,
+        sourceFrameEnd: segment.sourceFrameEnd + endDelta,
+      },
+      ...clip.matchSegments.slice(1),
+    ],
   }
 }

@@ -127,7 +127,6 @@
   background: linear-gradient(90deg, rgba(56, 189, 248, 0.88), rgba(14, 165, 233, 0.72));
   border: 1px solid rgba(255, 255, 255, 0.35);
   border-radius: 6px;
-  cursor: default;
 }
 
 .annotation-timeline__annotation--overlay {

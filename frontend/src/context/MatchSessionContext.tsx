@@ -60,8 +60,10 @@ type MatchSessionContextValue = {
 
   selectMatch: (matchId: number) => void
   setCurrentMatchFrame: (frame: number) => void
+  setCurrentClipFrame: (clipFrame: number) => void
   advanceFrame: () => void
   addSegment: (sourceFrameStart: number, sourceFrameEnd: number) => void
+  setSegmentRange: (clipStart: number, clipEnd: number, kind: 'move' | 'resize') => void
   togglePlayback: () => void
   stopPlayback: () => void
   doublePlaybackSpeed: () => void
@@ -175,12 +177,27 @@ export function MatchSessionProvider({
             })
         },
 
+        setCurrentClipFrame: (clipFrame: number) => {
+            setSession((prev) => {
+                const resolved = clipManager.resolveClipFrame(prev.playback.clip, clipFrame)
+
+                return {
+                    ...prev,
+                    playback: {
+                        ...prev.playback,
+                        currentClipFrame: clipFrame,
+                        currentMatchFrame: resolved ? resolved.sourceFrame : prev.playback.currentMatchFrame,
+                    },
+                }
+            })
+        },
+
         advanceFrame: () => {
             setSession((prev) => {
                 const { currentClipFrame, clip } = prev.playback
                 const nextClipFrame = currentClipFrame >= clip.length ? 0 : currentClipFrame + 1
                 const resolved = clipManager.resolveClipFrame(clip, nextClipFrame)
-
+                logger.info('Advance Frame:', nextClipFrame, resolved)
                 return {
                     ...prev,
                     playback: {
@@ -206,6 +223,24 @@ export function MatchSessionProvider({
                         currentMatchFrame: sourceFrameStart,
                         currentClipFrame: 0,
                         isPlaying: false,
+                    },
+                }
+            })
+        },
+
+        setSegmentRange: (clipStart: number, clipEnd: number, kind: 'move' | 'resize') => {
+            setSession((prev) => {
+                const clip = clipManager.setSegmentRange(prev.playback.clip, clipStart, clipEnd, kind)
+                const resolved = clipManager.resolveClipFrame(clip, prev.playback.currentClipFrame)
+
+                logger.info('Clip segment range changed', { clipStart, clipEnd, kind })
+
+                return {
+                    ...prev,
+                    playback: {
+                        ...prev.playback,
+                        clip,
+                        currentMatchFrame: resolved ? resolved.sourceFrame : prev.playback.currentMatchFrame,
                     },
                 }
             })

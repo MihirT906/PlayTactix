@@ -49,7 +49,7 @@ function AppContent({
       session,
       resources,
       selectMatch,
-      setCurrentMatchFrame,
+      setCurrentClipFrame,
       advanceFrame,
       addSegment,
       togglePlayback,
@@ -190,7 +190,7 @@ function AppContent({
     }
 
     const handleClipFrameChange = (clipFrame: number) => {
-      setCurrentMatchFrame(segment.sourceFrameStart + clipFrame)
+      setCurrentClipFrame(clipFrame)
       stopPlayback() // Pause playback when user manually changes frame
     }
 

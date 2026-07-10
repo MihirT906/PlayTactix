@@ -6,7 +6,7 @@ import type { FrameData, Event } from '../types/FrameDataInterfaces'
 import type AnnotationStore from '../services/AnnotationStore-optimized'
 import type TimelineStore from '../services/TimelineStore'
 import EventDisplayComponent from './EventDisplayComponent'
-import AnnotationTimeline from './AnnotationTimeline'
+import AnnotationTimeline from './annotation-timeline'
 
 type PlotLayoutComponentProps = {
   isPlaying: boolean
@@ -89,9 +89,7 @@ function PlotLayoutComponent({
         annotationStore={annotationStore}
         clipFrame={clipFrame}
         clipRange={clipRange}
-        segmentLength={segmentRange.end - segmentRange.start}
         annotationVersion={annotationVersion}
-        onAnnotationUpdate={onAnnotationUpdate}
       />
     </div>
   )

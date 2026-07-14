@@ -8,6 +8,8 @@ import {
   EVENT_SUBTYPES,
   START_TYPES,
   END_TYPES,
+  CHANNELS,
+  THIRDS,
   LEAD_TO_GOAL_VALUES,
   LEAD_TO_SHOT_VALUES,
   formatEventValue,
@@ -45,6 +47,8 @@ function EventVisualisationTab({
   const [eventSubtypeFilter, setEventSubtypeFilter] = useState<string[]>([])
   const [startTypeFilter, setStartTypeFilter] = useState<string[]>([])
   const [endTypeFilter, setEndTypeFilter] = useState<string[]>([])
+  const [channelFilter, setChannelFilter] = useState<string[]>([])
+  const [thirdFilter, setThirdFilter] = useState<string[]>([])
   const [playerPositionFilter, setPlayerPositionFilter] = useState<string[]>([])
   const [teamIdFilter, setTeamIdFilter] = useState<number[]>([])
   const [leadToShotFilter, setLeadToShotFilter] = useState<boolean[]>([])
@@ -66,6 +70,8 @@ function EventVisualisationTab({
       (eventSubtypeFilter.length === 0 || eventSubtypeFilter.includes(event.event_subtype)) &&
       (startTypeFilter.length === 0 || startTypeFilter.includes(event.start_type)) &&
       (endTypeFilter.length === 0 || endTypeFilter.includes(event.end_type)) &&
+      (channelFilter.length === 0 || channelFilter.includes(event.channel_start) || channelFilter.includes(event.channel_end)) &&
+      (thirdFilter.length === 0 || thirdFilter.includes(event.third_start) || thirdFilter.includes(event.third_end)) &&
       (playerPositionFilter.length === 0 || playerPositionFilter.includes(event.player_position)) &&
       (teamIdFilter.length === 0 || teamIdFilter.includes(event.team_id)) &&
       (leadToShotFilter.length === 0 || leadToShotFilter.includes(event.lead_to_shot)) &&
@@ -189,6 +195,52 @@ function EventVisualisationTab({
                 type="button"
                 className={`key-moment-chip${endTypeFilter.includes(value) ? ' is-active' : ''}`}
                 onClick={() => setEndTypeFilter((current) => toggleValue(current, value))}
+              >
+                {formatEventValue(value)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="key-moment-filter-chip-row">
+          <span className="key-moment-filter-label">Channel</span>
+          <div className="key-moment-filter-chips">
+            <button
+              type="button"
+              className={`key-moment-chip${channelFilter.length === 0 ? ' is-active' : ''}`}
+              onClick={() => setChannelFilter([])}
+            >
+              Any
+            </button>
+            {CHANNELS.map((value) => (
+              <button
+                key={value}
+                type="button"
+                className={`key-moment-chip${channelFilter.includes(value) ? ' is-active' : ''}`}
+                onClick={() => setChannelFilter((current) => toggleValue(current, value))}
+              >
+                {formatEventValue(value)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="key-moment-filter-chip-row">
+          <span className="key-moment-filter-label">Third</span>
+          <div className="key-moment-filter-chips">
+            <button
+              type="button"
+              className={`key-moment-chip${thirdFilter.length === 0 ? ' is-active' : ''}`}
+              onClick={() => setThirdFilter([])}
+            >
+              Any
+            </button>
+            {THIRDS.map((value) => (
+              <button
+                key={value}
+                type="button"
+                className={`key-moment-chip${thirdFilter.includes(value) ? ' is-active' : ''}`}
+                onClick={() => setThirdFilter((current) => toggleValue(current, value))}
               >
                 {formatEventValue(value)}
               </button>

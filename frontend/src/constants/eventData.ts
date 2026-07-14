@@ -104,6 +104,16 @@ export const END_TYPES: string[] = [
   'None'
 ]
 
+export const CHANNELS: string[] = [
+  'wide_left',
+  'half_space_left',
+  'center',
+  'half_space_right',
+  'wide_right',
+]
+
+export const THIRDS: string[] = ['defensive_third', 'middle_third', 'attacking_third']
+
 export const formatEventValue = (value: string | boolean): string => {
   if (typeof value === 'boolean') return value ? 'Yes' : 'No'
   return value

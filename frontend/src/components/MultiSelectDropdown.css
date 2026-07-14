@@ -1,0 +1,109 @@
+.multi-select-dropdown {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.multi-select-dropdown-label {
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-subtle);
+  white-space: nowrap;
+}
+
+.multi-select-dropdown-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.32rem 0.62rem;
+  border: 1px solid var(--surface-subtle-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.multi-select-dropdown-trigger:hover {
+  background: var(--surface-subtle-background-hover);
+  color: var(--color-text-primary);
+  border-color: var(--surface-subtle-border-hover);
+}
+
+.multi-select-dropdown-trigger.is-active {
+  border-color: var(--color-accent);
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.multi-select-dropdown-summary {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.multi-select-dropdown-arrow {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  transition: transform 0.15s ease;
+}
+
+.multi-select-dropdown-arrow.is-expanded {
+  transform: rotate(180deg);
+}
+
+.multi-select-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  left: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  min-width: 100%;
+  max-width: 260px;
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 0.3rem;
+  border: 1px solid var(--surface-subtle-border);
+  border-radius: 8px;
+  background: #2c2f33;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.multi-select-dropdown-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.32rem 0.5rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: 0.82rem;
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.multi-select-dropdown-option:hover {
+  background: var(--surface-subtle-background-hover);
+  color: var(--color-text-primary);
+}
+
+.multi-select-dropdown-option.is-active {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+.multi-select-dropdown-option input[type='checkbox'] {
+  margin: 0;
+}

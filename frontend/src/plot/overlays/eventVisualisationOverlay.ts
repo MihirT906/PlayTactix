@@ -117,7 +117,7 @@ export function buildEventVisualisationOverlay(events: Event[], lineColor: strin
 
     const passSegments = buildPassFadeSegments(event.x_end, event.y_end, passEndX, passEndY, markerColor, hovertemplate)
 
-    return [eventSegment, ...passSegments]
-    // return [eventSegment]
+    // return [eventSegment, ...passSegments]
+    return [eventSegment]
   })
 }

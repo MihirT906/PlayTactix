@@ -237,8 +237,8 @@
 
 .key-moment-filters {
   display: flex;
-  flex-direction: column;
-  gap: 0;
+  flex-wrap: wrap;
+  gap: 0.6rem;
   padding: 0.5rem 0;
 }
 

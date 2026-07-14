@@ -10,6 +10,7 @@ import {
   formatEventValue,
 } from '../constants/eventData'
 import type { InPossessionPhaseType, OutOfPossessionPhaseType } from '../constants/eventData'
+import MultiSelectDropdown from './MultiSelectDropdown'
 import './KeyMomentFinderComponent.css'
 
 interface KeyMomentFinderComponentProps {
@@ -40,10 +41,6 @@ const CHIP_FILTERS: Array<{
   { key: 'team_in_possession_phase_type', label: 'In Possession', values: IN_POSSESSION_PHASE_TYPES },
   { key: 'team_out_of_possession_phase_type', label: 'Out of Possession', values: OUT_OF_POSSESSION_PHASE_TYPES },
 ]
-
-function toggleValue<T>(arr: T[], value: T): T[] {
-  return arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value]
-}
 
 function KeyMomentFinderComponent({ segmentRange, onAddSegment, keyMomentsData, matchData }: KeyMomentFinderComponentProps) {
   const [startFrame, setStartFrame] = useState(segmentRange.start.toString())
@@ -164,59 +161,28 @@ function KeyMomentFinderComponent({ segmentRange, onAddSegment, keyMomentsData, 
       {keyMomentsData ? (
         <div className="key-moment-groups">
           <div className="key-moment-filters">
-                        {matchData && (
-              <div className="key-moment-filter-chip-row">
-                <span className="key-moment-filter-label">Team</span>
-                <div className="key-moment-filter-chips">
-                  <button
-                    type="button"
-                    className={`key-moment-chip${filters.team_id.length === 0 ? ' is-active' : ''}`}
-                    onClick={() => setFilters((f) => ({ ...f, team_id: [] }))}
-                  >
-                    Any
-                  </button>
-                  {[matchData.home_team, matchData.away_team].map((team) => (
-                    <button
-                      key={team.id}
-                      type="button"
-                      className={`key-moment-chip${filters.team_id.includes(team.id) ? ' is-active' : ''}`}
-                      onClick={() => setFilters((f) => ({ ...f, team_id: toggleValue(f.team_id, team.id) }))}
-                    >
-                      {team.short_name}
-                    </button>
-                  ))}
-                </div>
-              </div>
+            {matchData && (
+              <MultiSelectDropdown
+                label="Team"
+                options={[matchData.home_team, matchData.away_team]}
+                selected={[matchData.home_team, matchData.away_team].filter((team) => filters.team_id.includes(team.id))}
+                onChange={(teams) => setFilters((f) => ({ ...f, team_id: teams.map((team) => team.id) }))}
+                formatOption={(team) => team.short_name}
+                getKey={(team) => String(team.id)}
+              />
             )}
 
             {CHIP_FILTERS.map(({ key, label, values }) => (
-              <div key={key} className="key-moment-filter-chip-row">
-                <span className="key-moment-filter-label">{label}</span>
-                <div className="key-moment-filter-chips">
-                  <button
-                    type="button"
-                    className={`key-moment-chip${filters[key].length === 0 ? ' is-active' : ''}`}
-                    onClick={() => setFilters((f) => ({ ...f, [key]: [] }))}
-                  >
-                    Any
-                  </button>
-                  {values.map((value) => (
-                    <button
-                      key={String(value)}
-                      type="button"
-                      className={`key-moment-chip${(filters[key] as (string | boolean)[]).includes(value) ? ' is-active' : ''}`}
-                      onClick={() => setFilters((f) => ({
-                        ...f,
-                        [key]: toggleValue(f[key] as (string | boolean)[], value),
-                      }))}
-                    >
-                      {formatEventValue(value)}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <MultiSelectDropdown
+                key={key}
+                label={label}
+                options={values}
+                selected={filters[key] as (string | boolean)[]}
+                onChange={(selected) => setFilters((f) => ({ ...f, [key]: selected }))}
+                formatOption={formatEventValue}
+                getKey={String}
+              />
             ))}
-            
           </div>
           {/* {renderMomentGroup('Goals', keyMomentsData.goals)}
           {renderMomentGroup('Shots', keyMomentsData.shots)} */}

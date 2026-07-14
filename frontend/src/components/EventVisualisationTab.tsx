@@ -15,6 +15,7 @@ import {
   formatEventValue,
   type EventType,
 } from '../constants/eventData'
+import MultiSelectDropdown from './MultiSelectDropdown'
 import './KeyMomentFinderComponent.css'
 
 type EventVisualisationTabProps = {
@@ -28,10 +29,6 @@ type EventVisualisationTabProps = {
 }
 
 const MAX_SELECT_ALL_EVENTS = 100
-
-function toggleValue<T>(arr: T[], value: T): T[] {
-  return arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value]
-}
 
 function EventVisualisationTab({
   keyMomentsData,
@@ -110,237 +107,89 @@ function EventVisualisationTab({
         <span className="key-moment-primary">Auto Disappear</span>
       </label>
       <div className="key-moment-filters">
-        <div className="key-moment-filter-chip-row">
-          <span className="key-moment-filter-label">Event Type</span>
-          <div className="key-moment-filter-chips">
-            <button
-              type="button"
-              className={`key-moment-chip${eventTypeFilter.length === 0 ? ' is-active' : ''}`}
-              onClick={() => setEventTypeFilter([])}
-            >
-              Any
-            </button>
-            {EVENT_TYPES.map((value) => (
-              <button
-                key={value}
-                type="button"
-                className={`key-moment-chip${eventTypeFilter.includes(value) ? ' is-active' : ''}`}
-                onClick={() => setEventTypeFilter((current) => toggleValue(current, value))}
-              >
-                {formatEventValue(value)}
-              </button>
-            ))}
-          </div>
-        </div>
+        <MultiSelectDropdown
+          label="Event Type"
+          options={EVENT_TYPES}
+          selected={eventTypeFilter}
+          onChange={setEventTypeFilter}
+          formatOption={formatEventValue}
+        />
 
-        <div className="key-moment-filter-chip-row">
-          <span className="key-moment-filter-label">Event Subtype</span>
-          <div className="key-moment-filter-chips">
-            <button
-              type="button"
-              className={`key-moment-chip${eventSubtypeFilter.length === 0 ? ' is-active' : ''}`}
-              onClick={() => setEventSubtypeFilter([])}
-            >
-              Any
-            </button>
-            {EVENT_SUBTYPES.map((value) => (
-              <button
-                key={value}
-                type="button"
-                className={`key-moment-chip${eventSubtypeFilter.includes(value) ? ' is-active' : ''}`}
-                onClick={() => setEventSubtypeFilter((current) => toggleValue(current, value))}
-              >
-                {formatEventValue(value)}
-              </button>
-            ))}
-          </div>
-        </div>
+        <MultiSelectDropdown
+          label="Event Subtype"
+          options={EVENT_SUBTYPES}
+          selected={eventSubtypeFilter}
+          onChange={setEventSubtypeFilter}
+          formatOption={formatEventValue}
+        />
 
-        <div className="key-moment-filter-chip-row">
-          <span className="key-moment-filter-label">Start Type</span>
-          <div className="key-moment-filter-chips">
-            <button
-              type="button"
-              className={`key-moment-chip${startTypeFilter.length === 0 ? ' is-active' : ''}`}
-              onClick={() => setStartTypeFilter([])}
-            >
-              Any
-            </button>
-            {START_TYPES.map((value) => (
-              <button
-                key={value}
-                type="button"
-                className={`key-moment-chip${startTypeFilter.includes(value) ? ' is-active' : ''}`}
-                onClick={() => setStartTypeFilter((current) => toggleValue(current, value))}
-              >
-                {formatEventValue(value)}
-              </button>
-            ))}
-          </div>
-        </div>
+        <MultiSelectDropdown
+          label="Start Type"
+          options={START_TYPES}
+          selected={startTypeFilter}
+          onChange={setStartTypeFilter}
+          formatOption={formatEventValue}
+        />
 
-        <div className="key-moment-filter-chip-row">
-          <span className="key-moment-filter-label">End Type</span>
-          <div className="key-moment-filter-chips">
-            <button
-              type="button"
-              className={`key-moment-chip${endTypeFilter.length === 0 ? ' is-active' : ''}`}
-              onClick={() => setEndTypeFilter([])}
-            >
-              Any
-            </button>
-            {END_TYPES.map((value) => (
-              <button
-                key={value}
-                type="button"
-                className={`key-moment-chip${endTypeFilter.includes(value) ? ' is-active' : ''}`}
-                onClick={() => setEndTypeFilter((current) => toggleValue(current, value))}
-              >
-                {formatEventValue(value)}
-              </button>
-            ))}
-          </div>
-        </div>
+        <MultiSelectDropdown
+          label="End Type"
+          options={END_TYPES}
+          selected={endTypeFilter}
+          onChange={setEndTypeFilter}
+          formatOption={formatEventValue}
+        />
 
-        <div className="key-moment-filter-chip-row">
-          <span className="key-moment-filter-label">Channel</span>
-          <div className="key-moment-filter-chips">
-            <button
-              type="button"
-              className={`key-moment-chip${channelFilter.length === 0 ? ' is-active' : ''}`}
-              onClick={() => setChannelFilter([])}
-            >
-              Any
-            </button>
-            {CHANNELS.map((value) => (
-              <button
-                key={value}
-                type="button"
-                className={`key-moment-chip${channelFilter.includes(value) ? ' is-active' : ''}`}
-                onClick={() => setChannelFilter((current) => toggleValue(current, value))}
-              >
-                {formatEventValue(value)}
-              </button>
-            ))}
-          </div>
-        </div>
+        <MultiSelectDropdown
+          label="Channel"
+          options={CHANNELS}
+          selected={channelFilter}
+          onChange={setChannelFilter}
+          formatOption={formatEventValue}
+        />
 
-        <div className="key-moment-filter-chip-row">
-          <span className="key-moment-filter-label">Third</span>
-          <div className="key-moment-filter-chips">
-            <button
-              type="button"
-              className={`key-moment-chip${thirdFilter.length === 0 ? ' is-active' : ''}`}
-              onClick={() => setThirdFilter([])}
-            >
-              Any
-            </button>
-            {THIRDS.map((value) => (
-              <button
-                key={value}
-                type="button"
-                className={`key-moment-chip${thirdFilter.includes(value) ? ' is-active' : ''}`}
-                onClick={() => setThirdFilter((current) => toggleValue(current, value))}
-              >
-                {formatEventValue(value)}
-              </button>
-            ))}
-          </div>
-        </div>
+        <MultiSelectDropdown
+          label="Third"
+          options={THIRDS}
+          selected={thirdFilter}
+          onChange={setThirdFilter}
+          formatOption={formatEventValue}
+        />
 
-        <div className="key-moment-filter-chip-row">
-          <span className="key-moment-filter-label">Player Position</span>
-          <div className="key-moment-filter-chips">
-            <button
-              type="button"
-              className={`key-moment-chip${playerPositionFilter.length === 0 ? ' is-active' : ''}`}
-              onClick={() => setPlayerPositionFilter([])}
-            >
-              Any
-            </button>
-            {playerPositions.map((value) => (
-              <button
-                key={value}
-                type="button"
-                className={`key-moment-chip${playerPositionFilter.includes(value) ? ' is-active' : ''}`}
-                onClick={() => setPlayerPositionFilter((current) => toggleValue(current, value))}
-              >
-                {value}
-              </button>
-            ))}
-          </div>
-        </div>
+        <MultiSelectDropdown
+          label="Player Position"
+          options={playerPositions}
+          selected={playerPositionFilter}
+          onChange={setPlayerPositionFilter}
+        />
 
         {matchData && (
-          <div className="key-moment-filter-chip-row">
-            <span className="key-moment-filter-label">Team</span>
-            <div className="key-moment-filter-chips">
-              <button
-                type="button"
-                className={`key-moment-chip${teamIdFilter.length === 0 ? ' is-active' : ''}`}
-                onClick={() => setTeamIdFilter([])}
-              >
-                Any
-              </button>
-              {[matchData.home_team, matchData.away_team].map((team) => (
-                <button
-                  key={team.id}
-                  type="button"
-                  className={`key-moment-chip${teamIdFilter.includes(team.id) ? ' is-active' : ''}`}
-                  onClick={() => setTeamIdFilter((current) => toggleValue(current, team.id))}
-                >
-                  {team.short_name}
-                </button>
-              ))}
-            </div>
-          </div>
+          <MultiSelectDropdown
+            label="Team"
+            options={[matchData.home_team, matchData.away_team]}
+            selected={[matchData.home_team, matchData.away_team].filter((team) => teamIdFilter.includes(team.id))}
+            onChange={(teams) => setTeamIdFilter(teams.map((team) => team.id))}
+            formatOption={(team) => team.short_name}
+            getKey={(team) => String(team.id)}
+          />
         )}
 
-        <div className="key-moment-filter-chip-row">
-          <span className="key-moment-filter-label">Lead to Shot</span>
-          <div className="key-moment-filter-chips">
-            <button
-              type="button"
-              className={`key-moment-chip${leadToShotFilter.length === 0 ? ' is-active' : ''}`}
-              onClick={() => setLeadToShotFilter([])}
-            >
-              Any
-            </button>
-            {LEAD_TO_SHOT_VALUES.map((value) => (
-              <button
-                key={String(value)}
-                type="button"
-                className={`key-moment-chip${leadToShotFilter.includes(value) ? ' is-active' : ''}`}
-                onClick={() => setLeadToShotFilter((current) => toggleValue(current, value))}
-              >
-                {formatEventValue(value)}
-              </button>
-            ))}
-          </div>
-        </div>
+        <MultiSelectDropdown
+          label="Lead to Shot"
+          options={LEAD_TO_SHOT_VALUES}
+          selected={leadToShotFilter}
+          onChange={setLeadToShotFilter}
+          formatOption={formatEventValue}
+          getKey={String}
+        />
 
-        <div className="key-moment-filter-chip-row">
-          <span className="key-moment-filter-label">Lead to Goal</span>
-          <div className="key-moment-filter-chips">
-            <button
-              type="button"
-              className={`key-moment-chip${leadToGoalFilter.length === 0 ? ' is-active' : ''}`}
-              onClick={() => setLeadToGoalFilter([])}
-            >
-              Any
-            </button>
-            {LEAD_TO_GOAL_VALUES.map((value) => (
-              <button
-                key={String(value)}
-                type="button"
-                className={`key-moment-chip${leadToGoalFilter.includes(value) ? ' is-active' : ''}`}
-                onClick={() => setLeadToGoalFilter((current) => toggleValue(current, value))}
-              >
-                {formatEventValue(value)}
-              </button>
-            ))}
-          </div>
-        </div>
+        <MultiSelectDropdown
+          label="Lead to Goal"
+          options={LEAD_TO_GOAL_VALUES}
+          selected={leadToGoalFilter}
+          onChange={setLeadToGoalFilter}
+          formatOption={formatEventValue}
+          getKey={String}
+        />
       </div>
 
       <section className={`key-moment-group${isExpanded ? ' is-expanded' : ''}`}>

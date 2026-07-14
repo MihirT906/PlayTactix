@@ -30,3 +30,18 @@ NoneType: None
 2026-07-14 13:48:45 | INFO     | playtactix.services.key_moments_service | Key moments computed shots=31
 2026-07-14 13:48:45 | INFO     | playtactix.services.key_moments_service | Key moments computed pops=400
 2026-07-14 13:48:45 | INFO     | playtactix.services.key_moments_service | Key moments computed events=5079
+2026-07-14 14:01:20 | INFO     | playtactix.routes.data_routes | Fetching frames match_id=1886347 start=311 end=611
+2026-07-14 14:01:20 | INFO     | playtactix.services.frame_data_service | Reading data files for match_id=1886347
+2026-07-14 14:01:20 | INFO     | playtactix.services.frame_data_service | Filtering frames for match_id=1886347 to range 311-611
+2026-07-14 14:01:24 | INFO     | playtactix.services.frame_data_service | Returning frames for match_id=1886347
+NoneType: None
+2026-07-14 14:02:00 | INFO     | playtactix.routes.data_routes | Fetching frames match_id=1886347 start=612 end=912
+2026-07-14 14:02:00 | INFO     | playtactix.services.frame_data_service | Reading data files for match_id=1886347
+2026-07-14 14:02:00 | INFO     | playtactix.services.frame_data_service | Filtering frames for match_id=1886347 to range 612-912
+2026-07-14 14:02:04 | INFO     | playtactix.services.frame_data_service | Returning frames for match_id=1886347
+NoneType: None
+2026-07-14 14:02:05 | INFO     | playtactix.routes.data_routes | Fetching frames match_id=1886347 start=613 end=913
+2026-07-14 14:02:05 | INFO     | playtactix.services.frame_data_service | Reading data files for match_id=1886347
+2026-07-14 14:02:05 | INFO     | playtactix.services.frame_data_service | Filtering frames for match_id=1886347 to range 613-913
+2026-07-14 14:02:08 | INFO     | playtactix.services.frame_data_service | Returning frames for match_id=1886347
+NoneType: None

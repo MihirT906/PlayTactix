@@ -370,7 +370,8 @@ class SkillCornerDataIngestor:
             'x_start', 'y_start', 'x_end', 'y_end', 'start_type', 'end_type',
             'channel_start', 'channel_end', 'third_start', 'third_end',
             'lead_to_shot', 'lead_to_goal',
-            'distance_covered', 'speed_avg', 'separation_gain', 'pass_distance_received', 'n_opponents_overtaken',
+            'distance_covered', 'speed_avg', 'separation_gain', 
+            'pass_angle', 'pass_distance', 'n_opponents_overtaken',
             'player_targeted_xpass_completion', 'player_targeted_xthreat', 'xthreat', 'xpass_completion', 'xloss_player_possession_start', 'xloss_player_possession_end', 'xloss_player_possession_max', 'xshot_player_possession_start', 'xshot_player_possession_end', 'xshot_player_possession_max'
         ]
         

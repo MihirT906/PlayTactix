@@ -197,7 +197,7 @@ export function MatchSessionProvider({
                 const { currentClipFrame, clip } = prev.playback
                 const nextClipFrame = currentClipFrame >= clip.length ? 0 : currentClipFrame + 1
                 const resolved = clipManager.resolveClipFrame(clip, nextClipFrame)
-                logger.info('Advance Frame:', nextClipFrame, resolved)
+                // logger.info('Advance Frame:', nextClipFrame, resolved)
                 return {
                     ...prev,
                     playback: {

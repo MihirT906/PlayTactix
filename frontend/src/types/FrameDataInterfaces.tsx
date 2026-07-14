@@ -59,7 +59,8 @@ interface Event {
     distance_covered: number;
     speed_avg: number;
     separation_gain: number;
-    pass_distance_received: number;
+    pass_angle: number;
+    pass_distance: number;
     player_targeted_xpass_completion: number;
     player_targeted_xthreat: number;
     xthreat: number;

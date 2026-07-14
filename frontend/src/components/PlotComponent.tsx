@@ -158,12 +158,24 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     };
   }, [eventVisibility.onBallEngagement, eventVisibility.passingOption, eventVisibility.playerPossession, frameData]);
 
+  // Lookup of player id -> display info (name, position) sourced from matchData
+  const playerInfoById = useMemo(() => {
+    const map = new Map<number, { name: string; position: string }>()
+    for (const player of matchData?.players || []) {
+      map.set(player.id, {
+        name: player.short_name || '',
+        position: player.player_role?.acronym || '',
+      })
+    }
+    return map
+  }, [matchData])
+
   // Creating traces of diff styling for players based on their involvement in the current frame's events (possession, passing options, on-ball engagement)
   const playerTraces = useMemo(() => {
     if (!frameData) return [];
 
     const players = frameData.players;
-    if (players.player_id.length === 0) 
+    if (players.player_id.length === 0)
       return []; // Return empty array if there are no players in the frame data
 
     const visibleTeamMask = getVisibleTeamMask(players.team);
@@ -176,10 +188,15 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
       return {
         x: filterByMask(players.x, mask),
         y: filterByMask(players.y, mask),
-        customdata: visiblePlayerIds.map((playerId) => [playerId]),
+        customdata: visiblePlayerIds.map((playerId) => {
+          const info = playerInfoById.get(playerId)
+          const name = info?.name || `Player ${playerId}`
+          const label = info?.position ? `${name} (${info.position})` : name
+          return [playerId, label]
+        }),
         mode: 'markers+text',
         type: 'scatter',
-        hovertemplate: 'Player %{customdata[0]}<extra></extra>',
+        hovertemplate: '%{customdata[1]}<extra></extra>',
         hoverlabel: {
           font: {
             size: 16,

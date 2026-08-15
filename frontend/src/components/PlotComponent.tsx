@@ -300,16 +300,33 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
         console.warn('Undefined player IDs in annotationStore.getPlayerLineAnnotations:', firstPoint, secondPoint);
         continue;
       }
+      const x0 = frameData?.players.x[frameData.players.player_id.indexOf(firstPoint)]
+      const y0 = frameData?.players.y[frameData.players.player_id.indexOf(firstPoint)]
+      const x1 = frameData?.players.x[frameData.players.player_id.indexOf(secondPoint)]
+      const y1 = frameData?.players.y[frameData.players.player_id.indexOf(secondPoint)]
+
+      const distanceLabel = (x0 !== undefined && y0 !== undefined && x1 !== undefined && y1 !== undefined)
+        ? `${Math.hypot(x1 - x0, y1 - y0).toFixed(1)}m`
+        : ''
+
       const newLine = {
         type: 'line',
         layer: 'between',
-        x0: frameData?.players.x[frameData.players.player_id.indexOf(firstPoint)], 
-        y0: frameData?.players.y[frameData.players.player_id.indexOf(firstPoint)],
-        x1: frameData?.players.x[frameData.players.player_id.indexOf(secondPoint)],
-        y1: frameData?.players.y[frameData.players.player_id.indexOf(secondPoint)],
+        x0,
+        y0,
+        x1,
+        y1,
         line: {
           color: plotConfig.focusLineColor,
           width: plotConfig.focusLineWidth,
+        },
+        label: {
+          text: distanceLabel,
+          textposition: 'middle',
+          font: {
+            color: plotConfig.focusLineColor,
+            // size: 14,
+          },
         },
         editable: true,
         name: `Player1:${firstPoint},Player2:${secondPoint}`, // Using this name to identify the players connected by the line

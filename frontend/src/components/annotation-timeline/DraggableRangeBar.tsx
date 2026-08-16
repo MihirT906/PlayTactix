@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import { useRangeDrag, type FrameRange } from './useRangeDrag'
 
 type DraggableRangeBarProps = {
@@ -7,6 +8,7 @@ type DraggableRangeBarProps = {
   scaleEnd: number
   label: string
   className: string
+  style?: CSSProperties
   onRangeChange: (frameStart: number, frameEnd: number, kind: 'move' | 'resize') => void
 }
 
@@ -18,6 +20,7 @@ export function DraggableRangeBar({
   scaleEnd,
   label,
   className,
+  style,
   onRangeChange,
 }: DraggableRangeBarProps) {
   const visibleFrameSpan = Math.max(scaleEnd - scaleStart, 1)
@@ -37,7 +40,7 @@ export function DraggableRangeBar({
   return (
     <div
       className={`annotation-timeline__annotation annotation-timeline__annotation--croppable ${className}`}
-      style={{ left: `${leftPercent}%`, width: `${widthPercent}%`, top: '2px' }}
+      style={{ left: `${leftPercent}%`, width: `${widthPercent}%`, top: '2px', ...style }}
       title={label}
       onPointerDown={(event) => beginDrag(event, 'move', range)}
     >

@@ -130,7 +130,7 @@ export function AnnotationRows({
             return (
               <div
                 key={annotation.key}
-                className={`annotation-timeline__annotation ${annotation.isOngoing ? 'annotation-timeline__annotation--ongoing' : ''}`}
+                className={`annotation-timeline__annotation ${annotation.isOngoing ? 'annotation-timeline__annotation--ongoing' : 'annotation-timeline__annotation--minimal'}`}
                 style={{
                   left: `${annotation.leftPercent}%`,
                   width: `${annotation.widthPercent}%`,

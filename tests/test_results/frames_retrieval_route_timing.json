@@ -1,0 +1,12 @@
+{
+  "label": "local-run-001",
+  "route": "/data/frames",
+  "match_id": 1886347,
+  "start_frame": 10,
+  "end_frame": 110,
+  "elapsed_seconds": 0.5714,
+  "max_seconds": 30,
+  "passed": true,
+  "status_code": 200,
+  "payload_size_bytes": 404714
+}

@@ -20,6 +20,7 @@ type PlotLayoutComponentProps = {
   clipRange: { start: number; end: number }
   segmentRange: { start: number; end: number }
   chunkRange: { start: number; end: number }
+  missingFrameRanges: { start: number; end: number }[]
   matchData: MatchData | null
   frameData: FrameData | null
   eventsData: Map<number, Event[]> | null
@@ -41,6 +42,7 @@ function PlotLayoutComponent({
   clipRange,
   segmentRange,
   chunkRange,
+  missingFrameRanges,
   matchData,
   frameData,
   eventsData,
@@ -63,6 +65,7 @@ function PlotLayoutComponent({
         onClipFrameChange={onClipFrameChange}
         chunkRange={chunkRange}
         segmentStart={segmentRange.start}
+        missingRanges={missingFrameRanges}
         annotationStore={annotationStore}
       />
       <div className="plot-layout__plot">

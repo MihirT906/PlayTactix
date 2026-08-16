@@ -85,13 +85,7 @@
   -webkit-appearance: none;
   appearance: none;
   height: 4px;
-  background: linear-gradient(
-    to right,
-    var(--controls-slider-progress, red) var(--progress),
-    var(--controls-slider-cached, darkgray) var(--progress),
-    var(--controls-slider-cached, darkgray) var(--cache-progress),
-    var(--controls-slider-track, lightgray) var(--cache-progress)
-  );
+  background: var(--controls-slider-track, lightgray); /* overridden inline via buildTrackGradient */
   border-radius: 999px;
   border: 0;
   outline: none;

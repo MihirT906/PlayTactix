@@ -16,6 +16,7 @@ interface ControlsProps {
   onClipFrameChange: (clipFrame: number) => void
   chunkRange: { start: number; end: number }
   segmentStart: number
+  missingRanges: { start: number; end: number }[]
   annotationStore: AnnotationStore
 }
 
@@ -24,7 +25,48 @@ const formatSpeed = (speed: number) => {
   return `${formatted}x`
 }
 
-const Controls: React.FC<ControlsProps> = ({ isPlaying, onPlayPause, playbackSpeed, onDoubleSpeed, onHalveSpeed, currentMatchFrame, clipFrame, clipRange, onClipFrameChange, chunkRange, segmentStart, annotationStore }) => {
+// Builds the slider track background as hard-edged color bands: played progress,
+// cached-but-unplayed, not-yet-loaded, and (overriding all of those) confirmed-missing
+// frame ranges, so gaps in the data are visible on the scrubber regardless of playhead position.
+const buildTrackGradient = (
+  clipRange: { start: number; end: number },
+  clipFrame: number,
+  cacheEndFrame: number,
+  missingRanges: { start: number; end: number }[]
+): string => {
+  const totalLength = clipRange.end - clipRange.start || 1
+  const toPercent = (frame: number) => Math.min(100, Math.max(0, ((frame - clipRange.start) / totalLength) * 100))
+
+  const breakpoints = new Set<number>([0, 100, toPercent(clipFrame), toPercent(cacheEndFrame)])
+  missingRanges.forEach(({ start, end }) => {
+    breakpoints.add(toPercent(start))
+    breakpoints.add(toPercent(end + 1))
+  })
+
+  const sortedBreakpoints = Array.from(breakpoints).sort((a, b) => a - b)
+
+  const colorAt = (percent: number): string => {
+    const frame = clipRange.start + (percent / 100) * totalLength
+    const isMissing = missingRanges.some(({ start, end }) => frame >= start && frame < end + 1)
+    if (isMissing) return 'var(--controls-slider-missing, #6b6b6b)'
+    if (frame < clipFrame) return 'var(--controls-slider-progress, red)'
+    if (frame < cacheEndFrame) return 'var(--controls-slider-cached, darkgray)'
+    return 'var(--controls-slider-track, lightgray)'
+  }
+
+  const stops: string[] = []
+  for (let i = 0; i < sortedBreakpoints.length - 1; i++) {
+    const start = sortedBreakpoints[i]
+    const end = sortedBreakpoints[i + 1]
+    if (end <= start) continue
+    const color = colorAt((start + end) / 2)
+    stops.push(`${color} ${start}%`, `${color} ${end}%`)
+  }
+
+  return `linear-gradient(to right, ${stops.join(', ')})`
+}
+
+const Controls: React.FC<ControlsProps> = ({ isPlaying, onPlayPause, playbackSpeed, onDoubleSpeed, onHalveSpeed, currentMatchFrame, clipFrame, clipRange, onClipFrameChange, chunkRange, segmentStart, missingRanges, annotationStore }) => {
   const handleSliderChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const frame = parseInt(event.target.value, 10)
     onClipFrameChange(frame)
@@ -66,9 +108,8 @@ const Controls: React.FC<ControlsProps> = ({ isPlaying, onPlayPause, playbackSpe
         onChange={handleSliderChange}
         onMouseUp={handleSliderDragEnd}
         style={{
-          '--progress': `${((clipFrame - clipRange.start) / (clipRange.end - clipRange.start)) * 100}%`,
-          '--cache-progress': `${(((chunkRange.end - segmentStart) - clipRange.start) / (clipRange.end - clipRange.start)) * 100}%`,
-        } as React.CSSProperties}
+          background: buildTrackGradient(clipRange, clipFrame, chunkRange.end - segmentStart, missingRanges),
+        }}
       />
     </div>
   )

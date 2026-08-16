@@ -84,6 +84,7 @@ function AppContent({
     const [keyMomentsData, setKeyMomentsData] = useState<KeyMomentsData | null>(null)
     const [eventsData, setEventsData] = useState<Map<number, Event[]>>(new Map()) // State to hold events data
     const [currentFrameData, setCurrentFrameData] = useState<FrameData | null>(null)
+    const [missingFrameRanges, setMissingFrameRanges] = useState<{ start: number; end: number }[]>([])
     const [annotationVersion, setAnnotationVersion] = useState(0)
     const handleAnnotationUpdate = useCallback(() => setAnnotationVersion((version) => version + 1), [])
     const [appView, setAppView] = useState<AppView>('idle')
@@ -128,6 +129,17 @@ function AppContent({
 
       fetchFrameData()
     }, [currentMatchFrame, selectedMatchId, dataManager])
+
+    useEffect(() => { // Recompute known-missing frame ranges (mapped to clip coordinates) whenever more data loads
+      if (selectedMatchId === null) return
+
+      const ranges = dataManager.getMissingFrameRanges(segment.sourceFrameStart, segment.sourceFrameEnd)
+      const clipRanges = ranges.map((range) => ({
+        start: range.start - segment.sourceFrameStart + segment.clipStart,
+        end: range.end - segment.sourceFrameStart + segment.clipStart,
+      }))
+      setMissingFrameRanges(clipRanges)
+    }, [chunkRange, segment.sourceFrameStart, segment.sourceFrameEnd, segment.clipStart, selectedMatchId, dataManager])
 
     useEffect(() => { // Fetch match metadata when a match is selected
       if (selectedMatchId === null) return
@@ -276,6 +288,7 @@ function AppContent({
                       clipRange={clipRange}
                       segmentRange={segmentRange}
                       chunkRange={chunkRange}
+                      missingFrameRanges={missingFrameRanges}
                       matchData={matchMetaData}
                       frameData={currentFrameData}
                       eventsData={eventsData}

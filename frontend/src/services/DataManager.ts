@@ -160,6 +160,28 @@ export default class DataManager {
     };
   }
 
+  // Merges known-missing frame numbers within [start, end] into contiguous ranges,
+  // for rendering gaps on the timeline. Only reflects frames that have already
+  // been fetched — frames not yet requested are simply absent from the result.
+  getMissingFrameRanges(start: number, end: number): { start: number; end: number }[] {
+    const ranges: { start: number; end: number }[] = []
+    let rangeStart: number | null = null
+
+    for (let i = start; i <= end; i++) {
+      if (this.missingFrames.has(i)) {
+        if (rangeStart === null) rangeStart = i
+      } else if (rangeStart !== null) {
+        ranges.push({ start: rangeStart, end: i - 1 })
+        rangeStart = null
+      }
+    }
+    if (rangeStart !== null) {
+      ranges.push({ start: rangeStart, end })
+    }
+
+    return ranges
+  }
+
   getEventData(start: number, end: number): Map<number, Event[]> {
     const eventData = new Map<number, Event[]>()
     let missingCount = 0

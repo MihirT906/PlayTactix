@@ -75,10 +75,11 @@ const Settings: React.FC<{ matchData: MatchData | null }> = ({ matchData }) => {
 
     const {
         session,
-        setActiveOverlay,
+        setActiveOverlaySegment,
     } = useMatchSession()
 
-    const activeOverlay = session.overlays.active
+    const isPassOptionProbActive = session.playback.clip.overlaySegments.some((overlay) => overlay.type === 'pass_option_prob')
+    const isPitchControlActive = session.playback.clip.overlaySegments.some((overlay) => overlay.type === 'pitch_control')
 
     return (
         <div className="settings-display">
@@ -97,8 +98,8 @@ const Settings: React.FC<{ matchData: MatchData | null }> = ({ matchData }) => {
             </div>
             <div className="settings-box settings-box--flat">
                 <div className="settings-section-heading">Overlays</div>
-                <SettingsRow label={'Pass Option Probability'} color={null} visible={activeOverlay === 'pass_option_prob'} onChange={setHomeTeamColor} onToggleVisibility={(visible) => setActiveOverlay(visible ? 'pass_option_prob' : null)} />
-                <SettingsRow label={'Pitch Control'} color={null} visible={activeOverlay === 'pitch_control'} onChange={setHomeTeamColor} onToggleVisibility={(visible) => setActiveOverlay(visible ? 'pitch_control' : null)} />
+                <SettingsRow label={'Pass Option Probability'} color={null} visible={isPassOptionProbActive} onChange={setHomeTeamColor} onToggleVisibility={(visible) => setActiveOverlaySegment('pass_option_prob', visible)} />
+                <SettingsRow label={'Pitch Control'} color={null} visible={isPitchControlActive} onChange={setHomeTeamColor} onToggleVisibility={(visible) => setActiveOverlaySegment('pitch_control', visible)} />
 
             </div>
         </div>

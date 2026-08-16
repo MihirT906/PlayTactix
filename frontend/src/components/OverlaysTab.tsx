@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { FaPlus, FaCalendarAlt } from 'react-icons/fa'
-import { GiSoccerField } from 'react-icons/gi'
+import { FaPlus } from 'react-icons/fa'
+import { GiAbstract006, GiFlagObjective, GiSoccerField, GiTargeting } from 'react-icons/gi'
 import { useMatchSession } from '../context/MatchSessionContext'
 import type { KeyMomentsData } from '../types/KeyMomentsDataInterfaces'
 import type { MatchData } from '../types/MatchDataInterfaces'
+import type { OverlaySegmentKind } from '../types/ClipInterfaces'
 import EventVisualisationTab from './EventVisualisationTab'
 import './TimelineTab.css'
 
@@ -18,16 +19,18 @@ function OverlaysTab({
 }: OverlaysTabProps) {
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false)
   const [isEventsDropdownOpen, setIsEventsDropdownOpen] = useState(false)
-  const { session, setActiveBackground, toggleSelectedEvent, setSelectedEvents, setAutoDisappearEvents } = useMatchSession()
-  const isPitchBackgroundActive = session.playback.clip.overlaySegments.some((overlay) => overlay.type === 'pitch')
+  const { session, setActiveOverlaySegment, toggleSelectedEvent, setSelectedEvents, setAutoDisappearEvents } = useMatchSession()
+
+  const isOverlaySegmentActive = (kind: OverlaySegmentKind) =>
+    session.playback.clip.overlaySegments.some((overlay) => overlay.type === kind)
 
   const handleEventsSelect = () => {
     setIsEventsDropdownOpen((previousValue) => !previousValue)
     setIsAddMenuOpen(false)
   }
 
-  const handlePitchSelect = () => {
-    setActiveBackground(isPitchBackgroundActive ? null : 'pitch')
+  const handleOverlaySegmentSelect = (kind: OverlaySegmentKind) => {
+    setActiveOverlaySegment(kind, !isOverlaySegmentActive(kind))
     setIsAddMenuOpen(false)
   }
 
@@ -51,11 +54,27 @@ function OverlaysTab({
           <div id="overlays-add-options" className="timeline-add-options" aria-label="Overlay option types">
             <button
               type="button"
-              className={`app-header-action workspace-sidebar-action timeline-add-option ${isPitchBackgroundActive ? 'is-active' : ''}`}
-              onClick={handlePitchSelect}
+              className={`app-header-action workspace-sidebar-action timeline-add-option ${isOverlaySegmentActive('pitch') ? 'is-active' : ''}`}
+              onClick={() => handleOverlaySegmentSelect('pitch')}
             >
               <GiSoccerField aria-hidden="true" />
               <span>Pitch</span>
+            </button>
+            <button
+              type="button"
+              className={`app-header-action workspace-sidebar-action timeline-add-option ${isOverlaySegmentActive('pitch_control') ? 'is-active' : ''}`}
+              onClick={() => handleOverlaySegmentSelect('pitch_control')}
+            >
+              <GiAbstract006 aria-hidden="true" />
+              <span>Pitch Control</span>
+            </button>
+            <button
+              type="button"
+              className={`app-header-action workspace-sidebar-action timeline-add-option ${isOverlaySegmentActive('pass_option_prob') ? 'is-active' : ''}`}
+              onClick={() => handleOverlaySegmentSelect('pass_option_prob')}
+            >
+              <GiTargeting aria-hidden="true" />
+              <span>Pass Probability</span>
             </button>
             <button
               type="button"
@@ -64,7 +83,7 @@ function OverlaysTab({
               aria-controls="events-overlay-panel"
               onClick={handleEventsSelect}
             >
-              <FaCalendarAlt aria-hidden="true" />
+              <GiFlagObjective aria-hidden="true" />
               <span>Events</span>
             </button>
           </div>

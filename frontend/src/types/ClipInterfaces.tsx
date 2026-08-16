@@ -8,11 +8,18 @@ export type Segment = {
   sourceFrameEnd: number
 }
 
-export type BackgroundKind = 'pitch'
+export type OverlaySegmentKind = 'pitch' | 'pitch_control' | 'pass_option_prob'
 
-// An overlay (e.g. the pitch background) placed over a range of the clip's own timeline.
+export const OVERLAY_SEGMENT_LABELS: Record<OverlaySegmentKind, string> = {
+  pitch: 'Pitch',
+  pitch_control: 'Pitch Control',
+  pass_option_prob: 'Pass Probability',
+}
+
+// An overlay (e.g. the pitch background, pitch control, pass probability) placed
+// over a range of the clip's own timeline.
 export type OverlaySegment = {
-  type: BackgroundKind
+  type: OverlaySegmentKind
   clipStart: number
   clipEnd: number
 }

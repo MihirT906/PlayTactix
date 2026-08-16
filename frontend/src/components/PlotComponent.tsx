@@ -48,6 +48,16 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     pitchOverlay !== undefined &&
     clipFrame >= pitchOverlay.clipStart &&
     clipFrame <= pitchOverlay.clipEnd
+  const pitchControlOverlaySegment = session.playback.clip.overlaySegments.find((overlay) => overlay.type === 'pitch_control')
+  const isPitchControlActive =
+    pitchControlOverlaySegment !== undefined &&
+    clipFrame >= pitchControlOverlaySegment.clipStart &&
+    clipFrame <= pitchControlOverlaySegment.clipEnd
+  const passOptionProbOverlaySegment = session.playback.clip.overlaySegments.find((overlay) => overlay.type === 'pass_option_prob')
+  const isPassOptionProbActive =
+    passOptionProbOverlaySegment !== undefined &&
+    clipFrame >= passOptionProbOverlaySegment.clipStart &&
+    clipFrame <= passOptionProbOverlaySegment.clipEnd
   const editMode = session.ui.editMode;
 
   // Utility function to filter arrays based on a boolean mask
@@ -256,57 +266,51 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
   useEffect(() => {
     let cancelled = false;
 
-    async function loadOverlay() {
-      if (!overlay) {
-        setOverlayTraces([]);
-        return;
-      }
+    async function loadOverlays() {
+      const traces: any[] = [];
 
-      if (overlay === 'pass_option_prob') {
-        const result = await overlayManager.getOverlayForFrame(overlay, currentFrame, frameData);
-        
-        if (!cancelled && result.payload?.kind === 'pass_option_prob') {
-          setOverlayTraces(buildPassOptionProbOverlay(result.payload.data, eventStyles.passingOption.color) || []);
+      if (isPassOptionProbActive) {
+        const result = await overlayManager.getOverlayForFrame('pass_option_prob', currentFrame, frameData);
+
+        if (result.payload?.kind === 'pass_option_prob') {
+          traces.push(...(buildPassOptionProbOverlay(result.payload.data, eventStyles.passingOption.color) || []));
         }
-        return;
       }
 
-      if (overlay === 'pitch_control') {
+      if (isPitchControlActive) {
         const config = {
           'homeTeamColor': homeTeamColor,
           'awayTeamColor': awayTeamColor,
         };
-        const traces = await buildPitchControlOverlay(frameData, matchData, config);
-        if (!cancelled) {
-          setOverlayTraces(traces || []);
-        }
-        return;
+        const pitchControlTraces = await buildPitchControlOverlay(frameData, matchData, config);
+        traces.push(...(pitchControlTraces || []));
       }
 
       if (overlay === 'event_visualisation') {
         const visibleEvents = session.overlays.autoDisappearEvents
           ? session.overlays.selectedEvents.filter((event) => currentFrame <= event.frame_end)
           : session.overlays.selectedEvents;
-        setOverlayTraces(
-          buildEventVisualisationOverlay(visibleEvents, eventStyles.playerPossession.color, {
+        traces.push(
+          ...(buildEventVisualisationOverlay(visibleEvents, eventStyles.playerPossession.color, {
             homeTeamId: matchData?.home_team.id,
             awayTeamId: matchData?.away_team.id,
             homeTeamColor,
             awayTeamColor,
-          }) || [],
+          }) || []),
         );
-        return;
       }
 
-      setOverlayTraces([]);
+      if (!cancelled) {
+        setOverlayTraces(traces);
+      }
     }
 
-    loadOverlay();
+    loadOverlays();
 
     return () => {
       cancelled = true;
     };
-  }, [overlay, frameData, currentFrame, overlayManager, eventStyles.passingOption.color, eventStyles.playerPossession.color, homeTeamColor, awayTeamColor, matchData, session.overlays.selectedEvents, session.overlays.autoDisappearEvents]);
+  }, [overlay, isPassOptionProbActive, isPitchControlActive, frameData, currentFrame, overlayManager, eventStyles.passingOption.color, eventStyles.playerPossession.color, homeTeamColor, awayTeamColor, matchData, session.overlays.selectedEvents, session.overlays.autoDisappearEvents]);
 
   // Creates lines to add to Plotly.layout using the player focus lines stored in annotationStore
   const updateLines = () => { 

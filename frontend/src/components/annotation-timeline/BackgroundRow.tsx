@@ -1,11 +1,11 @@
-import type { OverlaySegment } from '../../types/ClipInterfaces'
+import { OVERLAY_SEGMENT_LABELS, type OverlaySegment } from '../../types/ClipInterfaces'
 import { DraggableRangeBar } from './DraggableRangeBar'
 import { TimelineRow } from './TimelineRow'
 
 const LANE_HEIGHT = 22
 
 type BackgroundRowProps = {
-  overlay: OverlaySegment | null
+  overlay: OverlaySegment
   scaleStart: number
   scaleEnd: number
   labelWidth: number
@@ -14,7 +14,7 @@ type BackgroundRowProps = {
   onRangeChange: (clipStart: number, clipEnd: number) => void
 }
 
-/** The active background overlay (e.g. pitch): the clip range it's shown behind. */
+/** One active overlay segment (pitch, pitch control, pass probability): the clip range it's shown for. */
 export function BackgroundRow({
   overlay,
   scaleStart,
@@ -24,11 +24,9 @@ export function BackgroundRow({
   currentFrameOffsetPercent,
   onRangeChange,
 }: BackgroundRowProps) {
-  if (!overlay) return null
-
   return (
     <TimelineRow
-      label="Background"
+      label={OVERLAY_SEGMENT_LABELS[overlay.type]}
       labelWidth={labelWidth}
       trackWidth={trackWidth}
       trackHeight={LANE_HEIGHT}
@@ -39,7 +37,7 @@ export function BackgroundRow({
         frameEnd={overlay.clipEnd}
         scaleStart={scaleStart}
         scaleEnd={scaleEnd}
-        label={overlay.type}
+        label={OVERLAY_SEGMENT_LABELS[overlay.type]}
         className="annotation-timeline__annotation--overlay"
         onRangeChange={onRangeChange}
       />

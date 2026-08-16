@@ -17,10 +17,10 @@ type AnnotationTimelineProps = {
 }
 
 /**
- * Renders three independent kinds of rows over the same frame scale:
- * the match segment (source clip range), the background overlay (e.g. pitch),
- * and read-only lanes of annotations (player lines, drawn shapes). Each
- * draggable row owns its own drag state - see useRangeDrag.
+ * Renders rows over the same frame scale: the match segment (source clip
+ * range), one row per active overlay segment (pitch, pitch control, pass
+ * probability), and read-only lanes of annotations (player lines, drawn
+ * shapes). Each draggable row owns its own drag state - see useRangeDrag.
  */
 const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
   annotationStore,
@@ -28,7 +28,7 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
   clipRange,
   annotationVersion,
 }) => {
-  const { session, setBackgroundRange, setSegmentRange } = useMatchSession()
+  const { session, setOverlaySegmentRange, setSegmentRange } = useMatchSession()
 
   const scaleStart = clipRange.start
   const scaleEnd = clipRange.end
@@ -41,7 +41,7 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
   )
 
   const activeSegment = session.playback.clip.matchSegments[0] ?? null
-  const activeOverlay = session.playback.clip.overlaySegments[0] ?? null
+  const overlaySegments = session.playback.clip.overlaySegments
 
   return (
     <section className="annotation-timeline">
@@ -61,15 +61,18 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
             onRangeChange={setSegmentRange}
           />
 
-          <BackgroundRow
-            overlay={activeOverlay}
-            scaleStart={scaleStart}
-            scaleEnd={scaleEnd}
-            labelWidth={TIMELINE_LABEL_WIDTH}
-            trackWidth={trackWidth}
-            currentFrameOffsetPercent={currentFrameOffsetPercent}
-            onRangeChange={setBackgroundRange}
-          />
+          {overlaySegments.map((overlay) => (
+            <BackgroundRow
+              key={overlay.type}
+              overlay={overlay}
+              scaleStart={scaleStart}
+              scaleEnd={scaleEnd}
+              labelWidth={TIMELINE_LABEL_WIDTH}
+              trackWidth={trackWidth}
+              currentFrameOffsetPercent={currentFrameOffsetPercent}
+              onRangeChange={(clipStart, clipEnd) => setOverlaySegmentRange(overlay.type, clipStart, clipEnd)}
+            />
+          ))}
 
           <AnnotationRows
             annotationStore={annotationStore}

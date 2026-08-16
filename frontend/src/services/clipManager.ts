@@ -1,4 +1,4 @@
-import type { BackgroundKind, Clip, ResolvedClipFrame } from '../types/ClipInterfaces'
+import type { Clip, OverlaySegmentKind, ResolvedClipFrame } from '../types/ClipInterfaces'
 
 export const DEFAULT_CLIP_LENGTH = 1000
 export const DEFAULT_SEGMENT_SOURCE_RANGE = { start: 10, end: 1000 }
@@ -59,7 +59,7 @@ export function resolveClipFrame(clip: Clip, clipFrame: number): ResolvedClipFra
 // Adds (or replaces) the overlay of the given type on the clip, spanning the full
 // clip whenever it's (re)activated, same as a freshly placed segment would start at clipStart 0.
 // Only one overlay per type is supported at a time.
-export function addOverlay(clip: Clip, type: BackgroundKind): Clip {
+export function addOverlay(clip: Clip, type: OverlaySegmentKind): Clip {
   return {
     ...clip,
     overlaySegments: [
@@ -69,14 +69,14 @@ export function addOverlay(clip: Clip, type: BackgroundKind): Clip {
   }
 }
 
-export function removeOverlay(clip: Clip, type: BackgroundKind): Clip {
+export function removeOverlay(clip: Clip, type: OverlaySegmentKind): Clip {
   return {
     ...clip,
     overlaySegments: clip.overlaySegments.filter((overlay) => overlay.type !== type),
   }
 }
 
-export function setOverlayRange(clip: Clip, type: BackgroundKind, clipStart: number, clipEnd: number): Clip {
+export function setOverlayRange(clip: Clip, type: OverlaySegmentKind, clipStart: number, clipEnd: number): Clip {
   return {
     ...clip,
     overlaySegments: clip.overlaySegments.map((overlay) =>

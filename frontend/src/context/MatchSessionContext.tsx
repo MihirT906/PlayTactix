@@ -9,16 +9,18 @@ import type DataManager from '../services/DataManager'
 import type { SidebarPanel } from '../components/WorkspaceSidebar'
 import type OverlayManager from '../services/OverlayManager'
 import type { Event } from '../types/FrameDataInterfaces'
-import type { BackgroundKind, Clip } from '../types/ClipInterfaces'
+import type { Clip, OverlaySegmentKind } from '../types/ClipInterfaces'
 import * as clipManager from '../services/clipManager'
 import { getLogger } from '../services/logger'
 
 const logger = getLogger('Clip')
 
 export type LoadStatus = 'idle' | 'loading' | 'ready' | 'error'
-export type OverlayKind = 'pass_option_prob' | 'pitch_control' | 'event_visualisation'
+// Only event_visualisation still uses the single "active" overlay slot; pitch,
+// pitch_control and pass_option_prob live as independent OverlaySegments instead.
+export type OverlayKind = 'event_visualisation'
 export type EditMode = 'draw_line' | 'draw_rect' | 'player_focus' | 'draw_line_players'
-export type { BackgroundKind }
+export type { OverlaySegmentKind }
 
 export type MatchSessionState = {
   match: {
@@ -43,6 +45,9 @@ export type MatchSessionState = {
     selectedEvents: Event[]
     autoDisappearEvents: boolean
   }
+  // Overlays are also expressed as OverlaySegments on the clip's own timeline (see
+  // playback.clip.overlaySegments) so they can be independently toggled and given
+  // their own visible clip range, the same way the pitch background works.
   ui: {
     activeSidebarPanel: SidebarPanel
     editMode: EditMode | null
@@ -79,8 +84,8 @@ type MatchSessionContextValue = {
   setSelectedEvents: (events: Event[]) => void
   setAutoDisappearEvents: (autoDisappear: boolean) => void
 
-  setActiveBackground: (background: BackgroundKind | null) => void
-  setBackgroundRange: (clipStart: number, clipEnd: number) => void
+  setActiveOverlaySegment: (kind: OverlaySegmentKind, active: boolean) => void
+  setOverlaySegmentRange: (kind: OverlaySegmentKind, clipStart: number, clipEnd: number) => void
 
   setFrameLoading: (isLoading: boolean) => void
   setLoadedFrameRange: (range: { start: number; end: number } | null) => void
@@ -118,8 +123,6 @@ export const createInitialMatchSessionState = (matchId: number | null = null): M
   overlays: {
     active: null,
     status: {
-      pass_option_prob: 'idle',
-      pitch_control: 'idle',
       event_visualisation: 'idle',
     },
     selectedEvents: [],
@@ -374,13 +377,13 @@ export function MatchSessionProvider({
             }))
         },
 
-        setActiveBackground: (background: BackgroundKind | null) => {
+        setActiveOverlaySegment: (kind: OverlaySegmentKind, active: boolean) => {
             setSession((prev) => {
-                const clip = background
-                    ? clipManager.addOverlay(prev.playback.clip, background)
-                    : { ...prev.playback.clip, overlaySegments: [] }
+                const clip = active
+                    ? clipManager.addOverlay(prev.playback.clip, kind)
+                    : clipManager.removeOverlay(prev.playback.clip, kind)
 
-                logger.info('Clip background overlay changed', { background, overlay: clip.overlaySegments[0] })
+                logger.info('Clip overlay segment changed', { kind, active })
 
                 return {
                     ...prev,
@@ -392,18 +395,15 @@ export function MatchSessionProvider({
             })
         },
 
-        setBackgroundRange: (clipStart: number, clipEnd: number) => {
+        setOverlaySegmentRange: (kind: OverlaySegmentKind, clipStart: number, clipEnd: number) => {
             setSession((prev) => {
-                const activeType = prev.playback.clip.overlaySegments[0]?.type
-                if (!activeType) return prev
-
-                logger.info('Clip background overlay range changed', { clipStart, clipEnd })
+                logger.info('Clip overlay segment range changed', { kind, clipStart, clipEnd })
 
                 return {
                     ...prev,
                     playback: {
                         ...prev.playback,
-                        clip: clipManager.setOverlayRange(prev.playback.clip, activeType, clipStart, clipEnd),
+                        clip: clipManager.setOverlayRange(prev.playback.clip, kind, clipStart, clipEnd),
                     },
                 }
             })

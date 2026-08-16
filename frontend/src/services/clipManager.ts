@@ -15,7 +15,7 @@ export function createDefaultClip(matchId: number | null): Clip {
         sourceFrameEnd: DEFAULT_SEGMENT_SOURCE_RANGE.end,
       },
     ],
-    overlaySegments: [],
+    overlaySegments: [{ type: 'pitch', clipStart: 0, clipEnd: DEFAULT_CLIP_LENGTH }],
   }
 }
 

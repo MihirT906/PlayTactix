@@ -20,6 +20,8 @@ export const APP_CONFIG = {
 		rectLineColor: '#d85e1d',
 		rectLineWidth: 2,
 		rectFillColor: 'rgba(0, 0, 0, 0.2)',
+		highlightRingGap: 5,
+		highlightRingWidth: 1,
 		paperBackgroundColor: '#ffffff',
 		plotBackgroundColor: '#ffffff',
 		modeBarButtonsToAdd: ['drawline', 'drawrect', 'eraseshape'] as const,

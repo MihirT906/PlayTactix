@@ -3,7 +3,7 @@ import Plot from 'react-plotly.js'
 import Plotly from 'plotly.js-dist-min'
 import AnnotationStore from '../services/AnnotationStore-optimized'
 import type { FrameData } from '../types/FrameDataInterfaces'
-import { APP_CONFIG, SELECTED_POINTS_OPACITY, UNSELECTED_POINTS_OPACITY } from '../config'
+import { APP_CONFIG, SELECTED_POINTS_OPACITY } from '../config'
 // Import the background image
 import backgroundImage from '../../../data/background_image.png';
 import type { MatchData } from '../types/MatchDataInterfaces'
@@ -181,13 +181,14 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     const visibleTeamMask = getVisibleTeamMask(players.team);
     const applyVisibilityMask = (mask: boolean[]) => mask.map((isVisible, index) => isVisible && visibleTeamMask[index]);
 
-    const build = (mask: boolean[], lineColor: string, lineWidth = 1, sizeMultiplier = 1) => {
+    const build = (mask: boolean[], lineColor: string, lineWidth = 1) => {
       const visiblePlayerIds = filterByMask(players.player_id, mask)
-      const selectedIndices = focusPoints.map((playerId) => visiblePlayerIds.indexOf(playerId)).filter((index) => index !== -1)
+      const visibleX = filterByMask(players.x, mask)
+      const visibleY = filterByMask(players.y, mask)
 
-      return {
-        x: filterByMask(players.x, mask),
-        y: filterByMask(players.y, mask),
+      const markerTrace = {
+        x: visibleX,
+        y: visibleY,
         customdata: visiblePlayerIds.map((playerId) => {
           const info = playerInfoById.get(playerId)
           const name = info?.name || `Player ${playerId}`
@@ -203,7 +204,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
           },
         },
         marker: {
-          size: plotConfig.markerSize * sizeMultiplier,
+          size: plotConfig.markerSize,
           color: filterByMask(players.team, mask).map((team) => {
             if (team === 'home') return homeTeamColor
             if (team === 'away') return awayTeamColor
@@ -215,22 +216,40 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
           },
           opacity: SELECTED_POINTS_OPACITY,
         },
-        selectedpoints: selectedIndices,
-        selected: {
-          marker: { opacity: SELECTED_POINTS_OPACITY, size: plotConfig.markerSize * 1.2, line: {color: 'white', width: 2} },
-        },
-        unselected: {
-          marker: { opacity: focusPoints.length > 0 ? UNSELECTED_POINTS_OPACITY : SELECTED_POINTS_OPACITY },
-        },
       }
+
+      // Draws a halo ring (with a gap from the marker) around focused players
+      const highlightedIndices = focusPoints
+        .map((playerId) => visiblePlayerIds.indexOf(playerId))
+        .filter((index) => index !== -1)
+
+      const ringTrace = highlightedIndices.length > 0 ? {
+        x: highlightedIndices.map((index) => visibleX[index]),
+        y: highlightedIndices.map((index) => visibleY[index]),
+        mode: 'markers',
+        type: 'scatter',
+        hoverinfo: 'skip',
+        marker: {
+          size: plotConfig.markerSize + plotConfig.highlightRingGap,
+          symbol: 'circle',
+          color: 'rgba(0,0,0,0)',
+          line: {
+            color: plotConfig.focusLineColor,
+            width: plotConfig.highlightRingWidth,
+          },
+        },
+        showlegend: false,
+      } : null
+
+      return ringTrace ? [markerTrace, ringTrace] : [markerTrace]
     }
 
     const EMPTY_MASK = frameData?.players?.x?.map(() => true) || [];
     return [
-      build(applyVisibilityMask(playerMasks?.regular || EMPTY_MASK), '#000000'),
-      build(applyVisibilityMask(playerMasks?.possession || EMPTY_MASK.map(() => false)), eventStyles.playerPossession.color, eventStyles.playerPossession.width),
-      build(applyVisibilityMask(playerMasks?.passing_options || EMPTY_MASK.map(() => false)), eventStyles.passingOption.color, eventStyles.passingOption.width),
-      build(applyVisibilityMask(playerMasks?.on_ball_engagement || EMPTY_MASK.map(() => false)), eventStyles.onBallEngagement.color, eventStyles.onBallEngagement.width),
+      ...build(applyVisibilityMask(playerMasks?.regular || EMPTY_MASK), '#000000'),
+      ...build(applyVisibilityMask(playerMasks?.possession || EMPTY_MASK.map(() => false)), eventStyles.playerPossession.color, eventStyles.playerPossession.width),
+      ...build(applyVisibilityMask(playerMasks?.passing_options || EMPTY_MASK.map(() => false)), eventStyles.passingOption.color, eventStyles.passingOption.width),
+      ...build(applyVisibilityMask(playerMasks?.on_ball_engagement || EMPTY_MASK.map(() => false)), eventStyles.onBallEngagement.color, eventStyles.onBallEngagement.width),
     ];
   }, [awayTeamColor, eventStyles.onBallEngagement.color, eventStyles.onBallEngagement.width, eventStyles.passingOption.color, eventStyles.passingOption.width, eventStyles.playerPossession.color, eventStyles.playerPossession.width, eventVisibility.onBallEngagement, eventVisibility.passingOption, eventVisibility.playerPossession, frameData, homeTeamColor, matchData, playerMasks, teamVisibility.away, teamVisibility.home, focusPoints])
 

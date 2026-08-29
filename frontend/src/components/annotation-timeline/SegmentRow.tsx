@@ -12,6 +12,7 @@ type SegmentRowProps = {
   trackWidth: number
   currentFrameOffsetPercent: number
   onRangeChange: (clipStart: number, clipEnd: number, kind: 'move' | 'resize') => void
+  onDelete: () => void
 }
 
 /** The active match segment: the source clip range played back. */
@@ -23,6 +24,7 @@ export function SegmentRow({
   trackWidth,
   currentFrameOffsetPercent,
   onRangeChange,
+  onDelete,
 }: SegmentRowProps) {
   if (!segment) return null
 
@@ -42,6 +44,7 @@ export function SegmentRow({
         label="Segment"
         className="annotation-timeline__annotation--match"
         onRangeChange={onRangeChange}
+        contextMenuItems={[{ label: 'Delete', danger: true, onSelect: onDelete }]}
       />
     </TimelineRow>
   )

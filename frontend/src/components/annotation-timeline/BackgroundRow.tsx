@@ -21,6 +21,7 @@ type BackgroundRowProps = {
   trackWidth: number
   currentFrameOffsetPercent: number
   onRangeChange: (clipStart: number, clipEnd: number) => void
+  onDelete: () => void
   barStyle?: CSSProperties
 }
 
@@ -33,6 +34,7 @@ export function BackgroundRow({
   trackWidth,
   currentFrameOffsetPercent,
   onRangeChange,
+  onDelete,
   barStyle,
 }: BackgroundRowProps) {
   return (
@@ -52,6 +54,7 @@ export function BackgroundRow({
         className={OVERLAY_BAR_CLASS_NAMES[overlay.type]}
         style={barStyle}
         onRangeChange={onRangeChange}
+        contextMenuItems={[{ label: 'Delete', danger: true, onSelect: onDelete }]}
       />
     </TimelineRow>
   )

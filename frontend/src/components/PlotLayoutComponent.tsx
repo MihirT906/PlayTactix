@@ -113,6 +113,7 @@ function PlotLayoutComponent({
         clipFrame={clipFrame}
         clipRange={clipRange}
         annotationVersion={annotationVersion}
+        onAnnotationUpdate={onAnnotationUpdate}
       />
     </div>
   )

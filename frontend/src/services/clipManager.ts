@@ -37,6 +37,15 @@ export function addSegment(clip: Clip, matchId: number | null, sourceFrameStart:
   }
 }
 
+// Drops the clip's match segment. resolveClipFrame returns null with no segments,
+// and SegmentRow renders nothing, so the Match Segments row simply goes empty.
+export function removeSegment(clip: Clip): Clip {
+  return {
+    ...clip,
+    matchSegments: [],
+  }
+}
+
 // Given a frame on the Clip's own timeline, finds which Segment covers it and
 // translates the frame into a source match frame. Falls back to the first
 // segment when the clip frame falls outside every segment's range (matches

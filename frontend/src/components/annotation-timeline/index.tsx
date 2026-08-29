@@ -17,6 +17,7 @@ type AnnotationTimelineProps = {
   clipFrame: number
   clipRange: { start: number; end: number }
   annotationVersion: number
+  onAnnotationUpdate: () => void
 }
 
 type TimelineSectionProps = {
@@ -54,8 +55,15 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
   clipFrame,
   clipRange,
   annotationVersion,
+  onAnnotationUpdate,
 }) => {
-  const { session, setOverlaySegmentRange, setSegmentRange } = useMatchSession()
+  const {
+    session,
+    setOverlaySegmentRange,
+    setSegmentRange,
+    removeSegment,
+    setActiveOverlaySegment,
+  } = useMatchSession()
   const { homeTeamColor, awayTeamColor } = useStyleConfig()
 
   const getOverlayBarStyle = (overlay: OverlaySegment): CSSProperties | undefined =>
@@ -89,6 +97,7 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
           trackWidth={trackWidth}
           currentFrameOffsetPercent={currentFrameOffsetPercent}
           onRangeChange={setSegmentRange}
+          onDelete={removeSegment}
         />
       </TimelineSection>
 
@@ -106,6 +115,7 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
               trackWidth={trackWidth}
               currentFrameOffsetPercent={currentFrameOffsetPercent}
               onRangeChange={(clipStart, clipEnd) => setOverlaySegmentRange(overlay.type, clipStart, clipEnd)}
+              onDelete={() => setActiveOverlaySegment(overlay.type, false)}
               barStyle={getOverlayBarStyle(overlay)}
             />
           ))
@@ -121,6 +131,10 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
           labelWidth={TIMELINE_LABEL_WIDTH}
           trackWidth={trackWidth}
           currentFrameOffsetPercent={currentFrameOffsetPercent}
+          onDelete={(annotationKey) => {
+            annotationStore.removeAnnotation(annotationKey)
+            onAnnotationUpdate()
+          }}
         />
       </TimelineSection>
     </>

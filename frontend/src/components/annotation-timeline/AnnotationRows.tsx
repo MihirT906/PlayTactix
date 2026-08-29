@@ -1,6 +1,8 @@
 import { useMemo } from 'react'
 import type AnnotationStore from '../../services/AnnotationStore-optimized'
 import { TimelineRow } from './TimelineRow'
+import { ContextMenu } from '../context-menu/ContextMenu'
+import { useContextMenu } from '../context-menu/useContextMenu'
 
 const LANE_HEIGHT = 22
 
@@ -45,6 +47,7 @@ type AnnotationRowsProps = {
   labelWidth: number
   trackWidth: number
   currentFrameOffsetPercent: number
+  onDelete: (annotationKey: string) => void
 }
 
 /** One lane-packed, read-only row per annotation type (player lines, drawn shapes, ...). */
@@ -56,8 +59,10 @@ export function AnnotationRows({
   labelWidth,
   trackWidth,
   currentFrameOffsetPercent,
+  onDelete,
 }: AnnotationRowsProps) {
   const visibleFrameSpan = Math.max(scaleEnd - scaleStart, 1)
+  const { menu, openMenu, closeMenu } = useContextMenu<string>()
 
   const rows = useMemo<AnnotationRow[]>(() => {
     const allAnnotations = annotationStore.getAllAnnotations()
@@ -116,6 +121,14 @@ export function AnnotationRows({
 
   return (
     <>
+      {menu && (
+        <ContextMenu
+          x={menu.x}
+          y={menu.y}
+          items={[{ label: 'Delete', danger: true, onSelect: () => onDelete(menu.data) }]}
+          onClose={closeMenu}
+        />
+      )}
       {rows.map((row) => (
         <TimelineRow
           key={row.type}
@@ -137,6 +150,7 @@ export function AnnotationRows({
                   top: `${annotation.laneIndex * LANE_HEIGHT + 2}px`,
                 }}
                 title={label}
+                onContextMenu={(event) => openMenu(event, annotation.key)}
               >
                 <span className="annotation-timeline__annotation-label">{label}</span>
               </div>

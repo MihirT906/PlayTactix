@@ -68,6 +68,7 @@ type MatchSessionContextValue = {
   setCurrentClipFrame: (clipFrame: number) => void
   advanceFrame: () => void
   addSegment: (sourceFrameStart: number, sourceFrameEnd: number) => void
+  removeSegment: () => void
   setSegmentRange: (clipStart: number, clipEnd: number, kind: 'move' | 'resize') => void
   togglePlayback: () => void
   stopPlayback: () => void
@@ -225,6 +226,21 @@ export function MatchSessionProvider({
                         clip,
                         currentMatchFrame: sourceFrameStart,
                         currentClipFrame: 0,
+                        isPlaying: false,
+                    },
+                }
+            })
+        },
+
+        removeSegment: () => {
+            setSession((prev) => {
+                logger.info('Clip segment removed')
+
+                return {
+                    ...prev,
+                    playback: {
+                        ...prev.playback,
+                        clip: clipManager.removeSegment(prev.playback.clip),
                         isPlaying: false,
                     },
                 }

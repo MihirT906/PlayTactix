@@ -176,6 +176,24 @@ export default class AnnotationStore {
         }));
     }
 
+    removeAnnotation(key: string) {
+        // Permanently drops a single annotation (used by the timeline's right-click delete).
+        if (!this.annotations.has(key)) return;
+        logger.info("Removed annotation", key);
+        this.annotations.delete(key);
+        this.active_annotations.delete(key);
+        for (const [frame, keys] of this.start_events.entries()) {
+            const filtered = keys.filter((k) => k !== key);
+            if (filtered.length) this.start_events.set(frame, filtered);
+            else this.start_events.delete(frame);
+        }
+        for (const [frame, keys] of this.end_events.entries()) {
+            const filtered = keys.filter((k) => k !== key);
+            if (filtered.length) this.end_events.set(frame, filtered);
+            else this.end_events.delete(frame);
+        }
+    }
+
     clear() {
         // Discards every annotation, e.g. when the clip's segment changes and old
         // clip-relative frame numbers no longer refer to the same footage.

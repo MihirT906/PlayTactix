@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react'
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import Plot from 'react-plotly.js'
 import Plotly from 'plotly.js-dist-min'
 import AnnotationStore from '../services/AnnotationStore-optimized'
@@ -41,7 +41,19 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
   const [lines, setLines] = useState<any[]>([]) // User annotation lines
   const [shapes, setShapes] = useState<any[]>([]) // User annotation shapes
   const [dragMode, setDragMode] = useState<string>('select')
-  const [overlayTraces, setOverlayTraces] = useState<any[]>([]); 
+  const [overlayTraces, setOverlayTraces] = useState<any[]>([]);
+  // Temporary, visualisation-only position edits keyed by player id. These are
+  // layered on top of frameData while playback is paused and are wiped whenever
+  // a new frame arrives (see the [frameData] effect below), so resuming playback
+  // restores the real tracked positions.
+  const [positionOverrides, setPositionOverrides] = useState<Map<number, { x: number; y: number }>>(new Map())
+  const isPlaying = session.playback.isPlaying
+  const graphDivRef = useRef<any>(null)
+  const dragStateRef = useRef<{ playerId: number } | null>(null)
+  // Latest values the imperative pointer handlers need, kept in a ref so the
+  // handlers can stay referentially stable (bound once to the graph div).
+  const dragDepsRef = useRef({ frameData, isPlaying, positionOverrides, editMode: session.ui.editMode })
+  dragDepsRef.current = { frameData, isPlaying, positionOverrides, editMode: session.ui.editMode }
   const image_src = backgroundImage; // Set the background image source
   const pitchOverlay = session.playback.clip.overlaySegments.find((overlay) => overlay.type === 'pitch')
   const isPitchBackgroundActive =
@@ -188,13 +200,17 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     if (players.player_id.length === 0)
       return []; // Return empty array if there are no players in the frame data
 
+    // Apply any temporary drag overrides on top of the tracked positions
+    const overriddenX = players.x.map((x, i) => positionOverrides.get(players.player_id[i])?.x ?? x)
+    const overriddenY = players.y.map((y, i) => positionOverrides.get(players.player_id[i])?.y ?? y)
+
     const visibleTeamMask = getVisibleTeamMask(players.team);
     const applyVisibilityMask = (mask: boolean[]) => mask.map((isVisible, index) => isVisible && visibleTeamMask[index]);
 
     const build = (mask: boolean[], lineColor: string, lineWidth = 1) => {
       const visiblePlayerIds = filterByMask(players.player_id, mask)
-      const visibleX = filterByMask(players.x, mask)
-      const visibleY = filterByMask(players.y, mask)
+      const visibleX = filterByMask(overriddenX, mask)
+      const visibleY = filterByMask(overriddenY, mask)
 
       const markerTrace = {
         x: visibleX,
@@ -261,7 +277,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
       ...build(applyVisibilityMask(playerMasks?.passing_options || EMPTY_MASK.map(() => false)), eventStyles.passingOption.color, eventStyles.passingOption.width),
       ...build(applyVisibilityMask(playerMasks?.on_ball_engagement || EMPTY_MASK.map(() => false)), eventStyles.onBallEngagement.color, eventStyles.onBallEngagement.width),
     ];
-  }, [awayTeamColor, eventStyles.onBallEngagement.color, eventStyles.onBallEngagement.width, eventStyles.passingOption.color, eventStyles.passingOption.width, eventStyles.playerPossession.color, eventStyles.playerPossession.width, eventVisibility.onBallEngagement, eventVisibility.passingOption, eventVisibility.playerPossession, frameData, homeTeamColor, matchData, playerMasks, teamVisibility.away, teamVisibility.home, focusPoints])
+  }, [awayTeamColor, eventStyles.onBallEngagement.color, eventStyles.onBallEngagement.width, eventStyles.passingOption.color, eventStyles.passingOption.width, eventStyles.playerPossession.color, eventStyles.playerPossession.width, eventVisibility.onBallEngagement, eventVisibility.passingOption, eventVisibility.playerPossession, frameData, homeTeamColor, matchData, playerMasks, teamVisibility.away, teamVisibility.home, focusPoints, positionOverrides])
 
   useEffect(() => {
     let cancelled = false;
@@ -323,10 +339,8 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
         console.warn('Undefined player IDs in annotationStore.getPlayerLineAnnotations:', firstPoint, secondPoint);
         continue;
       }
-      const x0 = frameData?.players.x[frameData.players.player_id.indexOf(firstPoint)]
-      const y0 = frameData?.players.y[frameData.players.player_id.indexOf(firstPoint)]
-      const x1 = frameData?.players.x[frameData.players.player_id.indexOf(secondPoint)]
-      const y1 = frameData?.players.y[frameData.players.player_id.indexOf(secondPoint)]
+      const { x: x0, y: y0 } = resolvePlayerPos(firstPoint)
+      const { x: x1, y: y1 } = resolvePlayerPos(secondPoint)
 
       const distanceLabel = (x0 !== undefined && y0 !== undefined && x1 !== undefined && y1 !== undefined)
         ? `${Math.hypot(x1 - x0, y1 - y0).toFixed(1)}m`
@@ -369,6 +383,9 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     updateShapes()
     setDragMode('select')
     setEditMode(null)
+    // A new frame's plot represents real tracked positions, so drop any
+    // temporary drag edits from the previous (paused) frame.
+    setPositionOverrides((prev) => (prev.size > 0 ? new Map() : prev))
     annotationStore.update_active_annotation(clipFrame) // Update active annotations in the store based on the current clip frame
   }, [frameData])
 
@@ -388,8 +405,146 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     }
   }, [editMode])
 
+  // Resolve a player's position, preferring a temporary drag override if present
+  const resolvePlayerPos = (playerId: number): { x: number | undefined; y: number | undefined } => {
+    const idx = frameData?.players.player_id.indexOf(playerId) ?? -1
+    const override = positionOverrides.get(playerId)
+    if (idx === -1) {
+      return { x: override?.x, y: override?.y }
+    }
+    return {
+      x: override?.x ?? frameData?.players.x[idx],
+      y: override?.y ?? frameData?.players.y[idx],
+    }
+  }
+
+  // --- Drag-to-reposition players while paused -----------------------------
+  // Plotly can't drag individual scatter points, so we hit-test the player
+  // markers ourselves on mousedown and translate pointer motion into data
+  // coordinates using Plotly's axis objects.
+  const DRAG_HIT_RADIUS_PX = plotConfig.markerSize / 2 + 6
+
+  const endDrag = useCallback(() => {
+    dragStateRef.current = null
+    window.removeEventListener('mousemove', onDragMove, true)
+    window.removeEventListener('mouseup', endDrag, true)
+    const gd = graphDivRef.current
+    if (gd) gd.style.cursor = ''
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const onDragMove = useCallback((e: MouseEvent) => {
+    const drag = dragStateRef.current
+    const gd = graphDivRef.current
+    if (!drag || !gd?._fullLayout) return
+    const xa = gd._fullLayout.xaxis
+    const ya = gd._fullLayout.yaxis
+    const rect = gd.getBoundingClientRect()
+    let x = xa.p2c(e.clientX - rect.left - xa._offset)
+    let y = ya.p2c(e.clientY - rect.top - ya._offset)
+    // Keep the player within the pitch bounds used by the layout axes
+    x = Math.max(-56.5, Math.min(56.5, x))
+    y = Math.max(-38, Math.min(38, y))
+    setPositionOverrides((prev) => {
+      const next = new Map(prev)
+      next.set(drag.playerId, { x, y })
+      return next
+    })
+  }, [])
+
+  const onDragStart = useCallback((e: MouseEvent) => {
+    const { frameData: fd, isPlaying: playing, positionOverrides: overrides, editMode: mode } = dragDepsRef.current
+    // Only drag while paused and not in a click-driven edit mode (focus / lines)
+    if (playing || !fd || mode !== null) return
+    const gd = graphDivRef.current
+    if (!gd?._fullLayout) return
+    const xa = gd._fullLayout.xaxis
+    const ya = gd._fullLayout.yaxis
+    const rect = gd.getBoundingClientRect()
+    const mx = e.clientX - rect.left
+    const my = e.clientY - rect.top
+
+    const ids = fd.players.player_id
+    let hitIndex = -1
+    let bestDist = DRAG_HIT_RADIUS_PX
+    for (let i = 0; i < ids.length; i++) {
+      const override = overrides.get(ids[i])
+      const dataX = override?.x ?? fd.players.x[i]
+      const dataY = override?.y ?? fd.players.y[i]
+      const px = xa.c2p(dataX) + xa._offset
+      const py = ya.c2p(dataY) + ya._offset
+      const dist = Math.hypot(px - mx, py - my)
+      if (dist <= bestDist) {
+        bestDist = dist
+        hitIndex = i
+      }
+    }
+    if (hitIndex === -1) return // not on a player - let Plotly handle the event
+
+    e.stopPropagation()
+    e.preventDefault()
+    dragStateRef.current = { playerId: ids[hitIndex] }
+    gd.style.cursor = 'grabbing'
+    window.addEventListener('mousemove', onDragMove, true)
+    window.addEventListener('mouseup', endDrag, true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [DRAG_HIT_RADIUS_PX, onDragMove, endDrag])
+
+  // Show a grab cursor when hovering a player while paused
+  const onHoverCursor = useCallback((e: MouseEvent) => {
+    const { frameData: fd, isPlaying: playing, positionOverrides: overrides, editMode: mode } = dragDepsRef.current
+    const gd = graphDivRef.current
+    if (!gd?._fullLayout || dragStateRef.current) return
+    if (playing || !fd || mode !== null) {
+      gd.style.cursor = ''
+      return
+    }
+    const xa = gd._fullLayout.xaxis
+    const ya = gd._fullLayout.yaxis
+    const rect = gd.getBoundingClientRect()
+    const mx = e.clientX - rect.left
+    const my = e.clientY - rect.top
+    const ids = fd.players.player_id
+    let onPlayer = false
+    for (let i = 0; i < ids.length; i++) {
+      const override = overrides.get(ids[i])
+      const px = xa.c2p(override?.x ?? fd.players.x[i]) + xa._offset
+      const py = ya.c2p(override?.y ?? fd.players.y[i]) + ya._offset
+      if (Math.hypot(px - mx, py - my) <= DRAG_HIT_RADIUS_PX) {
+        onPlayer = true
+        break
+      }
+    }
+    gd.style.cursor = onPlayer ? 'grab' : ''
+  }, [DRAG_HIT_RADIUS_PX])
+
+  // Bind the imperative pointer handlers once we have the Plotly graph div
+  const handleGraphDiv = useCallback((_figure: any, gd: any) => {
+    if (!gd || graphDivRef.current === gd) return
+    graphDivRef.current = gd
+    gd.addEventListener('mousedown', onDragStart, true)
+    gd.addEventListener('mousemove', onHoverCursor)
+  }, [onDragStart, onHoverCursor])
+
+  useEffect(() => {
+    return () => {
+      const gd = graphDivRef.current
+      if (!gd) return
+      gd.removeEventListener('mousedown', onDragStart, true)
+      gd.removeEventListener('mousemove', onHoverCursor)
+      window.removeEventListener('mousemove', onDragMove, true)
+      window.removeEventListener('mouseup', endDrag, true)
+    }
+  }, [onDragStart, onHoverCursor, onDragMove, endDrag])
+
+  // Keep player-focus lines in sync while a player is being dragged
+  useEffect(() => {
+    updateLines()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [positionOverrides])
+
   // Allows the user to 'Focus' on a player or draw lines between them
-  const handleClick = (event: any) => { 
+  const handleClick = (event: any) => {
     if (editMode == 'player_focus') {
       if (!event?.points?.length) return
       console.log(event.points)
@@ -535,6 +690,8 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
         }}
         onClick={handleClick}
         onRelayout={handleRelayout}
+        onInitialized={handleGraphDiv}
+        onUpdate={handleGraphDiv}
       />
     </div>
   )

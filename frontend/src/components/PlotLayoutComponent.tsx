@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import './PlotLayoutComponent.css'
 import Controls from './Controls'
 import PlotComponent from './PlotComponent'
@@ -51,6 +52,8 @@ function PlotLayoutComponent({
   onAnnotationUpdate,
   annotationVersion,
 }: PlotLayoutComponentProps) {
+  const [timelinesOpen, setTimelinesOpen] = useState(false)
+
   return (
     <div className="plot-layout">
       <Controls
@@ -69,24 +72,41 @@ function PlotLayoutComponent({
         annotationStore={annotationStore}
       />
       <div className="plot-layout__plot">
-        <PlotComponent
-          currentFrame={currentMatchFrame}
-          clipFrame={clipFrame}
-          matchData={matchData}
-          frameData={frameData}
-          annotationStore={annotationStore}
-          onAnnotationUpdate={onAnnotationUpdate}
-        />
-      </div>
+        <div className="plot-layout__stage">
+          <PlotComponent
+            currentFrame={currentMatchFrame}
+            clipFrame={clipFrame}
+            matchData={matchData}
+            frameData={frameData}
+            annotationStore={annotationStore}
+            onAnnotationUpdate={onAnnotationUpdate}
+          />
 
-      <EventDisplayComponent
-        eventsData={eventsData}
-        clipRange={clipRange}
-        segmentStart={segmentRange.start}
-        clipFrame={clipFrame}
-        matchData={matchData}
-        timelineStore={timelineStore}
-      />
+          <div className="plot-layout__timeline-dock">
+            <button
+              type="button"
+              className={`plot-layout__timeline-toggle${timelinesOpen ? ' is-open' : ''}`}
+              onClick={() => setTimelinesOpen((open) => !open)}
+              aria-expanded={timelinesOpen}
+              aria-label={timelinesOpen ? 'Hide event timelines' : 'Show event timelines'}
+            >
+              <span className="plot-layout__timeline-chevron" aria-hidden="true">▲</span>
+              <span className="plot-layout__timeline-toggle-text">Event Timelines</span>
+            </button>
+
+            <div className={`plot-layout__timeline-panel${timelinesOpen ? ' is-open' : ''}`}>
+              <EventDisplayComponent
+                eventsData={eventsData}
+                clipRange={clipRange}
+                segmentStart={segmentRange.start}
+                clipFrame={clipFrame}
+                matchData={matchData}
+                timelineStore={timelineStore}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
 
       <AnnotationTimeline
         annotationStore={annotationStore}

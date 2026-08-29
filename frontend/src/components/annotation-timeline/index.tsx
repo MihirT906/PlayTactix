@@ -83,22 +83,26 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
     100
   )
 
-  const activeSegment = session.playback.clip.matchSegments[0] ?? null
+  const matchSegments = session.playback.clip.matchSegments
   const overlaySegments = session.playback.clip.overlaySegments
 
   return (
     <>
       <TimelineSection title="Match Segments" contentWidth={contentWidth}>
-        <SegmentRow
-          segment={activeSegment}
-          scaleStart={scaleStart}
-          scaleEnd={scaleEnd}
-          labelWidth={TIMELINE_LABEL_WIDTH}
-          trackWidth={trackWidth}
-          currentFrameOffsetPercent={currentFrameOffsetPercent}
-          onRangeChange={setSegmentRange}
-          onDelete={removeSegment}
-        />
+        {matchSegments.length === 0 ? (
+          <div className="annotation-timeline__empty">No match segments</div>
+        ) : (
+          <SegmentRow
+            segments={matchSegments}
+            scaleStart={scaleStart}
+            scaleEnd={scaleEnd}
+            labelWidth={TIMELINE_LABEL_WIDTH}
+            trackWidth={trackWidth}
+            currentFrameOffsetPercent={currentFrameOffsetPercent}
+            onRangeChange={setSegmentRange}
+            onDelete={removeSegment}
+          />
+        )}
       </TimelineSection>
 
       <TimelineSection title="Overlays" contentWidth={contentWidth}>

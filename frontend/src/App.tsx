@@ -51,7 +51,7 @@ function AppContent({
       selectMatch,
       setCurrentClipFrame,
       advanceFrame,
-      addSegment,
+      appendSegment,
       togglePlayback,
       stopPlayback,
       doublePlaybackSpeed,
@@ -71,8 +71,10 @@ function AppContent({
     const clipFrame = session.playback.currentClipFrame
     const clip = session.playback.clip
     const clipRange = { start: 0, end: clip.length }
-    const segment = clip.matchSegments[0]
-    const segmentRange = { start: segment.sourceFrameStart, end: segment.sourceFrameEnd }
+    const segment = clip.matchSegments[0] ?? null
+    const segmentRange = segment
+      ? { start: segment.sourceFrameStart, end: segment.sourceFrameEnd }
+      : { start: 0, end: 0 }
     const isPlaying = session.playback.isPlaying
     const playbackSpeed = session.playback.playbackSpeed
     const isFetching = session.playback.isFrameLoading
@@ -207,11 +209,9 @@ function AppContent({
     }
 
     const handleAddSegment = (start: number, end: number) => {
-      // Annotations are stored in clip-relative frame numbers, so they no
-      // longer refer to the right footage once the segment underneath changes.
-      annotationStore.clear()
-      handleAnnotationUpdate()
-      addSegment(start, end)
+      // Appends after the existing setup - existing segments and their
+      // clip-relative annotations stay valid, so nothing is cleared here.
+      appendSegment(start, end)
       stopPlayback() // Pause playback when a new segment is added
     }
 

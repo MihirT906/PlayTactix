@@ -68,8 +68,9 @@ type MatchSessionContextValue = {
   setCurrentClipFrame: (clipFrame: number) => void
   advanceFrame: () => void
   addSegment: (sourceFrameStart: number, sourceFrameEnd: number) => void
-  removeSegment: () => void
-  setSegmentRange: (clipStart: number, clipEnd: number, kind: 'move' | 'resize') => void
+  appendSegment: (sourceFrameStart: number, sourceFrameEnd: number) => void
+  removeSegment: (index: number) => void
+  setSegmentRange: (index: number, clipStart: number, clipEnd: number, kind: 'move' | 'resize') => void
   togglePlayback: () => void
   stopPlayback: () => void
   doublePlaybackSpeed: () => void
@@ -232,27 +233,48 @@ export function MatchSessionProvider({
             })
         },
 
-        removeSegment: () => {
+        appendSegment: (sourceFrameStart: number, sourceFrameEnd: number) => {
             setSession((prev) => {
-                logger.info('Clip segment removed')
+                const clip = clipManager.appendSegment(prev.playback.clip, prev.match.id, sourceFrameStart, sourceFrameEnd)
+                const appended = clip.matchSegments[clip.matchSegments.length - 1]
+
+                logger.info('Clip segment appended', appended)
 
                 return {
                     ...prev,
                     playback: {
                         ...prev.playback,
-                        clip: clipManager.removeSegment(prev.playback.clip),
+                        clip,
+                        // Jump the playhead to the start of what was just added.
+                        currentClipFrame: appended ? appended.clipStart : prev.playback.currentClipFrame,
+                        currentMatchFrame: appended ? appended.sourceFrameStart : prev.playback.currentMatchFrame,
                         isPlaying: false,
                     },
                 }
             })
         },
 
-        setSegmentRange: (clipStart: number, clipEnd: number, kind: 'move' | 'resize') => {
+        removeSegment: (index: number) => {
             setSession((prev) => {
-                const clip = clipManager.setSegmentRange(prev.playback.clip, clipStart, clipEnd, kind)
+                logger.info('Clip segment removed', { index })
+
+                return {
+                    ...prev,
+                    playback: {
+                        ...prev.playback,
+                        clip: clipManager.removeSegment(prev.playback.clip, index),
+                        isPlaying: false,
+                    },
+                }
+            })
+        },
+
+        setSegmentRange: (index: number, clipStart: number, clipEnd: number, kind: 'move' | 'resize') => {
+            setSession((prev) => {
+                const clip = clipManager.setSegmentRange(prev.playback.clip, index, clipStart, clipEnd, kind)
                 const resolved = clipManager.resolveClipFrame(clip, prev.playback.currentClipFrame)
 
-                logger.info('Clip segment range changed', { clipStart, clipEnd, kind })
+                logger.info('Clip segment range changed', { index, clipStart, clipEnd, kind })
 
                 return {
                     ...prev,

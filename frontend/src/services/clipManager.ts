@@ -1,7 +1,7 @@
 import type { Clip, OverlaySegmentKind, ResolvedClipFrame } from '../types/ClipInterfaces'
 
-export const DEFAULT_CLIP_LENGTH = 1000
-export const DEFAULT_SEGMENT_SOURCE_RANGE = { start: 10, end: 1000 }
+export const DEFAULT_SEGMENT_SOURCE_RANGE = { start: 10, end: 110 }
+export const DEFAULT_CLIP_LENGTH = DEFAULT_SEGMENT_SOURCE_RANGE.end - DEFAULT_SEGMENT_SOURCE_RANGE.start
 
 export function createDefaultClip(matchId: number | null): Clip {
   return {
@@ -37,12 +37,39 @@ export function addSegment(clip: Clip, matchId: number | null, sourceFrameStart:
   }
 }
 
-// Drops the clip's match segment. resolveClipFrame returns null with no segments,
-// and SegmentRow renders nothing, so the Match Segments row simply goes empty.
-export function removeSegment(clip: Clip): Clip {
+// Places a new segment immediately after the last one on the clip's own timeline,
+// growing the clip (and any overlay that currently spans the whole clip, e.g. the
+// pitch) to fit. Existing segments and their annotations are left untouched.
+export function appendSegment(
+  clip: Clip,
+  matchId: number | null,
+  sourceFrameStart: number,
+  sourceFrameEnd: number
+): Clip {
+  const span = Math.max(sourceFrameEnd - sourceFrameStart, 1)
+  const clipStart = clip.matchSegments.reduce((end, segment) => Math.max(end, segment.clipEnd), 0)
+  const clipEnd = clipStart + span
+  const length = Math.max(clip.length, clipEnd)
+
   return {
     ...clip,
-    matchSegments: [],
+    length,
+    matchSegments: [
+      ...clip.matchSegments,
+      { matchId, clipStart, clipEnd, sourceFrameStart, sourceFrameEnd },
+    ],
+    overlaySegments: clip.overlaySegments.map((overlay) =>
+      overlay.clipStart === 0 && overlay.clipEnd === clip.length ? { ...overlay, clipEnd: length } : overlay
+    ),
+  }
+}
+
+// Drops the match segment at the given index. resolveClipFrame returns null once
+// there are no segments left, and the Match Segments row renders an empty state.
+export function removeSegment(clip: Clip, index: number): Clip {
+  return {
+    ...clip,
+    matchSegments: clip.matchSegments.filter((_, i) => i !== index),
   }
 }
 
@@ -94,12 +121,18 @@ export function setOverlayRange(clip: Clip, type: OverlaySegmentKind, clipStart:
   }
 }
 
-// Moves/resizes the clip's match segment to the given clip-relative range. A 'move' relocates
+// Moves/resizes the match segment at `index` to the given clip-relative range. A 'move' relocates
 // the same fixed source footage to a different spot on the clip timeline, so the source frame
 // range is left untouched. A 'resize' trims/extends which source footage is included, so the
 // corresponding source edge shifts by the same delta as the clip edge that moved.
-export function setSegmentRange(clip: Clip, clipStart: number, clipEnd: number, kind: 'move' | 'resize'): Clip {
-  const segment = clip.matchSegments[0]
+export function setSegmentRange(
+  clip: Clip,
+  index: number,
+  clipStart: number,
+  clipEnd: number,
+  kind: 'move' | 'resize'
+): Clip {
+  const segment = clip.matchSegments[index]
   if (!segment) return clip
 
   const startDelta = kind === 'move' ? 0 : clipStart - segment.clipStart
@@ -107,15 +140,16 @@ export function setSegmentRange(clip: Clip, clipStart: number, clipEnd: number, 
 
   return {
     ...clip,
-    matchSegments: [
-      {
-        ...segment,
-        clipStart,
-        clipEnd,
-        sourceFrameStart: segment.sourceFrameStart + startDelta,
-        sourceFrameEnd: segment.sourceFrameEnd + endDelta,
-      },
-      ...clip.matchSegments.slice(1),
-    ],
+    matchSegments: clip.matchSegments.map((current, i) =>
+      i === index
+        ? {
+            ...current,
+            clipStart,
+            clipEnd,
+            sourceFrameStart: current.sourceFrameStart + startDelta,
+            sourceFrameEnd: current.sourceFrameEnd + endDelta,
+          }
+        : current
+    ),
   }
 }

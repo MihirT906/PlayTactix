@@ -47,7 +47,7 @@ function WorkspaceSidebar({
     <aside className={`left-panel settings-sidebar ${isSidebarPanelOpen ? 'is-open' : ''}`} aria-label="Settings sidebar">
       <div className="settings-sidebar-rail">
         <span className="app-kicker workspace-sidebar-kicker">Navigation</span>
-        <nav className="settings-sidebar-nav" aria-label="Primary workspace actions">
+        <nav className="settings-sidebar-nav" aria-label="Navigation">
           <button
             type="button"
             className={`app-header-action workspace-sidebar-action ${isSettingsPanelOpen ? 'is-active' : ''}`}
@@ -59,17 +59,9 @@ function WorkspaceSidebar({
             <FaCog aria-hidden="true" />
             <span>Settings</span>
           </button>
-          <button
-            type="button"
-            className={`app-header-action workspace-sidebar-action ${isTimelinePanelOpen ? 'is-active' : ''}`}
-            onClick={() => onActivePanelChange(isTimelinePanelOpen ? null : 'timeline')}
-            aria-expanded={isTimelinePanelOpen}
-            aria-controls="timeline-sidebar-panel"
-            aria-label={isTimelinePanelOpen ? 'Close timeline panel' : 'Open timeline panel'}
-          >
-            <FaStream aria-hidden="true" />
-            <span>Timeline</span>
-          </button>
+        </nav>
+        <span className="app-kicker workspace-sidebar-kicker">Match</span>
+        <nav className="settings-sidebar-nav" aria-label="Match">
           <button
             type="button"
             className={`app-header-action workspace-sidebar-action ${isSearchPanelOpen ? 'is-active' : ''}`}
@@ -83,6 +75,20 @@ function WorkspaceSidebar({
           </button>
           <button
             type="button"
+            className={`app-header-action workspace-sidebar-action ${isTimelinePanelOpen ? 'is-active' : ''}`}
+            onClick={() => onActivePanelChange(isTimelinePanelOpen ? null : 'timeline')}
+            aria-expanded={isTimelinePanelOpen}
+            aria-controls="timeline-sidebar-panel"
+            aria-label={isTimelinePanelOpen ? 'Close timeline panel' : 'Open timeline panel'}
+          >
+            <FaStream aria-hidden="true" />
+            <span>Timeline</span>
+          </button>
+        </nav>
+        <span className="app-kicker workspace-sidebar-kicker">Layers</span>
+        <nav className="settings-sidebar-nav" aria-label="Layers">
+          <button
+            type="button"
             className={`app-header-action workspace-sidebar-action ${isOverlaysPanelOpen ? 'is-active' : ''}`}
             onClick={() => onActivePanelChange(isOverlaysPanelOpen ? null : 'overlays')}
             aria-expanded={isOverlaysPanelOpen}
@@ -93,7 +99,7 @@ function WorkspaceSidebar({
             <span>Overlays</span>
           </button>
         </nav>
-        <span className="app-kicker workspace-sidebar-kicker">Controls</span>
+        <span className="app-kicker workspace-sidebar-kicker">Annotations</span>
           <button
             type="button"
             className={`app-header-action workspace-sidebar-action workspace-sidebar-action--player-focus ${isPlayerFocusActive ? 'is-active' : ''}`}

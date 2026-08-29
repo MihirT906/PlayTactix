@@ -25,7 +25,9 @@
 }
 
 .workspace-sidebar-kicker {
-  width: fit-content;
+  display: flex;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .settings-sidebar-nav {

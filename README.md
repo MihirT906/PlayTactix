@@ -79,6 +79,10 @@ PlayTactix/
 | GET | `/data/match_key_moments?match_id` | Fetch phases of play, goals, and shots |
 | GET | `/data/pitch_control_overlay?match_id&start&end` | Compute pitch control for a frame range |
 
+## Design Notes
+
+- [Frame data caching](./docs/frame-data-caching.md) — proposed tiered cache architecture for tracking-frame playback, and the multi-segment problems it addresses (proposal, not yet implemented).
+
 ## License
 
 MIT — see [LICENSE](./LICENSE).

@@ -89,16 +89,6 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
       return true;
     });
 
-  // Button configuration for 'Player Focus' mode
-  const player_focus_button = useMemo(() => ({ // Button to toggle 'Player Focus' mode
-    name: 'Player Focus',
-    icon: Plotly.Icons.tooltip_basic,
-    click: () => {
-        setEditMode('draw_line_players')
-        logger.info("Player Focus mode activated")
-      },
-  }), [setEditMode])
-  
   // Trace for off-ball runs
   const offBallRunTrace = useMemo(() => {
     if (!eventVisibility.offBallRun) {
@@ -706,7 +696,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
         config={{
           editable: false,
           displayModeBar: true,
-          modeBarButtonsToAdd: [player_focus_button, ...plotConfig.modeBarButtonsToAdd as any],
+          modeBarButtonsToAdd: [...plotConfig.modeBarButtonsToAdd as any],
           modeBarButtonsToRemove: [...plotConfig.modeBarButtonsToRemove as any],
         }}
         onClick={handleClick}

@@ -1,19 +1,19 @@
-2026-09-19 09:39:44 | INFO     | playtactix | Log cleared — new data download started
-2026-09-19 09:39:44 | INFO     | playtactix.routes.data_routes | Downloading match data for match_id=1874553
-2026-09-19 09:39:44 | INFO     | playtactix.services.data_ingestor_github | Starting data ingestion pipeline for match_id=1874553
-2026-09-19 09:39:44 | INFO     | playtactix.services.data_ingestor_github | Fetching bronze metadata for match_id=1874553
-2026-09-19 09:39:44 | INFO     | playtactix.services.data_ingestor_github | Fetching metadata from GitHub match_id=1874553
-2026-09-19 09:39:44 | ERROR    | playtactix.services.data_ingestor_github | Failed to fetch metadata match_id=1874553 status=404
-2026-09-19 09:39:44 | INFO     | playtactix.routes.data_routes | Fetching frames match_id=1874553 start=10 end=310
-2026-09-19 09:39:44 | INFO     | playtactix.services.frame_data_service | Reading data files for match_id=1874553
-2026-09-19 09:39:45 | INFO     | playtactix.services.frame_data_service | Filtering frames for match_id=1874553 to range 10-310
-2026-09-19 09:39:49 | INFO     | playtactix.services.frame_data_service | Returning frames for match_id=1874553
+2026-09-19 10:07:13 | INFO     | playtactix | Log cleared — new data download started
+2026-09-19 10:07:13 | INFO     | playtactix.routes.data_routes | Downloading match data for match_id=1874553
+2026-09-19 10:07:13 | INFO     | playtactix.services.data_ingestor_github | Starting data ingestion pipeline for match_id=1874553
+2026-09-19 10:07:13 | INFO     | playtactix.services.data_ingestor_github | Fetching bronze metadata for match_id=1874553
+2026-09-19 10:07:13 | INFO     | playtactix.services.data_ingestor_github | Fetching metadata from GitHub match_id=1874553
+2026-09-19 10:07:13 | ERROR    | playtactix.services.data_ingestor_github | Failed to fetch metadata match_id=1874553 status=404
+2026-09-19 10:07:13 | INFO     | playtactix.routes.data_routes | Fetching frames match_id=1874553 start=10 end=310
+2026-09-19 10:07:13 | INFO     | playtactix.services.frame_data_service | Reading data files for match_id=1874553
+2026-09-19 10:07:13 | INFO     | playtactix.services.frame_data_service | Filtering frames for match_id=1874553 to range 10-310
+2026-09-19 10:07:17 | INFO     | playtactix.services.frame_data_service | Returning frames for match_id=1874553
 NoneType: None
-2026-09-19 09:39:50 | INFO     | playtactix.routes.data_routes | Fetching match metadata for match_id=1874553
-2026-09-19 09:39:50 | INFO     | playtactix.services.frame_data_service | Retrieving metadata for match_id=1874553 from stored data
-2026-09-19 09:39:50 | INFO     | playtactix.routes.data_routes | Fetching key moments for match_id=1874553
-2026-09-19 09:39:50 | INFO     | playtactix.services.key_moments_service | Fetching key moments for match_id=1874553
-2026-09-19 09:39:50 | INFO     | playtactix.services.key_moments_service | Key moments computed goals=2
-2026-09-19 09:39:50 | INFO     | playtactix.services.key_moments_service | Key moments computed shots=31
-2026-09-19 09:39:50 | INFO     | playtactix.services.key_moments_service | Key moments computed pops=400
-2026-09-19 09:39:50 | INFO     | playtactix.services.key_moments_service | Key moments computed events=5079
+2026-09-19 10:07:18 | INFO     | playtactix.routes.data_routes | Fetching match metadata for match_id=1874553
+2026-09-19 10:07:18 | INFO     | playtactix.services.frame_data_service | Retrieving metadata for match_id=1874553 from stored data
+2026-09-19 10:07:18 | INFO     | playtactix.routes.data_routes | Fetching key moments for match_id=1874553
+2026-09-19 10:07:18 | INFO     | playtactix.services.key_moments_service | Fetching key moments for match_id=1874553
+2026-09-19 10:07:18 | INFO     | playtactix.services.key_moments_service | Key moments computed goals=2
+2026-09-19 10:07:18 | INFO     | playtactix.services.key_moments_service | Key moments computed shots=31
+2026-09-19 10:07:18 | INFO     | playtactix.services.key_moments_service | Key moments computed pops=400
+2026-09-19 10:07:18 | INFO     | playtactix.services.key_moments_service | Key moments computed events=5079

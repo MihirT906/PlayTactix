@@ -125,6 +125,10 @@ export function setOverlayRange(clip: Clip, type: OverlaySegmentKind, clipStart:
 // the same fixed source footage to a different spot on the clip timeline, so the source frame
 // range is left untouched. A 'resize' trims/extends which source footage is included, so the
 // corresponding source edge shifts by the same delta as the clip edge that moved.
+//
+// The clip length is kept exactly fitted to the furthest segment end, so resizing the
+// length-defining segment grows or shrinks the clip. Overlays that spanned the whole clip
+// stretch to the new length; any other overlay is clamped so it can't dangle past a shrunk clip.
 export function setSegmentRange(
   clip: Clip,
   index: number,
@@ -138,18 +142,28 @@ export function setSegmentRange(
   const startDelta = kind === 'move' ? 0 : clipStart - segment.clipStart
   const endDelta = kind === 'move' ? 0 : clipEnd - segment.clipEnd
 
-  return {
-    ...clip,
-    matchSegments: clip.matchSegments.map((current, i) =>
-      i === index
-        ? {
-            ...current,
-            clipStart,
-            clipEnd,
-            sourceFrameStart: current.sourceFrameStart + startDelta,
-            sourceFrameEnd: current.sourceFrameEnd + endDelta,
-          }
-        : current
-    ),
-  }
+  const matchSegments = clip.matchSegments.map((current, i) =>
+    i === index
+      ? {
+          ...current,
+          clipStart,
+          clipEnd,
+          sourceFrameStart: current.sourceFrameStart + startDelta,
+          sourceFrameEnd: current.sourceFrameEnd + endDelta,
+        }
+      : current
+  )
+
+  const previousLength = clip.length
+  const length = Math.max(1, ...matchSegments.map((current) => current.clipEnd))
+
+  const overlaySegments = clip.overlaySegments.map((overlay) => {
+    if (overlay.clipStart === 0 && overlay.clipEnd === previousLength) {
+      return { ...overlay, clipEnd: length }
+    }
+    const nextStart = Math.min(overlay.clipStart, length)
+    return { ...overlay, clipStart: nextStart, clipEnd: Math.max(Math.min(overlay.clipEnd, length), nextStart) }
+  })
+
+  return { ...clip, length, matchSegments, overlaySegments }
 }

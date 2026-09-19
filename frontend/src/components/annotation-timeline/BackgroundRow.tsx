@@ -17,6 +17,9 @@ type BackgroundRowProps = {
   overlay: OverlaySegment
   scaleStart: number
   scaleEnd: number
+  /** Clip-frame bounds the overlay edges are held within (the real clip, not the drag headroom). */
+  minFrame: number
+  maxFrame: number
   labelWidth: number
   trackWidth: number
   currentFrameOffsetPercent: number
@@ -30,6 +33,8 @@ export function BackgroundRow({
   overlay,
   scaleStart,
   scaleEnd,
+  minFrame,
+  maxFrame,
   labelWidth,
   trackWidth,
   currentFrameOffsetPercent,
@@ -50,6 +55,8 @@ export function BackgroundRow({
         frameEnd={overlay.clipEnd}
         scaleStart={scaleStart}
         scaleEnd={scaleEnd}
+        minFrame={minFrame}
+        maxFrame={maxFrame}
         label={OVERLAY_SEGMENT_LABELS[overlay.type]}
         className={OVERLAY_BAR_CLASS_NAMES[overlay.type]}
         style={barStyle}

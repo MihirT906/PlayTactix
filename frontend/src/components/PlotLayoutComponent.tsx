@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import './PlotLayoutComponent.css'
 import Controls from './Controls'
 import PlotComponent from './PlotComponent'
@@ -53,6 +53,17 @@ function PlotLayoutComponent({
   annotationVersion,
 }: PlotLayoutComponentProps) {
   const [timelinesOpen, setTimelinesOpen] = useState(false)
+
+  // The playable source-frame range of the loaded match - the ceiling a segment
+  // edge can be dragged/extended to on the clip timeline.
+  const sourceBounds = useMemo(() => {
+    const periods = matchData?.match_periods
+    if (!periods?.length) return null
+    return {
+      min: Math.min(...periods.map((period) => period.start_frame)),
+      max: Math.max(...periods.map((period) => period.end_frame)),
+    }
+  }, [matchData])
 
   return (
     <div className="plot-layout">
@@ -112,6 +123,7 @@ function PlotLayoutComponent({
         annotationStore={annotationStore}
         clipFrame={clipFrame}
         clipRange={clipRange}
+        sourceBounds={sourceBounds}
         annotationVersion={annotationVersion}
         onAnnotationUpdate={onAnnotationUpdate}
       />

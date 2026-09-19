@@ -11,6 +11,13 @@ type DraggableRangeBarProps = {
   label: string
   className: string
   style?: CSSProperties
+  /** Hard clip-frame bounds for a dragged edge (source footage + neighbours). Defaults to the scale. */
+  minFrame?: number
+  maxFrame?: number
+  /** Option B auto-grow: widen the visible scale to at least this frame while an edge is pulled past the end. */
+  onScaleRequest?: (frameEnd: number) => void
+  /** The drag ended - drop any transient scale widening. */
+  onScaleRelease?: () => void
   onRangeChange: (frameStart: number, frameEnd: number, kind: 'move' | 'resize') => void
   /** Right-click menu entries for this bar (e.g. Delete). Omit for no menu. */
   contextMenuItems?: ContextMenuItem[]
@@ -25,6 +32,10 @@ export function DraggableRangeBar({
   label,
   className,
   style,
+  minFrame,
+  maxFrame,
+  onScaleRequest,
+  onScaleRelease,
   onRangeChange,
   contextMenuItems,
 }: DraggableRangeBarProps) {
@@ -33,6 +44,10 @@ export function DraggableRangeBar({
   const { liveRange, beginDrag } = useRangeDrag({
     scaleStart,
     scaleEnd,
+    minFrame,
+    maxFrame,
+    onScaleRequest,
+    onScaleRelease,
     onCommit: (range, edge) => onRangeChange(range.frameStart, range.frameEnd, edge === 'move' ? 'move' : 'resize'),
   })
   const { menu, openMenu, closeMenu } = useContextMenu()

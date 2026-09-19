@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react'
+import { useCallback, useState, type CSSProperties } from 'react'
 import type AnnotationStore from '../../services/AnnotationStore-optimized'
 import { useMatchSession } from '../../context/MatchSessionContext'
 import { useStyleConfig } from '../../context/StyleConfigContext'
@@ -11,11 +11,16 @@ import './AnnotationTimeline.css'
 const TIMELINE_LABEL_WIDTH = 220
 const TIMELINE_MIN_TRACK_WIDTH = 960
 const TIMELINE_PIXELS_PER_FRAME = 2
+/** Empty runway kept past the clip content so a segment edge always has somewhere to be dragged into. */
+const TIMELINE_HEADROOM_RATIO = 0.15
+const TIMELINE_MIN_HEADROOM_FRAMES = 12
 
 type AnnotationTimelineProps = {
   annotationStore: AnnotationStore
   clipFrame: number
   clipRange: { start: number; end: number }
+  /** Available source-footage frame range for the placed match, or null until match meta loads. */
+  sourceBounds: { min: number; max: number } | null
   annotationVersion: number
   onAnnotationUpdate: () => void
 }
@@ -54,6 +59,7 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
   annotationStore,
   clipFrame,
   clipRange,
+  sourceBounds,
   annotationVersion,
   onAnnotationUpdate,
 }) => {
@@ -73,8 +79,36 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
         }
       : undefined
 
+  const matchSegments = session.playback.clip.matchSegments
+  const overlaySegments = session.playback.clip.overlaySegments
+
+  // Transient scale widening while an edge is dragged past the visible end (Option B).
+  // Cleared on drag release, when the scale falls back to the clip length + headroom.
+  const [dragScaleEnd, setDragScaleEnd] = useState<number | null>(null)
+  const requestScaleEnd = useCallback((frameEnd: number) => {
+    setDragScaleEnd((current) => Math.max(current ?? 0, frameEnd))
+  }, [])
+  const releaseScale = useCallback(() => setDragScaleEnd(null), [])
+
   const scaleStart = clipRange.start
-  const scaleEnd = clipRange.end
+
+  // Furthest the scale can ever go: the point where some segment's end would pull
+  // its source frame past the end of the available footage. Infinite until meta loads.
+  const sourceCeiling = sourceBounds
+    ? matchSegments.reduce(
+        (max, segment) => Math.max(max, segment.clipEnd + (sourceBounds.max - segment.sourceFrameEnd)),
+        clipRange.end
+      )
+    : Number.POSITIVE_INFINITY
+
+  const headroom = Math.max(clipRange.end * TIMELINE_HEADROOM_RATIO, TIMELINE_MIN_HEADROOM_FRAMES)
+  const desiredScaleEnd = Math.max(clipRange.end + headroom, dragScaleEnd ?? 0)
+  const scaleEnd = Math.ceil(
+    Number.isFinite(sourceCeiling)
+      ? Math.min(desiredScaleEnd, Math.max(sourceCeiling, clipRange.end))
+      : desiredScaleEnd
+  )
+
   const visibleFrameSpan = Math.max(scaleEnd - scaleStart, 1)
   const trackWidth = Math.max(visibleFrameSpan * TIMELINE_PIXELS_PER_FRAME, TIMELINE_MIN_TRACK_WIDTH)
   const contentWidth = TIMELINE_LABEL_WIDTH + 12 + trackWidth
@@ -82,9 +116,6 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
     Math.max(((clipFrame - scaleStart) / visibleFrameSpan) * 100, 0),
     100
   )
-
-  const matchSegments = session.playback.clip.matchSegments
-  const overlaySegments = session.playback.clip.overlaySegments
 
   return (
     <>
@@ -96,11 +127,14 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
             segments={matchSegments}
             scaleStart={scaleStart}
             scaleEnd={scaleEnd}
+            sourceBounds={sourceBounds}
             labelWidth={TIMELINE_LABEL_WIDTH}
             trackWidth={trackWidth}
             currentFrameOffsetPercent={currentFrameOffsetPercent}
             onRangeChange={setSegmentRange}
             onDelete={removeSegment}
+            onScaleRequest={requestScaleEnd}
+            onScaleRelease={releaseScale}
           />
         )}
       </TimelineSection>
@@ -115,6 +149,8 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
               overlay={overlay}
               scaleStart={scaleStart}
               scaleEnd={scaleEnd}
+              minFrame={clipRange.start}
+              maxFrame={clipRange.end}
               labelWidth={TIMELINE_LABEL_WIDTH}
               trackWidth={trackWidth}
               currentFrameOffsetPercent={currentFrameOffsetPercent}

@@ -1,8 +1,7 @@
 import { useMemo } from 'react'
 import type AnnotationStore from '../../services/AnnotationStore-optimized'
 import { TimelineRow } from './TimelineRow'
-import { ContextMenu } from '../context-menu/ContextMenu'
-import { useContextMenu } from '../context-menu/useContextMenu'
+import { DraggableRangeBar } from './DraggableRangeBar'
 
 const LANE_HEIGHT = 22
 
@@ -27,8 +26,7 @@ type LaidOutAnnotation = {
   frameEnd: number | null
   shape: any
   laneIndex: number
-  leftPercent: number
-  widthPercent: number
+  effectiveEnd: number
   isOngoing: boolean
 }
 
@@ -42,28 +40,29 @@ type AnnotationRow = {
 type AnnotationRowsProps = {
   annotationStore: AnnotationStore
   annotationVersion: number
+  clipFrame: number
   scaleStart: number
   scaleEnd: number
   labelWidth: number
   trackWidth: number
   currentFrameOffsetPercent: number
   onDelete: (annotationKey: string) => void
+  onAnnotationUpdate: () => void
 }
 
-/** One lane-packed, read-only row per annotation type (player lines, drawn shapes, ...). */
+/** One lane-packed row per annotation type (player lines, drawn shapes, ...) - draggable to move/resize, like Segments and Overlays. */
 export function AnnotationRows({
   annotationStore,
   annotationVersion,
+  clipFrame,
   scaleStart,
   scaleEnd,
   labelWidth,
   trackWidth,
   currentFrameOffsetPercent,
   onDelete,
+  onAnnotationUpdate,
 }: AnnotationRowsProps) {
-  const visibleFrameSpan = Math.max(scaleEnd - scaleStart, 1)
-  const { menu, openMenu, closeMenu } = useContextMenu<string>()
-
   const rows = useMemo<AnnotationRow[]>(() => {
     const allAnnotations = annotationStore.getAllAnnotations()
     const byType = new Map<string, typeof allAnnotations>()
@@ -92,16 +91,10 @@ export function AnnotationRows({
             laneEndFrames[laneIndex] = effectiveEnd
           }
 
-          const clampedStart = Math.max(annotation.frameStart, scaleStart)
-          const clampedEnd = Math.min(effectiveEnd, scaleEnd)
-          const leftPercent = ((clampedStart - scaleStart) / visibleFrameSpan) * 100
-          const widthPercent = ((clampedEnd - clampedStart) / visibleFrameSpan) * 100
-
           return {
             ...annotation,
             laneIndex,
-            leftPercent,
-            widthPercent: Math.max(widthPercent, 0.6),
+            effectiveEnd,
             isOngoing,
           }
         })
@@ -113,7 +106,7 @@ export function AnnotationRows({
         laneCount: Math.max(...laidOut.map((a) => a.laneIndex + 1), 1),
       }
     })
-  }, [annotationStore, scaleStart, scaleEnd, visibleFrameSpan, annotationVersion])
+  }, [annotationStore, scaleStart, scaleEnd, annotationVersion])
 
   if (rows.length === 0) {
     return <div className="annotation-timeline__empty">No annotations</div>
@@ -121,14 +114,6 @@ export function AnnotationRows({
 
   return (
     <>
-      {menu && (
-        <ContextMenu
-          x={menu.x}
-          y={menu.y}
-          items={[{ label: 'Delete', danger: true, onSelect: () => onDelete(menu.data) }]}
-          onClose={closeMenu}
-        />
-      )}
       {rows.map((row) => (
         <TimelineRow
           key={row.type}
@@ -138,24 +123,27 @@ export function AnnotationRows({
           trackHeight={row.laneCount * LANE_HEIGHT}
           currentFrameOffsetPercent={currentFrameOffsetPercent}
         >
-          {row.annotations.map((annotation) => {
-            const label = getAnnotationLabel(annotation)
-            return (
-              <div
-                key={annotation.key}
-                className={`annotation-timeline__annotation ${annotation.isOngoing ? 'annotation-timeline__annotation--ongoing' : 'annotation-timeline__annotation--minimal'}`}
-                style={{
-                  left: `${annotation.leftPercent}%`,
-                  width: `${annotation.widthPercent}%`,
-                  top: `${annotation.laneIndex * LANE_HEIGHT + 2}px`,
-                }}
-                title={label}
-                onContextMenu={(event) => openMenu(event, annotation.key)}
-              >
-                <span className="annotation-timeline__annotation-label">{label}</span>
-              </div>
-            )
-          })}
+          {row.annotations.map((annotation) => (
+            <DraggableRangeBar
+              key={annotation.key}
+              frameStart={annotation.frameStart}
+              frameEnd={annotation.effectiveEnd}
+              scaleStart={scaleStart}
+              scaleEnd={scaleEnd}
+              minFrame={scaleStart}
+              maxFrame={scaleEnd}
+              label={getAnnotationLabel(annotation)}
+              className={annotation.isOngoing ? 'annotation-timeline__annotation--ongoing' : 'annotation-timeline__annotation--minimal'}
+              style={{ top: `${annotation.laneIndex * LANE_HEIGHT + 2}px` }}
+              onRangeChange={(frameStart, frameEnd) => {
+                // Dragging an "ongoing" annotation gives it a concrete end - same
+                // trade-off Segments/Overlays make, they have no open-ended state either.
+                annotationStore.updateAnnotationRange(annotation.key, frameStart, frameEnd, clipFrame)
+                onAnnotationUpdate()
+              }}
+              contextMenuItems={[{ label: 'Delete', danger: true, onSelect: () => onDelete(annotation.key) }]}
+            />
+          ))}
         </TimelineRow>
       ))}
     </>

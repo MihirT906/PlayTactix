@@ -176,6 +176,42 @@ export default class AnnotationStore {
         }));
     }
 
+    updateAnnotationRange(key: string, frameStart: number, frameEnd: number | null, currentFrame: number) {
+        // Moves/resizes an annotation (used by the timeline's draggable bars) by
+        // relocating its key between start_events/end_events buckets and
+        // rebuilding active_annotations for the current frame.
+        const annotation = this.annotations.get(key);
+        if (!annotation) return;
+
+        if (annotation.frameStart !== undefined) {
+            const startKeys = this.start_events.get(annotation.frameStart);
+            if (startKeys) {
+                const filtered = startKeys.filter(k => k !== key);
+                if (filtered.length) this.start_events.set(annotation.frameStart, filtered);
+                else this.start_events.delete(annotation.frameStart);
+            }
+        }
+        if (annotation.frameEnd !== undefined) {
+            const endKeys = this.end_events.get(annotation.frameEnd);
+            if (endKeys) {
+                const filtered = endKeys.filter(k => k !== key);
+                if (filtered.length) this.end_events.set(annotation.frameEnd, filtered);
+                else this.end_events.delete(annotation.frameEnd);
+            }
+        }
+
+        annotation.frameStart = frameStart;
+        annotation.frameEnd = frameEnd ?? undefined;
+
+        this.start_events.set(frameStart, [...(this.start_events.get(frameStart) || []), key]);
+        if (annotation.frameEnd !== undefined) {
+            this.end_events.set(annotation.frameEnd, [...(this.end_events.get(annotation.frameEnd) || []), key]);
+        }
+
+        logger.info("Updated annotation range", key, frameStart, frameEnd);
+        this.reconstruct_active_annotations(currentFrame);
+    }
+
     removeAnnotation(key: string) {
         // Permanently drops a single annotation (used by the timeline's right-click delete).
         if (!this.annotations.has(key)) return;

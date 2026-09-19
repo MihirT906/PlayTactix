@@ -51,9 +51,9 @@ function TimelineSection({ title, contentWidth, children }: TimelineSectionProps
 /**
  * Renders three boxed sections over the same frame scale: Match Segments (the
  * source clip range), Overlays (one row per active overlay segment - pitch,
- * pitch control, pass probability), and Annotations (read-only lanes of
- * player lines, drawn shapes). Each draggable row owns its own drag state -
- * see useRangeDrag.
+ * pitch control, pass probability), and Annotations (lane-packed rows of
+ * player lines, drawn shapes). All three are draggable to move/resize; each
+ * bar owns its own drag state - see useRangeDrag.
  */
 const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
   annotationStore,
@@ -166,6 +166,7 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
         <AnnotationRows
           annotationStore={annotationStore}
           annotationVersion={annotationVersion}
+          clipFrame={clipFrame}
           scaleStart={scaleStart}
           scaleEnd={scaleEnd}
           labelWidth={TIMELINE_LABEL_WIDTH}
@@ -175,6 +176,7 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
             annotationStore.removeAnnotation(annotationKey)
             onAnnotationUpdate()
           }}
+          onAnnotationUpdate={onAnnotationUpdate}
         />
       </TimelineSection>
     </>

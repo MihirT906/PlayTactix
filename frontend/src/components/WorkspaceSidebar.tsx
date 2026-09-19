@@ -1,4 +1,4 @@
-import { FaCog, FaSearch, FaStream, FaStreetView, FaProjectDiagram, FaVectorSquare, FaSlash } from 'react-icons/fa'
+import { FaCog, FaSearch, FaStream, FaStreetView, FaProjectDiagram, FaVectorSquare, FaSlash, FaEraser } from 'react-icons/fa'
 import { FaCircleNodes } from "react-icons/fa6";
 import { BiAddToQueue } from "react-icons/bi";
 import './WorkspaceSidebar.css'
@@ -32,7 +32,7 @@ function WorkspaceSidebar({
   onAddSegment,
   keyMomentsData,
 }: WorkspaceSidebarProps) {
-  const { session, setEditMode } = useMatchSession()
+  const { session, resources, setEditMode } = useMatchSession()
   const isSettingsPanelOpen = activePanel === 'settings'
   const isTimelinePanelOpen = activePanel === 'timeline'
   const isSearchPanelOpen = activePanel === 'search'
@@ -139,6 +139,15 @@ function WorkspaceSidebar({
           >
             <FaSlash aria-hidden="true" />
             <span>Draw Line</span>
+          </button>
+          <button
+            type="button"
+            className="app-header-action workspace-sidebar-action workspace-sidebar-action--erase-shape"
+            onClick={() => resources.plotActions.eraseActiveShape?.()}
+            aria-label="Erase the selected shape on the plot"
+          >
+            <FaEraser aria-hidden="true" />
+            <span>Erase</span>
           </button>
       </div>
       {isSettingsPanelOpen ? (

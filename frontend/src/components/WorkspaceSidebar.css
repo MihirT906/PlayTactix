@@ -234,6 +234,39 @@
   color: inherit;
 }
 
+.workspace-sidebar-action--erase-shape {
+  --es-color: #FFFFFF;
+  --es-color-glow: rgba(255, 255, 255, 0.4);
+
+  padding: 7px 12px;
+  border-radius: 0;
+  border: 1px solid #FFFFFF;
+  background: transparent;
+  color: #FFFFFF;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.1s ease;
+  width: 100%;
+}
+
+.workspace-sidebar-action--erase-shape:hover {
+  color: #FFFFFF;
+  border-color: color-mix(in srgb, #FFFFFF 70%, white);
+}
+
+.workspace-sidebar-action--erase-shape:active {
+  color: #FFFFFF;
+  transform: scale(0.97);
+}
+
+.workspace-sidebar-action--erase-shape svg {
+  color: inherit;
+}
+
 .settings-sidebar-panel {
   width: min(100%, 324px);
   display: flex;

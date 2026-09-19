@@ -537,6 +537,27 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     }
   }, [onDragStart, onHoverCursor, onDragMove, endDrag])
 
+  // Erasing the shape a user has clicked/selected on the plot (Plotly's own
+  // "active shape" concept) has no public JS API - the only place that logic
+  // lives is inside the click handler of Plotly's own 'eraseshape' modebar
+  // button (kept registered - see modeBarButtonsToAdd below - but hidden from
+  // view via CSS). So an external "Erase Active Shape" button elsewhere in the
+  // UI (see WorkspaceSidebar) can't call into Plotly directly; instead it
+  // reaches this component through resources.plotActions and we just click
+  // Plotly's own hidden button on its behalf, letting Plotly do the erase and
+  // emit the plotly_relayout that handleRelayout already knows how to handle.
+  useEffect(() => {
+    resources.plotActions.eraseActiveShape = () => {
+      const gd = graphDivRef.current
+      if (!gd) return
+      const eraseButton = gd.querySelector<HTMLElement>('.modebar-btn[data-title="Erase active shape"]')
+      eraseButton?.click()
+    }
+    return () => {
+      if (resources.plotActions.eraseActiveShape) resources.plotActions.eraseActiveShape = null
+    }
+  }, [resources])
+
   // Keep player-focus lines in sync while a player is being dragged
   useEffect(() => {
     updateLines()

@@ -2,6 +2,7 @@ import {
   createContext,
   useContext,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
@@ -54,9 +55,18 @@ export type MatchSessionState = {
   }
 }
 
+// A plain mutable box (not React state) that PlotComponent fills in once it has a
+// live Plotly graph div, so other components (e.g. the sidebar) can trigger
+// imperative plot actions without the two being wired together directly. Reads
+// happen at click-time, so no re-render is needed when the handler is (re)registered.
+export type PlotActions = {
+  eraseActiveShape: (() => void) | null
+}
+
 type MatchSessionResources = {
   dataManager: DataManager
   overlayManager: OverlayManager
+  plotActions: PlotActions
 }
 
 type MatchSessionContextValue = {
@@ -145,10 +155,13 @@ export function MatchSessionProvider({
 }: MatchSessionProviderProps) {
   const [session, setSession] = useState<MatchSessionState>(createInitialMatchSessionState)
 
+  const plotActionsRef = useRef<PlotActions>({ eraseActiveShape: null })
+
   const resources = useMemo(
     () => ({
         dataManager,
         overlayManager,
+        plotActions: plotActionsRef.current,
     }),
     [dataManager, overlayManager]
   )

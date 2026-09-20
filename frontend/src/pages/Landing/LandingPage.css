@@ -17,3 +17,7 @@
 .landing-steps { list-style: none; padding: 0; margin: 1.5rem 0 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: 1rem; counter-reset: step; }
 .landing-steps li { counter-increment: step; }
 .landing-steps li::before { content: counter(step); display: block; font-family: 'Barlow Condensed', var(--font-family-sans); font-weight: 800; color: var(--color-accent); font-size: 2rem; margin-bottom: 0.5rem; }
+
+.cursor-glow { position: fixed; top: 0; left: 0; width: 7rem; height: 7rem; border-radius: 50%; pointer-events: none; z-index: 0; opacity: 0; transition: opacity 0.2s; background: color-mix(in srgb, var(--color-accent) 40%, transparent); will-change: transform; }
+.landing > .cursor-glow { max-width: none; margin: 0; }
+.landing > :not(.cursor-glow) { position: relative; z-index: 1; }

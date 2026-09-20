@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { APP_CONFIG } from '../../config'
 import './LandingPage.css'
 
@@ -27,9 +28,44 @@ const STEPS = [
   { title: 'Share the clip', body: 'Export it and put your analysis in front of the people who need it.' },
 ]
 
+function CursorGlow() {
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el || !window.matchMedia('(pointer: fine)').matches) return
+    const target = { x: -100, y: -100 }
+    const pos = { x: -100, y: -100 }
+    let raf = 0
+    const tick = () => {
+      pos.x += (target.x - pos.x) * 0.18
+      pos.y += (target.y - pos.y) * 0.18
+      el.style.transform = `translate3d(${pos.x}px, ${pos.y}px, 0) translate(-50%, -50%)`
+      raf = requestAnimationFrame(tick)
+    }
+    const onMove = (e: PointerEvent) => {
+      target.x = e.clientX
+      target.y = e.clientY
+      el.style.opacity = '1'
+    }
+    const onLeave = () => { el.style.opacity = '0' }
+    window.addEventListener('pointermove', onMove)
+    document.addEventListener('pointerleave', onLeave)
+    raf = requestAnimationFrame(tick)
+    return () => {
+      cancelAnimationFrame(raf)
+      window.removeEventListener('pointermove', onMove)
+      document.removeEventListener('pointerleave', onLeave)
+    }
+  }, [])
+
+  return <div className="cursor-glow" ref={ref} aria-hidden="true" />
+}
+
 export default function LandingPage() {
   return (
     <div className="landing">
+      <CursorGlow />
       <section className="landing-hero">
         <h1 className="landing-headline">Turn Match Data Into Tactical Stories.</h1>
         <p className="landing-lede">

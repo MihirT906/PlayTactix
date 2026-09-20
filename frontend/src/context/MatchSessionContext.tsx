@@ -74,6 +74,7 @@ type MatchSessionContextValue = {
   resources: MatchSessionResources
 
   selectMatch: (matchId: number) => void
+  restoreSession: (restored: { clip: Clip; selectedEvents: Event[]; autoDisappearEvents: boolean }) => void
   setCurrentMatchFrame: (frame: number) => void
   setCurrentClipFrame: (clipFrame: number) => void
   advanceFrame: () => void
@@ -177,6 +178,30 @@ export function MatchSessionProvider({
 
             logger.info('Clip reset for new match', { matchId })
             setSession(createInitialMatchSessionState(matchId))
+        },
+
+        restoreSession: ({ clip, selectedEvents, autoDisappearEvents }) => {
+            logger.info('Session restored from saved project', { segments: clip.matchSegments.length })
+            setSession((prev) => {
+                const first = clip.matchSegments[0]
+
+                return {
+                    ...prev,
+                    playback: {
+                        ...prev.playback,
+                        clip,
+                        currentClipFrame: 0,
+                        currentMatchFrame: first ? first.sourceFrameStart : prev.playback.currentMatchFrame,
+                        isPlaying: false,
+                    },
+                    overlays: {
+                        ...prev.overlays,
+                        selectedEvents,
+                        autoDisappearEvents,
+                        active: selectedEvents.length > 0 ? 'event_visualisation' : null,
+                    },
+                }
+            })
         },
 
         setCurrentMatchFrame: (frame: number) => {

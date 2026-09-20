@@ -36,6 +36,12 @@ export default class TimelineStore {
         return timeline
     }
 
+    load(timelines: TimelineOption[]): void {
+        // Replaces all timelines with previously saved ones, keeping their saved ids.
+        this.timelines = [...timelines]
+        this.notifyListeners()
+    }
+
     getAll(): TimelineOption[] {
         return [...this.timelines]
     }

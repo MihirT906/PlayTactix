@@ -12,6 +12,7 @@ import MatchDetailsDisplay from './components/MatchDetailsDisplay'
 import { StyleConfigProvider } from './context/StyleConfigContext'
 import PlotLayoutComponent from './components/PlotLayoutComponent'
 import MatchPicker from './components/MatchPicker'
+import ProjectControls from './components/ProjectControls'
 import WorkspaceSidebar, { type SidebarPanel } from './components/WorkspaceSidebar'
 import { MatchSessionProvider, useMatchSession } from './context/MatchSessionContext'
 import type OverlayManager from './services/OverlayManager'
@@ -235,6 +236,22 @@ function AppContent({
               >
                 Choose Game
               </button>
+              <ProjectControls
+                annotationStore={annotationStore}
+                timelineStore={timelineStore}
+                keyMomentsData={keyMomentsData}
+                onResetMatchData={() => {
+                  setMatchMetaData(null)
+                  setKeyMomentsData(null)
+                  setEventsData(new Map())
+                  setCurrentFrameData(null)
+                }}
+                onOpenWorkspace={() => {
+                  clearSidebarPanel()
+                  setAppView('workspace')
+                }}
+                onProjectApplied={handleAnnotationUpdate}
+              />
             </div>
           </header>
 

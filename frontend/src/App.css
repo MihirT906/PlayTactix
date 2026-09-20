@@ -235,3 +235,17 @@
     grid-column: auto;
   }
 }
+
+.project-notice {
+  font-size: 0.9rem;
+  color: var(--color-text-secondary, var(--color-text-primary));
+}
+
+.project-notice--error {
+  color: #ff6b6b;
+}
+
+.app-header-action:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

@@ -2,11 +2,13 @@ import {
 	createContext,
 	useContext,
 	useEffect,
+	useRef,
 	useState,
 	type ReactNode,
 } from 'react';
 import { APP_CONFIG } from '../config';
 import type { MatchData } from '../types/MatchDataInterfaces';
+import type { SavedStyle } from '../types/SavedProject';
 
 type EventStyle = {
 	color: string;
@@ -26,6 +28,7 @@ type StyleConfigContextValue = {
 	teamVisibility: VisibilityState<TeamVisibilityKey>;
 	eventVisibility: VisibilityState<EventStyleKey>;
 	// overlayVisibility: VisibilityState<OverlayVisibilityKey>;
+	setAllStyle: (style: SavedStyle) => void;
 	setHomeTeamColor: (color: string) => void;
 	setAwayTeamColor: (color: string) => void;
 	setEventStyleColor: (eventKey: EventStyleKey, color: string) => void;
@@ -83,7 +86,13 @@ export const StyleConfigProvider = ({ children, matchData }: StyleConfigProvider
 	const [eventVisibility, setEventVisibilityState] = useState(DEFAULT_STYLE_CONFIG.eventVisibility);
 	// const [overlayVisibility, setOverlayVisibilityState] = useState<VisibilityState<OverlayVisibilityKey>>(DEFAULT_STYLE_CONFIG.overlayVisibility);
 
+	// The match whose kit colours a loaded project has already overridden, so the
+	// metadata effect below doesn't clobber restored colours (effect order vs. restore is not guaranteed).
+	const restoredForMatchData = useRef<MatchData | null>(null);
+
 	useEffect(() => {
+		if (matchData !== null && restoredForMatchData.current === matchData) return;
+
 		const homeColor = matchData?.home_team_kit?.jersey_color;
 		const awayColor = matchData?.away_team_kit?.jersey_color;
 
@@ -105,6 +114,22 @@ export const StyleConfigProvider = ({ children, matchData }: StyleConfigProvider
 				teamVisibility,
 				eventVisibility,
 				// overlayVisibility,
+				setAllStyle: (style) => {
+					restoredForMatchData.current = matchData;
+					setHomeTeamColor(normalizeColor(style.homeTeamColor));
+					setAwayTeamColor(normalizeColor(style.awayTeamColor));
+					// Merge over defaults so a file missing a key (e.g. a style added later) still works.
+					setEventStyles((current) => {
+						const next: Record<EventStyleKey, EventStyle> = { ...current };
+						for (const key of Object.keys(current) as EventStyleKey[]) {
+							const saved = style.eventStyles[key];
+							if (saved) next[key] = { color: normalizeColor(saved.color), width: saved.width };
+						}
+						return next as typeof current;
+					});
+					setTeamVisibilityState((current) => ({ ...current, ...style.teamVisibility }));
+					setEventVisibilityState((current) => ({ ...current, ...style.eventVisibility }));
+				},
 				setHomeTeamColor: (color: string) => setHomeTeamColor(normalizeColor(color)),
 				setAwayTeamColor: (color: string) => setAwayTeamColor(normalizeColor(color)),
 				setEventStyleColor: (eventKey, color) => {

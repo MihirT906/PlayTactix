@@ -240,6 +240,27 @@ export default class AnnotationStore {
         this.annotations.clear();
     }
 
+    load(saved: Array<{ key: string; type: string; frameStart: number; frameEnd: number | null; shape: any }>, currentFrame: number = 0) {
+        // Replaces the store's contents with previously saved annotations (see getAllAnnotations),
+        // rebuilding the sweep-line maps that drive which annotations are active per frame.
+        this.clear();
+        for (const item of saved) {
+            const annotation: Annotation = {
+                type: item.type,
+                frameStart: item.frameStart,
+                frameEnd: item.frameEnd ?? undefined,
+                shape: item.shape,
+            };
+            this.annotations.set(item.key, annotation);
+            this.start_events.set(item.frameStart, [...(this.start_events.get(item.frameStart) || []), item.key]);
+            if (item.frameEnd !== null) {
+                this.end_events.set(item.frameEnd, [...(this.end_events.get(item.frameEnd) || []), item.key]);
+            }
+        }
+        logger.info("Loaded annotations", saved.length);
+        this.reconstruct_active_annotations(currentFrame);
+    }
+
     describeAnnotationStore(){
         console.log('Start Events:', this.start_events)
         console.log('End Events:', this.end_events)

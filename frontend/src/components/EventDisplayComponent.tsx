@@ -316,7 +316,7 @@ const EventDisplayComponent: React.FC<EventDisplayProps> = ({
       return awayTeamColor
     }
 
-    return getComputedStyle(document.documentElement).getPropertyValue('--app-bg-accent').trim() || APP_CONFIG.theme.accentCycle[0]
+    return getComputedStyle(document.documentElement).getPropertyValue('--app-bg-accent').trim() || APP_CONFIG.theme.themeCycle[0].accent
   }
 
   const getEventLabel = (event: Event) => {

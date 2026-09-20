@@ -1,5 +1,11 @@
-// First entry is the initial accent; clicking cycles through the rest (see CursorGlow).
-const ACCENT_CYCLE = ['#f59e0b', '#54e6d4', '#dcf4a2'] as const;
+// First entry is the initial theme; clicking cycles through the rest (see CursorGlow).
+const THEME_CYCLE = [
+	{ primary: '#233d4d', accent: '#fe7f2d' }, // charcoal with pumpkin accent
+	{ primary: '#02182B', accent: '#D7263D' }, // nights with crimson accent
+	{ primary: '#1A281E', accent: '#FEFCE0' }, // emerald with lime accent
+	// { primary: '#372F3D', accent: '#FEBCC4' },
+	// { primary: '#722F37', accent: '#EFDFBB' },
+] as const;
 
 export const APP_CONFIG = {
 	brand: {
@@ -55,16 +61,16 @@ export const APP_CONFIG = {
 		},
 	},
 	theme: {
-		accentCycle: ACCENT_CYCLE,
+		themeCycle: THEME_CYCLE,
 		defaultTeamColors: {
 			home: '#3B82F6',
 			away: '#EF4444',
 		},
 		cssVariables: {
-			'--app-bg-primary': '#2C2F33',
+			'--app-bg-primary': THEME_CYCLE[0].primary,
 			'--app-bg-secondary': '#ffffff4c',
-				'--app-bg-accent': ACCENT_CYCLE[0],
-				'--app-bg-accent-light': `${ACCENT_CYCLE[0]}be`,
+				'--app-bg-accent': THEME_CYCLE[0].accent,
+				'--app-bg-accent-light': `${THEME_CYCLE[0].accent}be`,
 			'--app-border-color': '#000000',
 			'--app-border-radius': '12px',
 			'--app-info-font-size': '14px',

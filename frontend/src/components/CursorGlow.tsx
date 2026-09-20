@@ -2,8 +2,8 @@ import { useEffect, useRef } from 'react'
 import { APP_CONFIG } from '../config'
 import './CursorGlow.css'
 
-const ACCENT_COLORS = APP_CONFIG.theme.accentCycle
-let accentIndex = 0
+const THEMES = APP_CONFIG.theme.themeCycle
+let themeIndex = 0
 
 export default function CursorGlow() {
   const ref = useRef<HTMLDivElement>(null)
@@ -27,10 +27,12 @@ export default function CursorGlow() {
     }
     const onLeave = () => { el.style.opacity = '0' }
     const onClick = () => {
-      accentIndex = (accentIndex + 1) % ACCENT_COLORS.length
+      themeIndex = (themeIndex + 1) % THEMES.length
+      const { primary, accent } = THEMES[themeIndex]
       const root = document.documentElement
-      root.style.setProperty('--app-bg-accent', ACCENT_COLORS[accentIndex])
-      root.style.setProperty('--app-bg-accent-light', `${ACCENT_COLORS[accentIndex]}be`)
+      root.style.setProperty('--app-bg-primary', primary)
+      root.style.setProperty('--app-bg-accent', accent)
+      root.style.setProperty('--app-bg-accent-light', `${accent}be`)
     }
     window.addEventListener('pointermove', onMove)
     window.addEventListener('click', onClick)

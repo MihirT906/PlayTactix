@@ -1,0 +1,1 @@
+.cursor-glow { position: fixed; top: 0; left: 0; width: 7rem; height: 7rem; border-radius: 50%; pointer-events: none; z-index: 0; opacity: 0; transition: opacity 0.2s; background: color-mix(in srgb, var(--color-accent) 40%, transparent); will-change: transform; }

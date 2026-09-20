@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react'
+import { APP_CONFIG } from '../config'
 import './CursorGlow.css'
 
-const ACCENT_COLORS = ['#f59e0b', '#54e6d4', '#dcf4a2']
+const ACCENT_COLORS = APP_CONFIG.theme.accentCycle
 let accentIndex = 0
 
 export default function CursorGlow() {

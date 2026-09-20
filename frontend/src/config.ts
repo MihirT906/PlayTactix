@@ -1,3 +1,6 @@
+// First entry is the initial accent; clicking cycles through the rest (see CursorGlow).
+const ACCENT_CYCLE = ['#f59e0b', '#54e6d4', '#dcf4a2'] as const;
+
 export const APP_CONFIG = {
 	brand: {
 		title: "Tapp'd",
@@ -52,6 +55,7 @@ export const APP_CONFIG = {
 		},
 	},
 	theme: {
+		accentCycle: ACCENT_CYCLE,
 		defaultTeamColors: {
 			home: '#3B82F6',
 			away: '#EF4444',
@@ -59,8 +63,8 @@ export const APP_CONFIG = {
 		cssVariables: {
 			'--app-bg-primary': '#2C2F33',
 			'--app-bg-secondary': '#ffffff4c',
-				'--app-bg-accent': '#f59e0b',
-				'--app-bg-accent-light': '#f59e0bbe',
+				'--app-bg-accent': ACCENT_CYCLE[0],
+				'--app-bg-accent-light': `${ACCENT_CYCLE[0]}be`,
 			'--app-border-color': '#000000',
 			'--app-border-radius': '12px',
 			'--app-info-font-size': '14px',

@@ -30,7 +30,7 @@
   overflow-y: hidden;
   padding-bottom: 4px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(245, 158, 11, 0.72) rgba(255, 255, 255, 0.08);
+  scrollbar-color: var(--color-accent-scrollbar) rgba(255, 255, 255, 0.08);
 }
 
 .event-display__scroll::-webkit-scrollbar {
@@ -44,14 +44,14 @@
 }
 
 .event-display__scroll::-webkit-scrollbar-thumb {
-  background: linear-gradient(90deg, rgba(245, 158, 11, 0.92), rgba(251, 191, 36, 0.78));
+  background: linear-gradient(90deg, var(--color-accent-thumb-start), var(--color-accent-thumb-end));
   border-radius: var(--match-section-radius);
   border: 2px solid rgba(15, 23, 42, 0.16);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
 .event-display__scroll::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(90deg, rgba(251, 191, 36, 0.96), rgba(252, 211, 77, 0.84));
+  background: linear-gradient(90deg, var(--color-accent-thumb-hover-start), var(--color-accent-thumb-hover-end));
 }
 
 .event-display__scroll::-webkit-scrollbar-corner {

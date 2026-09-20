@@ -2,6 +2,11 @@
   --font-family-sans: Avenir, Montserrat, Corbel, 'URW Gothic', source-sans-pro, sans-serif;
   --color-accent: var(--app-bg-accent);
   --color-accent-soft: var(--app-bg-accent-light);
+  --color-accent-scrollbar: color-mix(in srgb, var(--color-accent) 72%, transparent);
+  --color-accent-thumb-start: color-mix(in srgb, var(--color-accent) 92%, transparent);
+  --color-accent-thumb-end: color-mix(in srgb, var(--color-accent) 78%, white 22%);
+  --color-accent-thumb-hover-start: color-mix(in srgb, var(--color-accent) 96%, white 20%);
+  --color-accent-thumb-hover-end: color-mix(in srgb, var(--color-accent) 84%, white 40%);
   --color-text-primary: #f8fafc;
   --color-text-secondary: rgba(255, 255, 255, 0.9);
   --color-text-muted: rgba(255, 255, 255, 0.74);

@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import TimelineStore from '../services/TimelineStore'
 import { useStyleConfig } from '../context/StyleConfigContext'
+import { APP_CONFIG } from '../config'
 import type { Event } from '../types/FrameDataInterfaces'
 import type { MatchData } from '../types/MatchDataInterfaces'
 import type { MetricTimelineOption, TimelineOption } from '../types/TimelineOption'
@@ -315,7 +316,7 @@ const EventDisplayComponent: React.FC<EventDisplayProps> = ({
       return awayTeamColor
     }
 
-    return '#F59E0B'
+    return getComputedStyle(document.documentElement).getPropertyValue('--app-bg-accent').trim() || APP_CONFIG.theme.accentCycle[0]
   }
 
   const getEventLabel = (event: Event) => {

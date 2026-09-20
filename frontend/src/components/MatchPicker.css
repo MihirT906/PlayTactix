@@ -65,7 +65,7 @@
     top: 0;
     width: 120px;
     height: 100%;
-    opacity: 0.24;
+    opacity: 0;
     pointer-events: none;
     transition: opacity 0.3s ease, width 0.3s ease, filter 0.3s ease;
     z-index: 0;

@@ -74,7 +74,7 @@
   padding: 0.3rem;
   border: 1px solid var(--surface-subtle-border);
   border-radius: 8px;
-  background: #2c2f33;
+  background: var(--app-bg-primary);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
 

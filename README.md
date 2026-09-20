@@ -1,8 +1,8 @@
-# PlayTactix
+# Tapp'd
 
 **A telestrator for football tracking data.**
 
-Think of it like the tool a TV analyst uses to draw on match footage — except instead of video, you're working directly on tracking and event data. PlayTactix lets you find the moments that matter, layer on analytical overlays (pitch control, phases of play, possession sequences), annotate them in football language, and export clips you can actually share.
+Think of it like the tool a TV analyst uses to draw on match footage — except instead of video, you're working directly on tracking and event data. Tapp'd lets you find the moments that matter, layer on analytical overlays (pitch control, phases of play, possession sequences), annotate them in football language, and export clips you can actually share.
 
 Built for coaches, analysts, and anyone who wants to go beyond the numbers and tell a story with data.
 

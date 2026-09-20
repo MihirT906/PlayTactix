@@ -3,6 +3,7 @@ import './App.css'
 import DataManager from './services/DataManager'
 import AnnotationStore from './services/AnnotationStore-optimized'
 import TimelineStore from './services/TimelineStore'
+import LandingPage from './pages/Landing/LandingPage'
 import { APP_CONFIG, SLEEP_INTERVAL, THEME_CSS_VARIABLES } from './config'
 import type { MatchData } from './types/MatchDataInterfaces';
 import type { FrameData, Event } from './types/FrameDataInterfaces'
@@ -236,6 +237,8 @@ function AppContent({
               </button>
             </div>
           </header>
+
+          {appView === 'idle' ? <LandingPage /> : null}
 
           {appView === 'picker' ? (
             <div className="app-picker-shell">

@@ -1,6 +1,6 @@
 export const APP_CONFIG = {
 	brand: {
-		title: 'PlayTactix',
+		title: "Tapp'd",
 	},
 	timing: {
 		chunkSize: 300,

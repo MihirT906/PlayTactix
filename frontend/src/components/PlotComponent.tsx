@@ -38,8 +38,8 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
   const [focusPoints, setFocusPoints] = useState<number[]>([]) // Points that are highlighted on click
   const [firstPoint, setFirstPoint] = useState<number | null>(null) // First point selected when drawing a line between two players
   // const [focusEnabled, setFocusEnabled] = useState(false) // 'Player Focus' mode toggled to draw lines
-  const [lines, setLines] = useState<any[]>([]) // User annotation lines
-  const [shapes, setShapes] = useState<any[]>([]) // User annotation shapes
+  // Bumped whenever the annotation store is edited from this component, so the derived lines/shapes below recompute
+  const [annotationTick, setAnnotationTick] = useState(0)
   const [dragMode, setDragMode] = useState<string>('select')
   const [overlayTraces, setOverlayTraces] = useState<any[]>([]);
   // Temporary, visualisation-only position edits keyed by player id. These are
@@ -318,66 +318,14 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     };
   }, [overlay, isPassOptionProbActive, isPitchControlActive, frameData, currentFrame, overlayManager, eventStyles.passingOption.color, eventStyles.playerPossession.color, homeTeamColor, awayTeamColor, matchData, session.overlays.selectedEvents, session.overlays.autoDisappearEvents]);
 
-  // Creates lines to add to Plotly.layout using the player focus lines stored in annotationStore
-  const updateLines = () => { 
-    setLines([])
-    // setFocusPoints([])
-    logger.debug("playerLineAnnotations for clipFrame:", clipFrame, annotationStore.getPlayerLineAnnotations(clipFrame))
-    for (const [firstPoint, secondPoint] of annotationStore.getPlayerLineAnnotations(clipFrame) as [number, number][]) {
-      // setFocusPoints(prev => [...prev, firstPoint, secondPoint]) // Add all players that have lines connected to them to focusPoints
-      if (firstPoint === undefined || secondPoint === undefined) {
-        console.warn('Undefined player IDs in annotationStore.getPlayerLineAnnotations:', firstPoint, secondPoint);
-        continue;
-      }
-      const { x: x0, y: y0 } = resolvePlayerPos(firstPoint)
-      const { x: x1, y: y1 } = resolvePlayerPos(secondPoint)
-
-      const distanceLabel = (x0 !== undefined && y0 !== undefined && x1 !== undefined && y1 !== undefined)
-        ? `${Math.hypot(x1 - x0, y1 - y0).toFixed(1)}m`
-        : ''
-
-      const newLine = {
-        type: 'line',
-        layer: 'between',
-        x0,
-        y0,
-        x1,
-        y1,
-        line: {
-          color: plotConfig.focusLineColor,
-          width: plotConfig.focusLineWidth,
-        },
-        label: {
-          text: distanceLabel,
-          textposition: 'middle',
-          font: {
-            color: plotConfig.focusLineColor,
-            // size: 14,
-          },
-        },
-        editable: true,
-        name: `Player1:${firstPoint},Player2:${secondPoint}`, // Using this name to identify the players connected by the line
-      }
-      setLines((prev) => [...prev, newLine]) // Add a new line based on updated player positions
-    }
-  }
-
-  const updateShapes = () => {
-    const drawShapes = annotationStore.getDrawAnnotations(clipFrame)
-    setShapes(Array.from(drawShapes)) // Update shapes based on the draw annotations in the store
-  }
-
-  // Lines have to be recreated every frame as player positions move
+  // Reset transient UI state whenever the frame changes
   useEffect(() => {
-    updateLines()
-    updateShapes()
     setDragMode('select')
     setEditMode(null)
     // A new frame's plot represents real tracked positions, so drop any
     // temporary drag edits from the previous (paused) frame.
     setPositionOverrides((prev) => (prev.size > 0 ? new Map() : prev))
-    annotationStore.update_active_annotation(clipFrame) // Update active annotations in the store based on the current clip frame
-  }, [frameData])
+  }, [frameData, clipFrame])
 
   // Syncs Plotly's dragmode with the sidebar's 'Draw Rectangle' toggle
   useEffect(() => {
@@ -407,6 +355,44 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
       y: override?.y ?? frameData?.players.y[idx],
     }
   }
+
+  // Annotation shapes for the current frame, derived (never stored) so they cannot go stale: the
+  // store's active set is rebuilt for this clip frame, and player lines are placed from this frame's
+  // positions. Lines whose players aren't in the frame (e.g. missing data) are skipped.
+  const { lines, shapes } = useMemo(() => {
+    annotationStore.reconstruct_active_annotations(clipFrame)
+    const lines: any[] = []
+    for (const [firstPoint, secondPoint] of annotationStore.getPlayerLineAnnotations(clipFrame) as [number, number][]) {
+      if (firstPoint === undefined || secondPoint === undefined) continue
+      const { x: x0, y: y0 } = resolvePlayerPos(firstPoint)
+      const { x: x1, y: y1 } = resolvePlayerPos(secondPoint)
+      if (x0 === undefined || y0 === undefined || x1 === undefined || y1 === undefined) continue
+
+      lines.push({
+        type: 'line',
+        layer: 'between',
+        x0,
+        y0,
+        x1,
+        y1,
+        line: {
+          color: plotConfig.focusLineColor,
+          width: plotConfig.focusLineWidth,
+        },
+        label: {
+          text: `${Math.hypot(x1 - x0, y1 - y0).toFixed(1)}m`,
+          textposition: 'middle',
+          font: {
+            color: plotConfig.focusLineColor,
+          },
+        },
+        editable: true,
+        name: `Player1:${firstPoint},Player2:${secondPoint}`, // Using this name to identify the players connected by the line
+      })
+    }
+    return { lines, shapes: Array.from(annotationStore.getDrawAnnotations(clipFrame)) as any[] }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [annotationStore, clipFrame, frameData, positionOverrides, annotationTick])
 
   // --- Drag-to-reposition players while paused -----------------------------
   // Plotly can't drag individual scatter points, so we hit-test the player
@@ -548,12 +534,6 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     }
   }, [resources])
 
-  // Keep player-focus lines in sync while a player is being dragged
-  useEffect(() => {
-    updateLines()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [positionOverrides])
-
   // Allows the user to 'Focus' on a player or draw lines between them
   const handleClick = (event: any) => {
     if (editMode == 'player_focus') {
@@ -585,7 +565,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
         }
         logger.info("Adding player line annotation between players:", firstPoint, "and", clickedPlayerId)
         annotationStore.addPlayerLineAnnotation(firstPoint, clickedPlayerId, clipFrame)
-        updateLines()
+        setAnnotationTick((tick) => tick + 1)
         onAnnotationUpdate?.()
         setFirstPoint(null) // Reset first point for the next line
       }
@@ -624,8 +604,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     // }
     if ('shapes' in eventData) {
       annotationStore.handleAnnotationRelayout(eventData, clipFrame)
-      updateLines()
-      updateShapes()
+      setAnnotationTick((tick) => tick + 1)
       onAnnotationUpdate?.() 
     }
     //annotationStore.describeAnnotationStore() // For debugging - logs the current state of the annotation store after every relayout event

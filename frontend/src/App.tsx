@@ -136,7 +136,10 @@ function AppContent({
     }, [currentMatchFrame, selectedMatchId, dataManager])
 
     useEffect(() => { // Recompute known-missing frame ranges (mapped to clip coordinates) whenever more data loads
-      if (selectedMatchId === null) return
+      if (selectedMatchId === null || !segment) {
+        setMissingFrameRanges([])
+        return
+      }
 
       const ranges = dataManager.getMissingFrameRanges(segment.sourceFrameStart, segment.sourceFrameEnd)
       const clipRanges = ranges.map((range) => ({
@@ -144,7 +147,7 @@ function AppContent({
         end: range.end - segment.sourceFrameStart + segment.clipStart,
       }))
       setMissingFrameRanges(clipRanges)
-    }, [chunkRange, segment.sourceFrameStart, segment.sourceFrameEnd, segment.clipStart, selectedMatchId, dataManager])
+    }, [chunkRange, segment?.sourceFrameStart, segment?.sourceFrameEnd, segment?.clipStart, selectedMatchId, dataManager])
 
     useEffect(() => { // Fetch match metadata when a match is selected
       if (selectedMatchId === null) return

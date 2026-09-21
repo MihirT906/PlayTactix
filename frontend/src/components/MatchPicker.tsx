@@ -77,7 +77,12 @@ const MatchPicker = ({ onMatchSelected }: MatchPickerProps) => {
 
     return (
         <div className="home-screen home-screen--embedded">
-            <h1 className="home-title">SkillCorner OpenData Matches:</h1>
+            <div className="home-title-block">
+                <h1 className="home-title">Australian A-League</h1>
+                <p className="home-source">
+                    Source: <a href="https://github.com/SkillCorner/opendata" target="_blank" rel="noopener noreferrer">SkillCorner Open Data</a>
+                </p>
+            </div>
             {error && <div className="match-info-error">{error}</div>}
             {loading && (
                 <div className="loading-overlay">

@@ -1,8 +1,8 @@
 // First entry is the initial theme; clicking cycles through the rest (see CursorGlow).
 const THEME_CYCLE = [
 	{ primary: '#233d4d', accent: '#fe7f2d' }, // charcoal with pumpkin accent
-	{ primary: '#02182B', accent: '#D7263D' }, // nights with crimson accent
-	{ primary: '#1A281E', accent: '#FEFCE0' }, // emerald with lime accent
+	// { primary: '#02182B', accent: '#D7263D' }, // nights with crimson accent
+	// { primary: '#1A281E', accent: '#FEFCE0' }, // emerald with lime accent
 	// { primary: '#372F3D', accent: '#FEBCC4' },
 	// { primary: '#722F37', accent: '#EFDFBB' },
 ] as const;

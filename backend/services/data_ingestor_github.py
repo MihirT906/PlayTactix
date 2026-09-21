@@ -27,6 +27,18 @@ def _time_to_seconds(self, time_str) -> int:
     h, m, s = map(int, time_str.split(":"))
     return h * 3600 + m * 60 + s
 
+def get_loaded_match_id() -> int | None:
+    """Match id of the data currently on disk, or None if absent/unreadable.
+
+    bronze_meta_data.json is written last during ingestion (and removed first),
+    so its id only matches when all data files belong to that match.
+    """
+    try:
+        with (DATA_DIR / "bronze_meta_data.json").open("r") as f:
+            return int(json.load(f)["id"])
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+
 class DataIngestor:
     def __init__(self):
         self.data_dir = DATA_DIR
@@ -38,6 +50,13 @@ class DataIngestor:
     
     def load_data(self, match_id) -> Dict[str, pd.DataFrame]:
         logger.info("Starting data ingestion pipeline for match_id=%s", match_id)
+
+        if get_loaded_match_id() == match_id:
+            logger.info("match_id=%s already loaded, skipping ingestion", match_id)
+            return None
+
+        # Invalidate the marker so a failed ingest can't leave mixed-match data marked as valid
+        self._data_path("bronze_meta_data.json").unlink(missing_ok=True)
 
         logger.info("Fetching bronze metadata for match_id=%s", match_id)
         bronze_meta_data = self.skillcorner_ingestor._get_bronze_meta_data(match_id)
@@ -58,16 +77,17 @@ class DataIngestor:
             index=False,
         )
 
-        logger.info("Writing metadata to data store")
-        with self._data_path("bronze_meta_data.json").open("w") as f:
-            json.dump(bronze_meta_data, f)
-
         logger.info("Writing event data to data store")
         silver_event_data.to_parquet(
             self._data_path("silver_event_data.parquet"),
             engine="pyarrow",
             index=False,
         )
+
+        # Written last: marks the data set as complete for this match
+        logger.info("Writing metadata to data store")
+        with self._data_path("bronze_meta_data.json").open("w") as f:
+            json.dump(bronze_meta_data, f)
 
         logger.info("Data ingestion pipeline complete for match_id=%s", match_id)
         return enriched_tracking_data

@@ -15,6 +15,7 @@ export default class MatchDataManager {
             logger.info("Match data downloaded successfully for match_id=%s", matchId)
         } catch (error) {
             logger.error("Failed to download match data for match_id=%s", matchId, error)
+            throw error
         }
     }
 }

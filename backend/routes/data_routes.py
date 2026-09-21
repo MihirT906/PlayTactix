@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 import math
 from fastapi.responses import JSONResponse 
 from logger import get_logger, clear_log
@@ -12,7 +12,7 @@ try:
 except ModuleNotFoundError:
     DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 
-from services.data_ingestor_github import DataIngestor
+from services.data_ingestor_github import DataIngestor, get_loaded_match_id
 from services.frame_data_service import FrameDataService
 from services.key_moments_service import KeyMomentsService
 from services.pitch_control_overlay import PitchControlOverlay
@@ -24,6 +24,17 @@ data_ingestor: DataIngestor = None
 def set_data_ingestor(ingestor: DataIngestor):
     global data_ingestor
     data_ingestor = ingestor
+
+def require_loaded_match(match_id: int = Query(...)) -> int:
+    """Refuse to serve data that belongs to a different match than the one requested."""
+    loaded = get_loaded_match_id()
+    if loaded != match_id:
+        logger.warning("Requested match_id=%s but loaded match_id=%s", match_id, loaded)
+        raise HTTPException(
+            status_code=409,
+            detail=f"Match {match_id} is not loaded (currently loaded: {loaded}).",
+        )
+    return match_id
 
 def sanitize_nan(obj):
     if isinstance(obj, float) and math.isnan(obj):
@@ -51,7 +62,7 @@ async def download_match_data(match_id: int):
         logger.error("Error occurred while downloading match data for match_id=%s: %s", match_id, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/frames")
+@router.get("/frames", dependencies=[Depends(require_loaded_match)])
 async def get_frame_data(match_id: int = Query(...), start: int = Query(1), end: int = Query(50)):
     try:
         logger.info("Fetching frames match_id=%s start=%s end=%s", match_id, start, end)
@@ -63,7 +74,7 @@ async def get_frame_data(match_id: int = Query(...), start: int = Query(1), end:
         logger.error("Failed to fetch frames match_id=%s start=%s end=%s", match_id, start, end, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
     
-@router.get("/match_meta")
+@router.get("/match_meta", dependencies=[Depends(require_loaded_match)])
 async def get_match_meta_data(match_id: int = Query(...)):
     try:
         logger.info("Fetching match metadata for match_id=%s", match_id)
@@ -75,7 +86,7 @@ async def get_match_meta_data(match_id: int = Query(...)):
         logger.error("Failed to fetch metadata for match_id=%s", match_id, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/match_key_moments")
+@router.get("/match_key_moments", dependencies=[Depends(require_loaded_match)])
 async def get_match_key_moments(match_id: int = Query(...)):
     try:
         logger.info("Fetching key moments for match_id=%s", match_id)
@@ -92,7 +103,7 @@ async def get_match_key_moments(match_id: int = Query(...)):
         logger.error("Failed to fetch key moments for match_id=%s", match_id, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/pitch_control_overlay")
+@router.get("/pitch_control_overlay", dependencies=[Depends(require_loaded_match)])
 async def get_pitch_control_overlay(match_id: int = Query(...), start: int = Query(1), end: int = Query(50)):
     try:
         logger.info("Fetching pitch control match_id=%s start=%s end=%s", match_id, start, end)

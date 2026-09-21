@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import './MatchPicker.css';
 import { APP_CONFIG } from '../config';
 import MatchDataManager from '../services/MatchDataManager';
@@ -12,6 +12,8 @@ type MatchPickerProps = {
 const MatchPicker = ({ onMatchSelected }: MatchPickerProps) => {
     const [matches, setMatches] = useState<MatchData[]>([]);
     const [loading, setLoading] = useState<boolean>(false); // Added loading state
+    const [error, setError] = useState<string | null>(null);
+    const inFlightRef = useRef<boolean>(false); // Synchronous guard; state updates are async
 
     const matchDataManager = new MatchDataManager();
 
@@ -56,14 +58,19 @@ const MatchPicker = ({ onMatchSelected }: MatchPickerProps) => {
     }, []);
 
     const handleMatchClick = async (matchId: number) => {
+        if (inFlightRef.current) return;
+        inFlightRef.current = true;
         console.log(`Match ${matchId} clicked`);
         setLoading(true);
+        setError(null);
         try {
             await matchDataManager.downloadMatchData(matchId);
             onMatchSelected(matchId);
         } catch (error) {
             console.error(`Error downloading match data for match ${matchId}:`, error);
+            setError(`Failed to load match ${matchId}. Please try again.`);
         } finally {
+            inFlightRef.current = false;
             setLoading(false);
         }
     };
@@ -71,6 +78,7 @@ const MatchPicker = ({ onMatchSelected }: MatchPickerProps) => {
     return (
         <div className="home-screen home-screen--embedded">
             <h1 className="home-title">SkillCorner OpenData Matches:</h1>
+            {error && <div className="match-info-error">{error}</div>}
             {loading && (
                 <div className="loading-overlay">
                     <div className="spinner"></div>

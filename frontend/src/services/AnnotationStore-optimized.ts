@@ -10,10 +10,7 @@ interface Annotation {
     shape: any;
 }
 
-function createShapeKey(shape: any, frameStart: number): string {
-    if (shape.players) {
-        return `playerLine|${frameStart}|${shape.players.sort((a: number, b: number) => a - b).join(',')}`;
-    }
+function createShapeKey(shape: any, _frameStart?: number): string {
     const type = shape.type;
     const x0 = shape.x0;
     const y0 = shape.y0;
@@ -26,60 +23,44 @@ function createShapeKey(shape: any, frameStart: number): string {
     return parts.join('|');
 }
 
+let playerLineCounter = 0;
+function newPlayerLineKey(): string {
+    // Immutable identity: independent of the pair and frame range, which are mutable data
+    return `playerLine|${Date.now().toString(36)}-${(playerLineCounter++).toString(36)}`;
+}
+
+function samePair(a: number[], b: number[]): boolean {
+    const norm = (p: number[]) => [...p].sort((x, y) => x - y).join(',');
+    return norm(a) === norm(b);
+}
+
 export default class AnnotationStore {
-    private start_events: Map<number, Array<string>> = new Map(); // Maps start frame number to an array of annotation keys (sweep line algorithm)
-    private end_events: Map<number, Array<string>> = new Map() // Maps end frame number to an array of annotation keys (sweep line algorithm)
     private active_annotations: Map<string, Annotation> = new Map() // Contains all currently active annotations
     private annotations: Map<string, Annotation> = new Map() // Contains all annotations
-    
+
     reconstruct_active_annotations(currentFrame: number) {
-        // Reconstructs active annotations from start_events and end_events based on the current frame
+        // Rebuilds the active set from each annotation's own [frameStart, frameEnd) range. The ranges are the
+        // single source of truth for visibility (and for the timeline bars), so nothing else may track it.
         this.active_annotations.clear()
-        for (const [frame, annotationKeys] of this.start_events.entries()) {
-            if (frame > currentFrame) continue;
-
-            for (const key of annotationKeys) {
-                const annotation = this.annotations.get(key)
-                if (annotation){
-                    this.active_annotations.set(key, annotation)
-                }
-            }
-        }
-        for (const [frame, annotationKeys] of this.end_events.entries()) {
-            if (frame > currentFrame) continue;
-
-            for (const key of annotationKeys) {
-                this.active_annotations.delete(key)
-            }
+        for (const [key, annotation] of this.annotations.entries()) {
+            const start = annotation.frameStart ?? 0
+            if (start > currentFrame) continue;
+            if (annotation.frameEnd !== undefined && annotation.frameEnd <= currentFrame) continue;
+            this.active_annotations.set(key, annotation)
         }
     }
-    
-    private discardAnnotation(key: string, currentFrame: number) {
+
+    private discardAnnotation(key: string) {
         // Annotation was created and deleted on the same frame - never store it
         this.annotations.delete(key);
         this.active_annotations.delete(key);
-        const startKeys = this.start_events.get(currentFrame);
-        if (startKeys) {
-            this.start_events.set(currentFrame, startKeys.filter(k => k !== key));
-        }
     }
 
     update_active_annotation(currentFrame: number) {
         // Keeps active annotations current
-        const shapes_to_remove = this.end_events.get(currentFrame) || []
-        for (const shapeKey of shapes_to_remove) {
-            this.active_annotations.delete(shapeKey)
-        }
-        const shapes_to_add = this.start_events.get(currentFrame) || []
-        for (const shapeKey of shapes_to_add) {
-            const annotation = this.annotations.get(shapeKey)
-            if (annotation) {
-                this.active_annotations.set(shapeKey, annotation)
-            }
-        }
-
+        this.reconstruct_active_annotations(currentFrame)
     }
-    
+
     addPlayerLineAnnotation(player1: number, player2: number, currentFrame: number){
         // Create a player line annotation and add it to the store
         const annotation: Annotation = {
@@ -94,13 +75,12 @@ export default class AnnotationStore {
         // loop through active annotations to check if an identical annotation already exists (to prevent duplicates from relayout events)
         for (const existingAnnotation of this.active_annotations.values()) {
             if (existingAnnotation.type !== 'playerLine') continue;
-            if (existingAnnotation.shape.players.sort().toString() === annotation.shape.players.sort().toString()) {
+            if (samePair(existingAnnotation.shape.players, annotation.shape.players)) {
                 return;
             }
         }
-        const uniqueKey = createShapeKey(annotation.shape, currentFrame);
+        const uniqueKey = newPlayerLineKey();
         annotation.frameStart = currentFrame;
-        this.start_events.set(currentFrame, [...(this.start_events.get(currentFrame) || []), uniqueKey]);
         annotation.frameEnd = undefined;
         this.annotations.set(uniqueKey, annotation);
         this.update_active_annotation(currentFrame)
@@ -114,11 +94,10 @@ export default class AnnotationStore {
             if (!isPresent) {
                 logger.info("Removed player line annotation for players:", annotation.shape.players, "at frame:", currentFrame);
                 if (annotation.frameStart === currentFrame) {
-                    this.discardAnnotation(key, currentFrame);
+                    this.discardAnnotation(key);
                     continue;
                 }
                 annotation.frameEnd = currentFrame;
-                this.end_events.set(currentFrame, [...(this.end_events.get(currentFrame) || []), key]);
             }
         }
         this.update_active_annotation(currentFrame)
@@ -132,11 +111,10 @@ export default class AnnotationStore {
             if (!isPresent) {
                 logger.info("Removed draw annotation at frame:", currentFrame);
                 if (annotation.frameStart === currentFrame) {
-                    this.discardAnnotation(key, currentFrame);
+                    this.discardAnnotation(key);
                     continue;
                 }
                 annotation.frameEnd = currentFrame;
-                this.end_events.set(currentFrame, [...(this.end_events.get(currentFrame) || []), key]);
             }
         }
 
@@ -145,7 +123,6 @@ export default class AnnotationStore {
             const uniqueKey = createShapeKey(shape, currentFrame);
             if (this.active_annotations.has(uniqueKey)) continue;
             logger.info("Added draw annotation at frame:", currentFrame);
-            this.start_events.set(currentFrame, [...(this.start_events.get(currentFrame) || []), uniqueKey]);
             const annotation: Annotation = {
                 type: 'draw',
                 frameStart: currentFrame,
@@ -177,36 +154,13 @@ export default class AnnotationStore {
     }
 
     updateAnnotationRange(key: string, frameStart: number, frameEnd: number | null, currentFrame: number) {
-        // Moves/resizes an annotation (used by the timeline's draggable bars) by
-        // relocating its key between start_events/end_events buckets and
-        // rebuilding active_annotations for the current frame.
+        // Moves/resizes an annotation (used by the timeline's draggable bars) and
+        // rebuilds active_annotations for the current frame.
         const annotation = this.annotations.get(key);
         if (!annotation) return;
 
-        if (annotation.frameStart !== undefined) {
-            const startKeys = this.start_events.get(annotation.frameStart);
-            if (startKeys) {
-                const filtered = startKeys.filter(k => k !== key);
-                if (filtered.length) this.start_events.set(annotation.frameStart, filtered);
-                else this.start_events.delete(annotation.frameStart);
-            }
-        }
-        if (annotation.frameEnd !== undefined) {
-            const endKeys = this.end_events.get(annotation.frameEnd);
-            if (endKeys) {
-                const filtered = endKeys.filter(k => k !== key);
-                if (filtered.length) this.end_events.set(annotation.frameEnd, filtered);
-                else this.end_events.delete(annotation.frameEnd);
-            }
-        }
-
         annotation.frameStart = frameStart;
         annotation.frameEnd = frameEnd ?? undefined;
-
-        this.start_events.set(frameStart, [...(this.start_events.get(frameStart) || []), key]);
-        if (annotation.frameEnd !== undefined) {
-            this.end_events.set(annotation.frameEnd, [...(this.end_events.get(annotation.frameEnd) || []), key]);
-        }
 
         logger.info("Updated annotation range", key, frameStart, frameEnd);
         this.reconstruct_active_annotations(currentFrame);
@@ -218,31 +172,19 @@ export default class AnnotationStore {
         logger.info("Removed annotation", key);
         this.annotations.delete(key);
         this.active_annotations.delete(key);
-        for (const [frame, keys] of this.start_events.entries()) {
-            const filtered = keys.filter((k) => k !== key);
-            if (filtered.length) this.start_events.set(frame, filtered);
-            else this.start_events.delete(frame);
-        }
-        for (const [frame, keys] of this.end_events.entries()) {
-            const filtered = keys.filter((k) => k !== key);
-            if (filtered.length) this.end_events.set(frame, filtered);
-            else this.end_events.delete(frame);
-        }
     }
 
     clear() {
         // Discards every annotation, e.g. when the clip's segment changes and old
         // clip-relative frame numbers no longer refer to the same footage.
         logger.info("Clip annotations cleared");
-        this.start_events.clear();
-        this.end_events.clear();
         this.active_annotations.clear();
         this.annotations.clear();
     }
 
     load(saved: Array<{ key: string; type: string; frameStart: number; frameEnd: number | null; shape: any }>, currentFrame: number = 0) {
         // Replaces the store's contents with previously saved annotations (see getAllAnnotations),
-        // rebuilding the sweep-line maps that drive which annotations are active per frame.
+        // then rebuilding which of them are active at currentFrame.
         this.clear();
         for (const item of saved) {
             const annotation: Annotation = {
@@ -252,29 +194,21 @@ export default class AnnotationStore {
                 shape: item.shape,
             };
             this.annotations.set(item.key, annotation);
-            this.start_events.set(item.frameStart, [...(this.start_events.get(item.frameStart) || []), item.key]);
-            if (item.frameEnd !== null) {
-                this.end_events.set(item.frameEnd, [...(this.end_events.get(item.frameEnd) || []), item.key]);
-            }
         }
         logger.info("Loaded annotations", saved.length);
         this.reconstruct_active_annotations(currentFrame);
     }
 
     describeAnnotationStore(){
-        console.log('Start Events:', this.start_events)
-        console.log('End Events:', this.end_events)
         console.log('Active Annotations:', this.active_annotations)
         console.log('All Annotations:', this.annotations)
     }
 
     handleAnnotationRelayout(eventData: any, currentFrame: number) {
         const shapes = eventData["shapes"] || [];
-        // Player lines are generated by PlotComponent (named, and carrying a distance label). Anything
-        // hand-drawn has neither, so a generated line must never be captured as a draw annotation,
-        // otherwise it is stored with frozen coordinates and shows up on every frame.
-        const isPlayerLine = (shape: any) =>
-            (typeof shape.name === 'string' && shape.name.startsWith('Player1:')) || shape.label !== undefined;
+        // Player lines are generated by PlotComponent and always named 'Player1:...'. Hand-drawn shapes
+        // are unnamed. (Don't test shape.label: Plotly may populate it with defaults on drawn shapes.)
+        const isPlayerLine = (shape: any) => typeof shape.name === 'string' && shape.name.startsWith('Player1:');
         const playerLineShapes = shapes.filter(isPlayerLine);
         const drawShapes = shapes.filter((shape: any) => !isPlayerLine(shape));
         this.deletePlayerLineAnnotations(playerLineShapes, currentFrame);

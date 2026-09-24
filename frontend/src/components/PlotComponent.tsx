@@ -20,16 +20,28 @@ const logger = getLogger("PlotComponent");
 
 const annotationStore = new AnnotationStore()
 
+// Plotly bug workaround: every frame change hands Plotly new data arrays, so it does a full redraw, and a
+// full redraw (shapes.draw) clears the 'above' and 'below' shape layers but never the 'between' layer that
+// player lines are drawn in. Any 'between' shape whose index no longer exists in layout.shapes (a line
+// scrubbed back past its start, or the clip looping) is therefore left on the canvas frozen, on every frame.
+// Sweep those orphans after each update; indices that still exist are redrawn by Plotly itself.
+const removeOrphanedBetweenShapes = (gd: HTMLElement, shapeCount: number) => {
+  gd.querySelectorAll('.layer-between .shapelayer [data-index]').forEach((node) => {
+    if (Number(node.getAttribute('data-index')) >= shapeCount) node.remove()
+  })
+}
+
 interface PlotComponentProps {
   currentFrame: number
   clipFrame: number
   frameData: FrameData | null
   matchData: MatchData | null
   annotationStore: AnnotationStore
+  annotationVersion?: number // Bumped when annotations change elsewhere (e.g. timeline bar drags/deletes)
   onAnnotationUpdate?: () => void // Optional callback to trigger when annotations are updated
 }
 
-const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, matchData, frameData, annotationStore, onAnnotationUpdate }) => {
+const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, matchData, frameData, annotationStore, onAnnotationUpdate, annotationVersion }) => {
   const plotConfig = APP_CONFIG.plot
   const { homeTeamColor, awayTeamColor, eventStyles, teamVisibility, eventVisibility } = useStyleConfig()
   const { session, resources, setEditMode } = useMatchSession()
@@ -392,7 +404,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     }
     return { lines, shapes: Array.from(annotationStore.getDrawAnnotations(clipFrame)) as any[] }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [annotationStore, clipFrame, frameData, positionOverrides, annotationTick])
+  }, [annotationStore, clipFrame, frameData, positionOverrides, annotationTick, annotationVersion])
 
   // --- Drag-to-reposition players while paused -----------------------------
   // Plotly can't drag individual scatter points, so we hit-test the player
@@ -495,8 +507,10 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
   }, [DRAG_HIT_RADIUS_PX])
 
   // Bind the imperative pointer handlers once we have the Plotly graph div
-  const handleGraphDiv = useCallback((_figure: any, gd: any) => {
-    if (!gd || graphDivRef.current === gd) return
+  const handleGraphDiv = useCallback((figure: any, gd: any) => {
+    if (!gd) return
+    removeOrphanedBetweenShapes(gd, figure?.layout?.shapes?.length ?? 0)
+    if (graphDivRef.current === gd) return
     graphDivRef.current = gd
     gd.addEventListener('mousedown', onDragStart, true)
     gd.addEventListener('mousemove', onHoverCursor)

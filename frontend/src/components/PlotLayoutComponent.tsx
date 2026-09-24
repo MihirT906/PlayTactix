@@ -91,6 +91,7 @@ function PlotLayoutComponent({
             frameData={frameData}
             annotationStore={annotationStore}
             onAnnotationUpdate={onAnnotationUpdate}
+            annotationVersion={annotationVersion}
           />
 
           <div className="plot-layout__timeline-dock">

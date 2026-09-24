@@ -1,5 +1,10 @@
-fastapi
-uvicorn[standard]
-pandas
-plotly
-mplsoccer
+fastapi==0.136.3
+uvicorn[standard]==0.48.0
+pandas==2.3.3
+numpy==2.4.6
+plotly==6.7.0
+mplsoccer==1.6.1
+kloppy==3.18.0
+databallpy==0.6.2
+requests==2.32.5
+pyarrow==19.0.1

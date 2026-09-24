@@ -40,6 +40,12 @@ uvicorn main:app --reload
 
 The API will be available at `http://localhost:8000`.
 
+Dependency versions in `requirements.txt` are pinned to a known-working set — a `backend/.python-version` file pins the Python version for pyenv/asdf users. To also run the test suite, install `requirements-dev.txt` instead (it layers `pytest` on top):
+
+```bash
+pip install -r requirements-dev.txt
+```
+
 ### Frontend
 
 ```bash

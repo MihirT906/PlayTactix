@@ -5,7 +5,7 @@ from logger import get_logger, clear_log
 
 logger = get_logger(__name__)
 
-from services.data_ingestor_github import DataIngestor, get_loaded_match_id
+from services.data_ingestor_github import DataIngestor, is_match_cached
 from services.frame_data_service import FrameDataService
 from services.key_moments_service import KeyMomentsService
 
@@ -18,13 +18,12 @@ def set_data_ingestor(ingestor: DataIngestor):
     data_ingestor = ingestor
 
 def require_loaded_match(match_id: int = Query(...)) -> int:
-    """Refuse to serve data that belongs to a different match than the one requested."""
-    loaded = get_loaded_match_id()
-    if loaded != match_id:
-        logger.warning("Requested match_id=%s but loaded match_id=%s", match_id, loaded)
+    """Refuse to serve data for a match that hasn't been ingested and cached yet."""
+    if not is_match_cached(match_id):
+        logger.warning("Requested match_id=%s but it is not cached", match_id)
         raise HTTPException(
             status_code=409,
-            detail=f"Match {match_id} is not loaded (currently loaded: {loaded}).",
+            detail=f"Match {match_id} is not loaded. Call GET /data/match/{match_id} first.",
         )
     return match_id
 

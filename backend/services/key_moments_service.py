@@ -5,15 +5,9 @@ logger = get_logger(__name__)
 import json
 import pandas as pd
 
-from paths import DATA_DIR
+from paths import events_data_path
 
 class KeyMomentsService:
-    def __init__(self):
-        self.data_dir = DATA_DIR
-
-    def _data_path(self, filename: str):
-        return self.data_dir / filename
-    
     def _get_lead_to_goals(self, events_data):
             events_data = events_data[(events_data['lead_to_goal'] == True) & (events_data['event_type'] == 'player_possession')]
             events_data["Sequence_ID"] = events_data['phase_index']
@@ -69,7 +63,7 @@ class KeyMomentsService:
     def get_key_moments(self, match_id: int):
         
         logger.info("Fetching key moments for match_id=%s", match_id)
-        events_df = pd.read_parquet(self._data_path("silver_event_data.parquet"))
+        events_df = pd.read_parquet(events_data_path(match_id))
         
         goals = self._get_lead_to_goals(events_df)
         logger.info("Key moments computed goals=%s", len(goals))

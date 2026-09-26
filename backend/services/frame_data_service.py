@@ -6,15 +6,9 @@ logger = get_logger(__name__)
 
 import pandas as pd
 
-from paths import DATA_DIR
+from paths import meta_data_path, tracking_data_path, events_data_path
 
 class FrameDataService:
-    def __init__(self):
-        self.data_dir = DATA_DIR
-
-    def _data_path(self, filename: str):
-        return self.data_dir / filename
-
     def _empty_players(self) -> dict:
         return {
             "x": [],
@@ -91,7 +85,7 @@ class FrameDataService:
     def get_metadata(self, match_id: int) -> dict:
         try:
             logger.info("Retrieving metadata for match_id=%s from stored data", match_id)
-            with self._data_path("bronze_meta_data.json").open("r") as f:
+            with meta_data_path(match_id).open("r") as f:
                 meta_data = json.load(f)
             
             return {
@@ -99,17 +93,17 @@ class FrameDataService:
                 "data": meta_data
             }
         except Exception as e:
-            logger.error("Error reading bronze_meta_data.json for match_id=%s: %s", match_id, e)
-            return {"error": "Failed to read bronze_meta_data.json."}
+            logger.error("Error reading meta data for match_id=%s: %s", match_id, e)
+            return {"error": "Failed to read meta data."}
           
 
     def get_frames(self, match_id: int, start: int, end: int) -> dict:
         try:
             # Read stored data
             logger.info("Reading data files for match_id=%s", match_id)
-            tracking_df = pd.read_parquet(self._data_path("silver_tracking_data_kloppy.parquet"))
-            events_df = pd.read_parquet(self._data_path("silver_event_data.parquet"))
-            with self._data_path("bronze_meta_data.json").open("r") as f:
+            tracking_df = pd.read_parquet(tracking_data_path(match_id))
+            events_df = pd.read_parquet(events_data_path(match_id))
+            with meta_data_path(match_id).open("r") as f:
                 meta_data = json.load(f)
 
             final_df = tracking_df.copy()

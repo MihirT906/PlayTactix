@@ -1,5 +1,6 @@
 import json
 import sys
+import threading
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -14,69 +15,92 @@ from logger import get_logger
 
 logger = get_logger(__name__)
 
-from paths import DATA_DIR
+from paths import meta_data_path, tracking_data_path, events_data_path
 
-def get_loaded_match_id() -> int | None:
-    """Match id of the data currently on disk, or None if absent/unreadable.
+# One lock per match_id, so two concurrent requests for the same not-yet-cached
+# match wait for each other instead of racing to ingest/write it twice.
+# Matches are namespaced by id (see docs/multi-user-match-caching.md), so a
+# lock for one match_id never blocks ingestion of a different one.
+_ingestion_locks: dict[int, threading.Lock] = {}
+_ingestion_locks_guard = threading.Lock()
 
-    bronze_meta_data.json is written last during ingestion (and removed first),
-    so its id only matches when all data files belong to that match.
+
+def _lock_for_match(match_id: int) -> threading.Lock:
+    with _ingestion_locks_guard:
+        lock = _ingestion_locks.get(match_id)
+        if lock is None:
+            lock = threading.Lock()
+            _ingestion_locks[match_id] = lock
+        return lock
+
+
+def _atomic_write_json(path: Path, data) -> None:
+    """Write via a temp file + rename so a reader never sees a half-written file."""
+    tmp_path = path.with_suffix(path.suffix + ".tmp")
+    with tmp_path.open("w") as f:
+        json.dump(data, f)
+    tmp_path.replace(path)
+
+
+def _atomic_write_parquet(path: Path, df: pd.DataFrame) -> None:
+    """Write via a temp file + rename so a reader never sees a half-written file."""
+    tmp_path = path.with_suffix(path.suffix + ".tmp")
+    df.to_parquet(tmp_path, engine="pyarrow", index=False)
+    tmp_path.replace(path)
+
+
+def is_match_cached(match_id: int) -> bool:
+    """Whether match_id's data has already been fully ingested and cached on disk.
+
+    bronze_meta_data_{match_id}.json is written last during ingestion, so its
+    presence (with a matching id) means the whole set is complete for this match.
     """
     try:
-        with (DATA_DIR / "bronze_meta_data.json").open("r") as f:
-            return int(json.load(f)["id"])
+        with meta_data_path(match_id).open("r") as f:
+            return int(json.load(f)["id"]) == match_id
     except (OSError, ValueError, KeyError, TypeError):
-        return None
+        return False
 
 class DataIngestor:
     def __init__(self):
-        self.data_dir = DATA_DIR
         self.kloppy_ingestor = KloppyDataIngestor()
         self.skillcorner_ingestor = SkillCornerDataIngestor()
-    
-    def _data_path(self, filename: str) -> Path:
-        return self.data_dir / filename
-    
+
     def load_data(self, match_id) -> Dict[str, pd.DataFrame]:
         logger.info("Starting data ingestion pipeline for match_id=%s", match_id)
 
-        if get_loaded_match_id() == match_id:
-            logger.info("match_id=%s already loaded, skipping ingestion", match_id)
+        if is_match_cached(match_id):
+            logger.info("match_id=%s already cached, skipping ingestion", match_id)
             return None
 
-        # Invalidate the marker so a failed ingest can't leave mixed-match data marked as valid
-        self._data_path("bronze_meta_data.json").unlink(missing_ok=True)
+        with _lock_for_match(match_id):
+            # Re-check now that we hold the lock: a concurrent request for this
+            # same match_id may have finished ingesting it while we were waiting.
+            if is_match_cached(match_id):
+                logger.info("match_id=%s was cached by a concurrent request, skipping ingestion", match_id)
+                return None
 
-        logger.info("Fetching bronze metadata for match_id=%s", match_id)
-        bronze_meta_data = self.skillcorner_ingestor._get_bronze_meta_data(match_id)
+            logger.info("Fetching bronze metadata for match_id=%s", match_id)
+            bronze_meta_data = self.skillcorner_ingestor._get_bronze_meta_data(match_id)
 
-        logger.info("Fetching bronze event data for match_id=%s", match_id)
-        bronze_event_data = self.skillcorner_ingestor._get_bronze_event_data(match_id)
+            logger.info("Fetching bronze event data for match_id=%s", match_id)
+            bronze_event_data = self.skillcorner_ingestor._get_bronze_event_data(match_id)
 
-        logger.info("Transforming silver event data for match_id=%s", match_id)
-        silver_event_data = self.skillcorner_ingestor._get_silver_event_data(bronze_event_data)
+            logger.info("Transforming silver event data for match_id=%s", match_id)
+            silver_event_data = self.skillcorner_ingestor._get_silver_event_data(bronze_event_data)
 
-        logger.info("Fetching and enriching tracking data for match_id=%s", match_id)
-        enriched_tracking_data = self.kloppy_ingestor._get_silver_tracking_data_from_kloppy(match_id, bronze_meta_data)
+            logger.info("Fetching and enriching tracking data for match_id=%s", match_id)
+            enriched_tracking_data = self.kloppy_ingestor._get_silver_tracking_data_from_kloppy(match_id, bronze_meta_data)
 
-        logger.info("Writing tracking data to data store")
-        enriched_tracking_data.to_parquet(
-            self._data_path("silver_tracking_data_kloppy.parquet"),
-            engine="pyarrow",
-            index=False,
-        )
+            logger.info("Writing tracking data to data store")
+            _atomic_write_parquet(tracking_data_path(match_id), enriched_tracking_data)
 
-        logger.info("Writing event data to data store")
-        silver_event_data.to_parquet(
-            self._data_path("silver_event_data.parquet"),
-            engine="pyarrow",
-            index=False,
-        )
+            logger.info("Writing event data to data store")
+            _atomic_write_parquet(events_data_path(match_id), silver_event_data)
 
-        # Written last: marks the data set as complete for this match
-        logger.info("Writing metadata to data store")
-        with self._data_path("bronze_meta_data.json").open("w") as f:
-            json.dump(bronze_meta_data, f)
+            # Written last: marks this match's data set as complete
+            logger.info("Writing metadata to data store")
+            _atomic_write_json(meta_data_path(match_id), bronze_meta_data)
 
         logger.info("Data ingestion pipeline complete for match_id=%s", match_id)
         return enriched_tracking_data

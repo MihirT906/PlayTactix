@@ -1,12 +1,18 @@
 # Multi-User Match Caching — Deployment Plan
 
-**Status:** Proposed. Not implemented. Written 2026-09-24.
+**Status:** Implemented. Written 2026-09-24, implemented 2026-09-26.
 
-This document describes why the backend's on-disk cache currently only works
-for one person at a time, and the plan ("Option A" below) to make it safe for
-multiple concurrent users without giving up the benefit of caching at all. It
-is a decision record — see [Alternatives considered](#alternatives-considered)
-for the two other designs that were weighed and rejected, and why.
+This document describes why the backend's on-disk cache used to only work
+for one person at a time, and the plan ("Option A" below) that made it safe
+for multiple concurrent users without giving up the benefit of caching at
+all. It's kept as a decision record — see
+[Alternatives considered](#alternatives-considered) for the two other designs
+that were weighed and rejected, and why — but the "problem today" section
+below now describes the *pre-implementation* state, not the current one.
+The final filenames chosen during implementation are cleaner than what was
+first proposed here; see the note in
+[Proposed design](#proposed-design-option-a). Code line references
+throughout predate several later cleanup passes and may have drifted.
 
 ---
 
@@ -66,7 +72,7 @@ These came from inspecting the actual data source, not estimation:
 | Fact | Value | Source |
 |---|---|---|
 | Total matches in SkillCorner's open-data repo | **20**, fixed | `GET api.github.com/repos/SkillCorner/opendata/contents/data/matches`, checked 2026-09-24 |
-| Cached size per match (tracking + event parquet + meta json) | **~8.5 MB** | measured from `data/silver_tracking_data_kloppy_{1886347,1899585}.parquet` (8.3 MB / 8.0 MB), `data/silver_event_data.parquet` (332 KB), `data/bronze_meta_data_{...}.json` (32 KB) |
+| Cached size per match (tracking + event parquet + meta json) | **~8.5 MB** | measured from early samples of the tracking parquet (8.3 MB / 8.0 MB), event parquet (332 KB), and meta json (32 KB) before the per-match rename below |
 | **Total ceiling if all 20 matches are cached** | **~170 MB** | 20 × ~8.5 MB — this is a hard ceiling, not a projection, since there are only ever 20 matches to cache |
 | Raw payload pulled from GitHub per ingest (before compression to parquet) | **~90–94 MB** (~85–89 MB tracking jsonl + ~5 MB event csv + 27 KB meta) | `curl -I` against the actual GitHub URLs used in `data_ingestor_github.py:237,243,378` |
 | Time budget for one ingest | **30 seconds** | `tests/route_tests.py` (`max_seconds = 30` for `GET /data/match/{id}`) |
@@ -85,16 +91,20 @@ worth knowing, and an easy separate fix later (pin that URL to a commit too).
 **Namespace the cache by `match_id`; stop treating "loaded" as a single global
 slot.**
 
-| Current (fixed) filename | Proposed (namespaced) filename |
+| Old (fixed) filename | Final (namespaced) filename |
 |---|---|
-| `bronze_meta_data.json` | `bronze_meta_data_{match_id}.json` |
-| `silver_tracking_data_kloppy.parquet` | `silver_tracking_data_kloppy_{match_id}.parquet` |
-| `silver_event_data.parquet` | `silver_event_data_{match_id}.parquet` |
+| `bronze_meta_data.json` | `meta_data_{match_id}.json` |
+| `silver_tracking_data_kloppy.parquet` | `tracking_data_{match_id}.parquet` |
+| `silver_event_data.parquet` | `events_data_{match_id}.parquet` |
 
-(Note `data/` already contains files in exactly this naming shape for two
-matches — `bronze_meta_data_1886347.json`, `silver_tracking_data_kloppy_1899585.parquet`
-— so this is a pattern the codebase has partially anticipated, just not what
-the live ingestion path currently produces.)
+The names actually implemented drop the bronze/silver ("medallion
+architecture") labeling and the `_kloppy` suffix: the labeling was applied
+inconsistently (only the meta file was called "bronze"), and `_kloppy` only
+ever existed to distinguish this tracking pipeline from an older, non-kloppy
+one that has since been deleted entirely — nothing left to disambiguate
+against. The final names also line up with the API that serves them: `meta`
+↔ `/data/match_meta`, `tracking` ↔ `/data/frames`, `events` ↔
+`/data/match_key_moments`.
 
 Consequences of this change:
 

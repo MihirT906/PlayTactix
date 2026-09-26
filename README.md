@@ -46,6 +46,18 @@ Dependency versions in `requirements.txt` are pinned to a known-working set — 
 pip install -r requirements-dev.txt
 ```
 
+Configuration (CORS origins, port, log level) is read from environment variables — see `backend/.env.example` for what's available. Copy it to `backend/.env` and adjust if you need something other than the defaults; `.env` is gitignored, so each environment sets its own.
+
+#### Running the backend in Docker
+
+```bash
+cd backend
+docker build -t playtactix-backend .
+docker run -p 8000:8000 -v playtactix-data:/data playtactix-backend
+```
+
+The `-v playtactix-data:/data` flag gives the container a named volume for its match-data cache, so it survives container restarts (without it, every restart re-downloads any previously cached match). In production, this should be a real persistent disk provided by your host, mounted at `/data`.
+
 ### Frontend
 
 ```bash
@@ -55,6 +67,8 @@ npm run dev
 ```
 
 The app will be available at `http://localhost:5173`. Make sure the backend is running first.
+
+The backend's URL is read from `VITE_API_URL` (see `frontend/.env.example`) — defaults to `http://localhost:8000` if unset. Set it to your deployed backend's URL when building for production.
 
 ## Project Structure
 

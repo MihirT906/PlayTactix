@@ -1,4 +1,4 @@
-import { CHUNK_SIZE } from "../config"
+import { CHUNK_SIZE, API_BASE_URL } from "../config"
 import type { FrameData, Event } from '../types/FrameDataInterfaces'
 import { getLogger } from "./logger";
 
@@ -39,7 +39,7 @@ export default class DataManager {
     }
 
     try {
-      const response = await fetch(`http://localhost:8000/data/frames?match_id=${this.selectedMatchId}&start=${start}&end=${end}`)
+      const response = await fetch(`${API_BASE_URL}/data/frames?match_id=${this.selectedMatchId}&start=${start}&end=${end}`)
       const ret = await response.json()
       const data = ret['frames']
       const missingFrames = ret['missing_frames']
@@ -69,7 +69,7 @@ export default class DataManager {
 
     try {
       const response = await fetch(
-        `http://localhost:8000/data/match_meta?match_id=${this.selectedMatchId}`
+        `${API_BASE_URL}/data/match_meta?match_id=${this.selectedMatchId}`
       )
 
       if (!response.ok) {
@@ -91,7 +91,7 @@ export default class DataManager {
     }
 
     try {
-      const response = await fetch(`http://localhost:8000/data/match_key_moments?match_id=${this.selectedMatchId}`)
+      const response = await fetch(`${API_BASE_URL}/data/match_key_moments?match_id=${this.selectedMatchId}`)
       if (!response.ok) {
         throw new Error(`Failed to fetch key moments: ${response.status}`)
       }

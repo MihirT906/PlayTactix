@@ -1,3 +1,8 @@
+// Backend API base URL. Set VITE_API_URL (e.g. in .env.production, or as an
+// env var at build time) to point at a deployed backend; defaults to the
+// local dev backend started via `cd backend && uvicorn main:app --reload`.
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+
 // First entry is the initial theme; clicking cycles through the rest (see CursorGlow).
 const THEME_CYCLE = [
 	{ primary: '#233d4d', accent: '#fe7f2d' }, // charcoal with pumpkin accent

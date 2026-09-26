@@ -83,11 +83,13 @@ PlayTactix/
 | GET | `/data/frames?match_id&start&end` | Fetch tracking frames for a frame range |
 | GET | `/data/match_meta?match_id` | Fetch match metadata (teams, players, score) |
 | GET | `/data/match_key_moments?match_id` | Fetch phases of play, goals, and shots |
-| GET | `/data/pitch_control_overlay?match_id&start&end` | Compute pitch control for a frame range |
+
+Pitch control is served as an embedded overlay on each frame returned by `/data/frames`, not as a separate endpoint — an earlier standalone `/data/pitch_control_overlay` route was removed (it was broken and unused).
 
 ## Design Notes
 
 - [Frame data caching](./docs/frame-data-caching.md) — proposed tiered cache architecture for tracking-frame playback, and the multi-segment problems it addresses (proposal, not yet implemented).
+- [Multi-user match caching](./docs/multi-user-match-caching.md) — proposed per-match backend cache so concurrent users can load different matches independently, a prerequisite for deploying beyond single-user local use (proposal, not yet implemented).
 
 ## License
 

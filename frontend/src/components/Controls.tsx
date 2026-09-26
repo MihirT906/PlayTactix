@@ -1,7 +1,7 @@
 import React from 'react'
 import './Controls.css'
 import AnnotationStore from '../services/AnnotationStore-optimized'
-import { FaPlay, FaPause, FaForward, FaBackward } from 'react-icons/fa'
+import { FaPlay, FaPause } from 'react-icons/fa'
 import { RiSlowDownLine, RiSpeedUpLine } from "react-icons/ri";
 
 interface ControlsProps {

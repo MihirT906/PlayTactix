@@ -1,5 +1,4 @@
 import json
-from pathlib import Path
 from services.pitch_control_overlay import PitchControlOverlay
 from logger import get_logger
 
@@ -7,10 +6,7 @@ logger = get_logger(__name__)
 
 import pandas as pd
 
-try:
-    from backend.paths import DATA_DIR
-except ModuleNotFoundError:
-    DATA_DIR = Path(__file__).resolve().parents[2] / "data"
+from paths import DATA_DIR
 
 class FrameDataService:
     def __init__(self):

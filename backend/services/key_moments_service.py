@@ -1,16 +1,11 @@
 from logger import get_logger
-from pathlib import Path
 
 logger = get_logger(__name__)
 
 import json
 import pandas as pd
 
-try:
-    from backend.paths import DATA_DIR
-except ModuleNotFoundError:
-    DATA_DIR = Path(__file__).resolve().parents[2] / "data"
-    
+from paths import DATA_DIR
 
 class KeyMomentsService:
     def __init__(self):

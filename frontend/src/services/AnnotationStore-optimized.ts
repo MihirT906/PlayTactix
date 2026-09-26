@@ -1,4 +1,3 @@
-import objectHash from "object-hash";
 import { getLogger } from "../services/logger";
 
 const logger = getLogger("AnnotationStore");
@@ -134,11 +133,11 @@ export default class AnnotationStore {
 
     }
 
-    getPlayerLineAnnotations(currentFrame: number) {
+    getPlayerLineAnnotations(_currentFrame: number) {
         return Array.from(this.active_annotations.values()).filter(annotation => annotation.type === 'playerLine').map(annotation => annotation.shape.players);
     }
 
-    getDrawAnnotations(currentFrame: number) {
+    getDrawAnnotations(_currentFrame: number) {
         return Array.from(this.active_annotations.values()).filter(annotation => annotation.type === 'draw').map(annotation => annotation.shape);
     }
 

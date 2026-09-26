@@ -1,5 +1,4 @@
 import { FaCog, FaSearch, FaStream, FaStreetView, FaProjectDiagram, FaVectorSquare, FaSlash, FaEraser } from 'react-icons/fa'
-import { FaCircleNodes } from "react-icons/fa6";
 import { BiAddToQueue } from "react-icons/bi";
 import './WorkspaceSidebar.css'
 import Settings from './Settings.tsx'

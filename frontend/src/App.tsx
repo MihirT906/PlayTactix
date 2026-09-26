@@ -14,7 +14,7 @@ import { StyleConfigProvider } from './context/StyleConfigContext'
 import PlotLayoutComponent from './components/PlotLayoutComponent'
 import MatchPicker from './components/MatchPicker'
 import ProjectControls from './components/ProjectControls'
-import WorkspaceSidebar, { type SidebarPanel } from './components/WorkspaceSidebar'
+import WorkspaceSidebar from './components/WorkspaceSidebar'
 import { MatchSessionProvider, useMatchSession } from './context/MatchSessionContext'
 import type OverlayManager from './services/OverlayManager'
 
@@ -61,7 +61,6 @@ function AppContent({
       halvePlaybackSpeed,
       setSidebarPanel,
       clearSidebarPanel,
-      setActiveOverlay,
       setFrameLoading,
       setLoadedFrameRange,
       setMetaStatus,

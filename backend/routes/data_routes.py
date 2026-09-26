@@ -1,21 +1,13 @@
-import json
-from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, Query
 import math
-from fastapi.responses import JSONResponse 
+from fastapi.responses import JSONResponse
 from logger import get_logger, clear_log
 
 logger = get_logger(__name__)
 
-try:
-    from backend.paths import DATA_DIR
-except ModuleNotFoundError:
-    DATA_DIR = Path(__file__).resolve().parents[2] / "data"
-
 from services.data_ingestor_github import DataIngestor, get_loaded_match_id
 from services.frame_data_service import FrameDataService
 from services.key_moments_service import KeyMomentsService
-from services.pitch_control_overlay import PitchControlOverlay
 
 router = APIRouter(prefix="/data", tags=["frames"])
 
@@ -57,7 +49,7 @@ async def download_match_data(match_id: int):
         ingestor = DataIngestor()
         ingestor.load_data(match_id)
         
-        return {"message": f"Data for match {match_id} has been saved to gold_tracking_data.json"}
+        return {"message": f"Data for match {match_id} has been ingested and cached."}
     except Exception as e:
         logger.error("Error occurred while downloading match data for match_id=%s: %s", match_id, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
@@ -101,16 +93,4 @@ async def get_match_key_moments(match_id: int = Query(...)):
 
     except Exception as e:
         logger.error("Failed to fetch key moments for match_id=%s", match_id, exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.get("/pitch_control_overlay", dependencies=[Depends(require_loaded_match)])
-async def get_pitch_control_overlay(match_id: int = Query(...), start: int = Query(1), end: int = Query(50)):
-    try:
-        logger.info("Fetching pitch control match_id=%s start=%s end=%s", match_id, start, end)
-        pco = PitchControlOverlay()
-        pitch_control_results = pco.get_pitch_control(match_id=match_id, start_frame=start, end_frame=end)
-        return pitch_control_results
-
-    except Exception as e:
-        logger.error("Failed to fetch pitch control match_id=%s start=%s end=%s", match_id, start, end, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))

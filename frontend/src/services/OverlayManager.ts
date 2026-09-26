@@ -1,5 +1,4 @@
 import type { FrameData } from '../types/FrameDataInterfaces'
-import type { OverlayKind } from '../context/MatchSessionContext'
 
 export type OverlayPayload =
   | { kind: 'pass_option_prob'; data: FrameData | null }
@@ -10,15 +9,14 @@ export type OverlayRequestResult = {
 }
 
 export default class OverlayManager {
-  private selectedMatchId: number | null = null
-
-  setMatchId(matchId: number | null): void {
-    this.selectedMatchId = matchId
-  }
+  // No-op today: getOverlayForFrame is handed frameData directly and doesn't
+  // need the match id. Kept for interface parity with DataManager.setMatchId,
+  // which does use it, since both are called together (MatchSessionContext).
+  setMatchId(_matchId: number | null): void {}
 
   async getOverlayForFrame(
-    overlay: OverlayKind | null,
-    frame: number,
+    overlay: OverlayPayload['kind'] | null,
+    _frame: number,
     frameData: FrameData | null
   ): Promise<OverlayRequestResult> {
     if (!overlay) {

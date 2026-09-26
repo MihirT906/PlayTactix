@@ -1,14 +1,13 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import Plot from 'react-plotly.js'
-import Plotly from 'plotly.js-dist-min'
 import AnnotationStore from '../services/AnnotationStore-optimized'
 import type { FrameData } from '../types/FrameDataInterfaces'
 import { APP_CONFIG, SELECTED_POINTS_OPACITY } from '../config'
 // Import the background image
-import backgroundImage from '../../../data/background_image.png';
+import backgroundImage from '../assets/background_image.png';
 import type { MatchData } from '../types/MatchDataInterfaces'
 import { useStyleConfig } from '../context/StyleConfigContext'
-import { useMatchSession, type EditMode } from '../context/MatchSessionContext'
+import { useMatchSession } from '../context/MatchSessionContext'
 import { buildPassOptionProbOverlay } from '../plot/overlays/passOptionProbOverlay'
 import { buildPitchControlOverlay } from '../plot/overlays/pitchControlOverlay.ts'
 import { buildEventVisualisationOverlay } from '../plot/overlays/eventVisualisationOverlay'
@@ -16,9 +15,6 @@ import { buildEventVisualisationOverlay } from '../plot/overlays/eventVisualisat
 import { getLogger } from "../services/logger";
 
 const logger = getLogger("PlotComponent");
-
-
-const annotationStore = new AnnotationStore()
 
 // Plotly bug workaround: every frame change hands Plotly new data arrays, so it does a full redraw, and a
 // full redraw (shapes.draw) clears the 'above' and 'below' shape layers but never the 'between' layer that
@@ -540,7 +536,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     resources.plotActions.eraseActiveShape = () => {
       const gd = graphDivRef.current
       if (!gd) return
-      const eraseButton = gd.querySelector<HTMLElement>('.modebar-btn[data-title="Erase active shape"]')
+      const eraseButton = gd.querySelector('.modebar-btn[data-title="Erase active shape"]') as HTMLElement | null
       eraseButton?.click()
     }
     return () => {

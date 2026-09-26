@@ -1,4 +1,3 @@
-import { useStyleConfig } from '../../context/StyleConfigContext'
 import type { FrameData } from '../../types/FrameDataInterfaces'
 import type { MatchData } from '../../types/MatchDataInterfaces'
 

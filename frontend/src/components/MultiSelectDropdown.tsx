@@ -4,7 +4,7 @@ import './MultiSelectDropdown.css'
 
 type MultiSelectDropdownProps<T> = {
   label: string
-  options: T[]
+  options: readonly T[]
   selected: T[]
   onChange: (values: T[]) => void
   formatOption?: (value: T) => string

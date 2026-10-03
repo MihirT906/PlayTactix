@@ -4,6 +4,7 @@ import DataManager from './services/DataManager'
 import AnnotationStore from './services/AnnotationStore-optimized'
 import TimelineStore from './services/TimelineStore'
 import LandingPage from './pages/Landing/LandingPage'
+import FirstClipSteps from './components/FirstClipSteps'
 import { APP_CONFIG, SLEEP_INTERVAL, THEME_CSS_VARIABLES } from './config'
 import type { MatchData } from './types/MatchDataInterfaces';
 import type { FrameData, Event } from './types/FrameDataInterfaces'
@@ -221,7 +222,7 @@ function AppContent({
 
     return (
       <StyleConfigProvider matchData={matchMetaData}>
-        <div className={`app-shell ${appView === 'idle' ? 'app-shell--landing' : ''}`}>
+        <div className={`app-shell ${appView !== 'workspace' ? 'app-shell--with-steps' : ''}`}>
           <header className="app-header">
             <div className="app-title-group">
               <h1 className="app-title">{APP_CONFIG.brand.title}</h1>
@@ -271,6 +272,7 @@ function AppContent({
                   setAppView('workspace')
                 }}
               />
+              <FirstClipSteps />
             </div>
           ) : null}
 

@@ -4,22 +4,22 @@
   padding: 12px 16px;
 }
 
-/* Landing view: leaves a left column for the getting-started steps, so the logo and page content start beside it */
-.app-shell--landing {
-  --landing-gutter: clamp(24px, 5vw, 96px);
+/* Landing and match picker: full width, with a left column reserved for the getting-started steps so the logo and page content start beside it */
+.app-shell--with-steps {
+  --shell-gutter: clamp(24px, 5vw, 96px);
   position: relative;
   max-width: none;
-  padding-left: calc(var(--landing-gutter) + 20rem + 3.5rem);
-  padding-right: var(--landing-gutter);
+  padding-left: calc(var(--shell-gutter) + 20rem + 3.5rem);
+  padding-right: var(--shell-gutter);
 }
 
-.app-shell--landing .app-title {
+.app-shell--with-steps .app-title {
   font-size: 3.8rem;
 }
 
 @media (max-width: 60rem) {
-  .app-shell--landing {
-    padding-left: var(--landing-gutter);
+  .app-shell--with-steps {
+    padding-left: var(--shell-gutter);
   }
 }
 
@@ -132,8 +132,10 @@
 }
 
 .app-picker-shell {
+  position: relative;
   width: 100%;
   margin-top: 22px;
+  --first-clip-steps-offset: 0.67rem;
 }
 
 .app-container--settings-open {

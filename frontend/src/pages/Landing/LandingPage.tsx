@@ -1,4 +1,5 @@
 import { APP_CONFIG } from '../../config'
+import FirstClipSteps from '../../components/FirstClipSteps'
 import './LandingPage.css'
 
 const FEATURES = [
@@ -18,13 +19,6 @@ const FEATURES = [
     title: 'Tell the story in one clip',
     body: 'Pull the moments that make your case from across the match into one clip. Keep it to come back to, or send it to someone who needs to see it.',
   },
-]
-
-const STEPS = [
-  { title: 'Pick a match', body: 'Choose the game you want to dig into from the top bar.' },
-  { title: 'Find the moment', body: 'Use key moments and the timeline to land on the passage of play that caught your eye.' },
-  { title: 'Tell the story', body: 'Switch on overlays and draw on the play to show what happened and why.' },
-  { title: 'Share the clip', body: 'Export it and send it to whoever you want to convince.' },
 ]
 
 export default function LandingPage() {
@@ -52,17 +46,7 @@ export default function LandingPage() {
             </p>
           </section>
         </div>
-        <aside className="landing-start">
-          <h2 className="landing-heading">Your first clip in four steps</h2>
-          <ol className="landing-steps">
-            {STEPS.map((s) => (
-              <li key={s.title}>
-                <h3>{s.title}</h3>
-                <p>{s.body}</p>
-              </li>
-            ))}
-          </ol>
-        </aside>
+        <FirstClipSteps />
       </div>
 
       <section className="landing-section">

@@ -12,14 +12,7 @@
 .landing-text { max-width: 60rem; line-height: 1.7; color: var(--color-text-muted); font-size: 1.1rem; }
 .landing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 1rem; margin-top: 1.5rem; }
 .landing-card { background: var(--surface-subtle-background); border-top: 1px solid var(--surface-subtle-border); border-bottom: 1px solid var(--surface-subtle-border); border-radius: 0; box-shadow: var(--surface-subtle-shadow); padding: 0.85rem 1rem; }
-.landing-card h3, .landing-steps h3 { margin: 0 0 0.4rem; font-size: 1.05rem; font-weight: 600; letter-spacing: 0.01em; color: var(--color-text-primary); }
-.landing-card p, .landing-steps p { margin: 0; font-size: 0.94rem; line-height: 1.5; color: var(--color-text-muted); }
-.landing-steps { list-style: none; padding: 0; margin: 1.5rem 0 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: 1rem; counter-reset: step; }
-.landing-steps li { counter-increment: step; display: grid; grid-template-columns: 1.75rem 1fr; column-gap: 0.75rem; padding: 0.85rem 0; border-top: 1px solid var(--surface-subtle-border); }
-.landing-steps li::before { content: counter(step); grid-row: 1 / span 2; font-size: 1.05rem; font-weight: 600; color: var(--color-text-subtle); }
+.landing-card h3 { margin: 0 0 0.4rem; font-size: 1.05rem; font-weight: 600; letter-spacing: 0.01em; color: var(--color-text-primary); }
+.landing-card p { margin: 0; font-size: 0.94rem; line-height: 1.5; color: var(--color-text-muted); }
 
-.landing-top { position: relative; }
-.landing-start { position: absolute; top: 0; left: calc(-20rem - 3.5rem); width: 20rem; padding-top: calc(3rem + var(--landing-headline-size) * 0.175 - 0.32rem); }
-.landing-start .landing-heading { font-size: 1.6rem; line-height: 1; }
-.landing-start .landing-steps { grid-template-columns: 1fr; gap: 0; margin-top: 1rem; }
-@media (max-width: 60rem) { .landing-start { position: static; width: auto; padding: 0 0 3rem; } }
+.landing-top { position: relative; --first-clip-steps-offset: calc(3rem + var(--landing-headline-size) * 0.175 - 0.32rem); }

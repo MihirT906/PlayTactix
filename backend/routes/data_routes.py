@@ -5,17 +5,11 @@ from logger import get_logger, clear_log
 
 logger = get_logger(__name__)
 
-from services.data_ingestor_github import DataIngestor, is_match_cached
+from services.match_cache import MatchNotAvailableError, ensure_match_cached, is_match_cached
 from services.frame_data_service import FrameDataService
 from services.key_moments_service import KeyMomentsService
 
 router = APIRouter(prefix="/data", tags=["frames"])
-
-data_ingestor: DataIngestor = None
-
-def set_data_ingestor(ingestor: DataIngestor):
-    global data_ingestor
-    data_ingestor = ingestor
 
 def require_loaded_match(match_id: int = Query(...)) -> int:
     """Refuse to serve data for a match that hasn't been ingested and cached yet."""
@@ -41,16 +35,20 @@ async def hello():
     return {"message": "Hello, World!"}
 
 @router.get("/match/{match_id}")
-async def download_match_data(match_id: int):
+def download_match_data(match_id: int):
+    # Plain `def` (not async) so the blocking download runs in FastAPI's
+    # threadpool instead of stalling the event loop for every other request.
     try:
         clear_log()
         logger.info("Downloading match data for match_id=%s", match_id)
-        ingestor = DataIngestor()
-        ingestor.load_data(match_id)
-        
+        ensure_match_cached(match_id)
+
         return {"message": f"Data for match {match_id} has been ingested and cached."}
+    except MatchNotAvailableError as e:
+        logger.warning("No prebuilt data for match_id=%s", match_id)
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        logger.error("Error occurred while downloading match data for match_id=%s: %s", match_id, exc_info=True)
+        logger.error("Error occurred while downloading match data for match_id=%s", match_id, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/frames", dependencies=[Depends(require_loaded_match)])

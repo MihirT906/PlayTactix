@@ -7,3 +7,6 @@ __pycache__/
 requirements-dev.txt
 notebooks/
 tests/
+requirements-build.txt
+scripts/
+services/data_ingestor_github.py

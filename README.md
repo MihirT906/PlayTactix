@@ -24,7 +24,7 @@ Built for coaches, analysts, and anyone who wants to go beyond the numbers and t
 
 - Node.js v24.13.0 and npm 11.6.2
 - Python 3.13
-- Internet access (match data is fetched directly from [SkillCorner's open data repository](https://github.com/SkillCorner/opendata) at runtime — no manual download required)
+- Internet access (the backend downloads prebuilt match data from this repo's [`match-data` release](https://github.com/MihirT906/PlayTactix/releases/tag/match-data) at runtime — no manual download required)
 
 ## Setup
 
@@ -46,7 +46,19 @@ Dependency versions in `requirements.txt` are pinned to a known-working set — 
 pip install -r requirements-dev.txt
 ```
 
-Configuration (CORS origins, port, log level) is read from environment variables — see `backend/.env.example` for what's available. Copy it to `backend/.env` and adjust if you need something other than the defaults; `.env` is gitignored, so each environment sets its own.
+#### Match data
+
+The server never parses raw tracking data itself — doing so peaks above 1GB of RAM per match. Instead, `backend/scripts/build_match_data.py` builds each match's files ahead of time from [SkillCorner's open data](https://github.com/SkillCorner/opendata), the **Build match data** GitHub Action publishes them to the `match-data` release, and the server downloads the finished files (a few MB each) the first time a match is requested.
+
+Re-run the action whenever the ingestion code changes the shape of the stored data. To build matches locally instead (this also primes a local server's cache in `data/`):
+
+```bash
+pip install -r requirements-build.txt
+python scripts/build_match_data.py            # every match
+python scripts/build_match_data.py 1886347    # just these ids
+```
+
+Configuration (CORS origins, port, log level, match-data URL) is read from environment variables — see `backend/.env.example` for what's available. Copy it to `backend/.env` and adjust if you need something other than the defaults; `.env` is gitignored, so each environment sets its own.
 
 #### Running the backend in Docker
 
@@ -93,7 +105,7 @@ PlayTactix/
 
 | Method | Endpoint | Description |
 |---|---|---|
-| GET | `/data/match/{match_id}` | Download and cache tracking + event data for a match |
+| GET | `/data/match/{match_id}` | Download and cache a match's prebuilt tracking + event data |
 | GET | `/data/frames?match_id&start&end` | Fetch tracking frames for a frame range |
 | GET | `/data/match_meta?match_id` | Fetch match metadata (teams, players, score) |
 | GET | `/data/match_key_moments?match_id` | Fetch phases of play, goals, and shots |

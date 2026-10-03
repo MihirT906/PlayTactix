@@ -1,0 +1,2 @@
+-r requirements.txt
+kloppy==3.18.0

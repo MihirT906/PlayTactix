@@ -3,7 +3,6 @@ from config import ALLOWED_ORIGINS, PORT  # loads .env; must come before other b
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from services.data_ingestor_github import SkillCornerDataIngestor
 from routes import data_routes
 
 app = FastAPI()
@@ -16,8 +15,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-data_ingestor = SkillCornerDataIngestor()
-data_routes.set_data_ingestor(data_ingestor)
 app.include_router(data_routes.router)
 
 @app.get("/")

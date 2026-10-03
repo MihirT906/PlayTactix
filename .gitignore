@@ -23,7 +23,8 @@ out/
 # IDE
 .vscode/
 .idea/
-.github/
+.github/*
+!.github/workflows/
 
 # OS
 .DS_Store

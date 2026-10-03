@@ -1,0 +1,55 @@
+name: Build match data
+
+# Runs the heavy kloppy ingestion on a GitHub runner and publishes the
+# finished per-match files to the "match-data" release, which is where the
+# backend downloads them from (MATCH_DATA_BASE_URL in backend/config.py).
+# Re-run whenever backend/services/data_ingestor_github.py changes the
+# shape of the stored data.
+
+on:
+  workflow_dispatch:
+    inputs:
+      match_ids:
+        description: "Space-separated match ids (blank = every open-data match)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+env:
+  RELEASE_TAG: match-data
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: backend/.python-version
+          cache: pip
+          cache-dependency-path: backend/requirements*.txt
+
+      - name: Install dependencies
+        run: pip install -r backend/requirements-build.txt
+
+      - name: Build match data
+        env:
+          MATCH_IDS: ${{ inputs.match_ids }}
+        run: python backend/scripts/build_match_data.py $MATCH_IDS
+
+      # always(): if one match failed to build, still publish the ones that did
+      - name: Publish to release
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "$RELEASE_TAG" >/dev/null 2>&1 || gh release create "$RELEASE_TAG" \
+            --title "Match data" \
+            --notes "Prebuilt per-match tracking, event and metadata files served to the backend. Built by the build-match-data workflow." \
+            --latest=false
+          # Metadata goes last: its presence is what marks a match as complete
+          gh release upload "$RELEASE_TAG" data/tracking_data_*.parquet data/events_data_*.parquet --clobber
+          gh release upload "$RELEASE_TAG" data/meta_data_*.json --clobber

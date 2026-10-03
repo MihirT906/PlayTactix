@@ -3,14 +3,12 @@
 // local dev backend started via `cd backend && uvicorn main:app --reload`.
 export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
-// First entry is the initial theme; clicking cycles through the rest (see CursorGlow).
-const THEME_CYCLE = [
-	{ primary: '#233d4d', accent: '#fe7f2d' }, // charcoal with pumpkin accent
-	// { primary: '#02182B', accent: '#D7263D' }, // nights with crimson accent
-	// { primary: '#1A281E', accent: '#FEFCE0' }, // emerald with lime accent
-	// { primary: '#372F3D', accent: '#FEBCC4' },
-	// { primary: '#722F37', accent: '#EFDFBB' },
-] as const;
+const THEME_COLORS = { primary: '#233d4d', accent: '#fe7f2d' } as const; // charcoal with pumpkin accent
+// Alternatives:
+// { primary: '#02182B', accent: '#D7263D' } // nights with crimson accent
+// { primary: '#1A281E', accent: '#FEFCE0' } // emerald with lime accent
+// { primary: '#372F3D', accent: '#FEBCC4' }
+// { primary: '#722F37', accent: '#EFDFBB' }
 
 export const APP_CONFIG = {
 	brand: {
@@ -66,16 +64,16 @@ export const APP_CONFIG = {
 		},
 	},
 	theme: {
-		themeCycle: THEME_CYCLE,
+		colors: THEME_COLORS,
 		defaultTeamColors: {
 			home: '#3B82F6',
 			away: '#EF4444',
 		},
 		cssVariables: {
-			'--app-bg-primary': THEME_CYCLE[0].primary,
+			'--app-bg-primary': THEME_COLORS.primary,
 			'--app-bg-secondary': '#ffffff4c',
-				'--app-bg-accent': THEME_CYCLE[0].accent,
-				'--app-bg-accent-light': `${THEME_CYCLE[0].accent}be`,
+				'--app-bg-accent': THEME_COLORS.accent,
+				'--app-bg-accent-light': `${THEME_COLORS.accent}be`,
 			'--app-border-color': '#000000',
 			'--app-border-radius': '12px',
 			'--app-info-font-size': '14px',

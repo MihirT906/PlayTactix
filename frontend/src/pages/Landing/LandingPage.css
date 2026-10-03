@@ -2,9 +2,10 @@
   color: var(--color-text-primary);
   font-family: 'Inter', var(--font-family-sans);
   padding: 0 0 4rem;
+  --landing-headline-size: clamp(3rem, 7vw, 7.5rem);
 }
 .landing-hero { padding: 3rem 0 3rem; }
-.landing-headline { font-family: 'Barlow Condensed', var(--font-family-sans); font-weight: 800; text-transform: uppercase; font-size: clamp(3rem, 7vw, 7.5rem); line-height: 0.95; letter-spacing: 0.01em; color: var(--color-accent); margin: 0 0 1.5rem; }
+.landing-headline { font-family: 'Barlow Condensed', var(--font-family-sans); font-weight: 800; text-transform: uppercase; font-size: var(--landing-headline-size); line-height: 0.95; letter-spacing: 0.01em; color: var(--color-accent); margin: 0 0 1.5rem; }
 .landing-lede { max-width: 60rem; font-size: 1.2rem; line-height: 1.6; color: var(--color-text-secondary); margin: 0 0 2rem; }
 .landing-section { padding: 3rem 0; border-top: 1px solid var(--surface-subtle-border); }
 .landing-heading { font-family: 'Barlow Condensed', var(--font-family-sans); font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; font-size: 2.2rem; margin: 0 0 1rem; }
@@ -18,7 +19,7 @@
 .landing-steps li::before { content: counter(step); grid-row: 1 / span 2; font-size: 1.05rem; font-weight: 600; color: var(--color-text-subtle); }
 
 .landing-top { position: relative; }
-.landing-start { position: absolute; top: 0; left: calc(-20rem - 3.5rem); width: 20rem; padding-top: 3rem; }
-.landing-start .landing-heading { font-size: 1.6rem; }
+.landing-start { position: absolute; top: 0; left: calc(-20rem - 3.5rem); width: 20rem; padding-top: calc(3rem + var(--landing-headline-size) * 0.175 - 0.32rem); }
+.landing-start .landing-heading { font-size: 1.6rem; line-height: 1; }
 .landing-start .landing-steps { grid-template-columns: 1fr; gap: 0; margin-top: 1rem; }
 @media (max-width: 60rem) { .landing-start { position: static; width: auto; padding: 0 0 3rem; } }

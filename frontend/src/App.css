@@ -6,11 +6,15 @@
 
 /* Landing view: leaves a left column for the getting-started steps, so the logo and page content start beside it */
 .app-shell--landing {
-  --landing-gutter: clamp(16px, 3vw, 48px);
+  --landing-gutter: clamp(24px, 5vw, 96px);
   position: relative;
   max-width: none;
   padding-left: calc(var(--landing-gutter) + 20rem + 3.5rem);
   padding-right: var(--landing-gutter);
+}
+
+.app-shell--landing .app-title {
+  font-size: 3.8rem;
 }
 
 @media (max-width: 60rem) {

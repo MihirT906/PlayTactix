@@ -260,7 +260,7 @@ class SkillCornerDataIngestor:
         pass
     
     def _get_bronze_meta_data(self, match_id) -> pd.DataFrame:
-        meta_data_github_url = f"https://raw.githubusercontent.com/SkillCorner/opendata/741bdb798b0c1835057e3fa77244c1571a00e4aa/data/matches/{match_id}/{match_id}_match.json"
+        meta_data_github_url = f"https://raw.githubusercontent.com/SkillCorner/opendata/refs/heads/master/data/matches/{match_id}/{match_id}_match.json"
         logger.info("Fetching metadata from GitHub match_id=%s", match_id)
         response = requests.get(meta_data_github_url)
         if not response.ok:

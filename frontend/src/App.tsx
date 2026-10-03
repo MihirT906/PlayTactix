@@ -222,7 +222,7 @@ function AppContent({
 
     return (
       <StyleConfigProvider matchData={matchMetaData}>
-        <div className="app-shell">
+        <div className={`app-shell ${appView === 'idle' ? 'app-shell--landing' : ''}`}>
         <CursorGlow />
           <header className="app-header">
             <div className="app-title-group">

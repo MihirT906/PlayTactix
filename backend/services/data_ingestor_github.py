@@ -176,27 +176,42 @@ class KloppyDataIngestor:
 
         tracking_df = tracking_df[existing_base_cols + keep_cols].rename(columns=rename_map)
 
+        # Position data doesn't need 64-bit precision - halving it here, before
+        # the (much larger) velocity/speed columns below are even computed,
+        # directly cuts peak memory during that computation, which is what
+        # was exceeding hosts' RAM limits, not just the finished data's size.
+        position_cols = [col for col in tracking_df.columns if col.endswith(("_x", "_y", "_z"))]
+        tracking_df[position_cols] = tracking_df[position_cols].astype("float32")
+
+        # Collect every derived column here and attach them all in one
+        # pd.concat at the end, instead of assigning columns one at a time in
+        # a loop. Repeated `df[new_col] = ...` on the same frame badly
+        # fragments pandas' internal memory layout - pandas itself warns
+        # "DataFrame is highly fragmented" doing it this way across ~30-40
+        # players x 3 columns each, and peak memory while building it that
+        # way runs well above what the finished data actually needs to hold.
+        computed_cols: dict[str, pd.Series] = {}
+
         if "ball_x" in tracking_df.columns and "ball_y" in tracking_df.columns:
-            tracking_df["ball_vx"] = (tracking_df["ball_x"].diff() / dt).round(2)
-            tracking_df["ball_vy"] = (tracking_df["ball_y"].diff() / dt).round(2)
-            tracking_df["ball_speed"] = np.sqrt(
-                tracking_df["ball_vx"] ** 2 + tracking_df["ball_vy"] ** 2
-            ).round(2)
+            ball_vx = (tracking_df["ball_x"].diff() / dt).round(2).astype("float32")
+            ball_vy = (tracking_df["ball_y"].diff() / dt).round(2).astype("float32")
+            computed_cols["ball_vx"] = ball_vx
+            computed_cols["ball_vy"] = ball_vy
+            computed_cols["ball_speed"] = np.sqrt(ball_vx ** 2 + ball_vy ** 2).round(2).astype("float32")
 
         for player in player_data:
             databallpy_id = player["databallpy_id"]
             x_col = f"{databallpy_id}_x"
             y_col = f"{databallpy_id}_y"
-            vx_col = f"{databallpy_id}_vx"
-            vy_col = f"{databallpy_id}_vy"
-            speed_col = f"{databallpy_id}_speed"
 
             if x_col in tracking_df.columns and y_col in tracking_df.columns:
-                tracking_df[vx_col] = (tracking_df[x_col].diff() / dt).round(2)
-                tracking_df[vy_col] = (tracking_df[y_col].diff() / dt).round(2)
-                tracking_df[speed_col] = np.sqrt(
-                    tracking_df[vx_col] ** 2 + tracking_df[vy_col] ** 2
-                ).round(2)
+                vx = (tracking_df[x_col].diff() / dt).round(2).astype("float32")
+                vy = (tracking_df[y_col].diff() / dt).round(2).astype("float32")
+                computed_cols[f"{databallpy_id}_vx"] = vx
+                computed_cols[f"{databallpy_id}_vy"] = vy
+                computed_cols[f"{databallpy_id}_speed"] = np.sqrt(vx ** 2 + vy ** 2).round(2).astype("float32")
+
+        tracking_df = pd.concat([tracking_df, pd.DataFrame(computed_cols, index=tracking_df.index)], axis=1)
 
         ordered_base_cols = [
             col for col in [
@@ -230,11 +245,13 @@ class KloppyDataIngestor:
 
         tracking_df = tracking_df[ordered_base_cols + ordered_player_cols]
         logger.info("Silver tracking data enriched rows=%s players=%s", len(tracking_df), len(player_data))
-        computed_cols = [col for col in tracking_df.columns if col not in existing_base_cols]
-        # numeric_cols = tracking_df.select_dtypes(include=[np.number]).columns
-        # tracking_df[computed_cols] = tracking_df[computed_cols].fillna(0)
+        # inf can show up from the speed computation; nan (not None) is kept
+        # all the way to the parquet file, since parquet stores float nulls
+        # natively and compactly, and every downstream reader already checks
+        # for missing values via pd.isna() - converting to Python None here
+        # would force these columns back to the heavy, boxed `object` dtype
+        # the float32 downcast above was specifically trying to avoid.
         tracking_df = tracking_df.replace([np.inf, -np.inf], np.nan)
-        tracking_df = tracking_df.where(pd.notna(tracking_df), None)
 
         return tracking_df
 

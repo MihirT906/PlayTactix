@@ -228,7 +228,7 @@ work, not corrupted data.
 
 - [SkillCorner open data](https://github.com/SkillCorner/opendata) — 20
   matches total, confirmed 2026-09-24.
-- [Frame data caching](./frame-data-caching.md) — the frontend-side sibling
+- [Frame data caching](./004-frame-data-caching.md) — the frontend-side sibling
   of this document: how tracking frames *within* an already-loaded match are
   cached and prefetched. This document is about which matches are available
   to be framed in the first place.

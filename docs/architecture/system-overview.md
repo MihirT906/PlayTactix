@@ -169,7 +169,7 @@ one concat), then the move to prebuilding.
 
 What it costs: the data is only as fresh as the last workflow run, a match
 that was never built returns `404`, and any change to the stored shape needs a
-rebuild. Record: `decisions/002-prebuilt-match-data.md`.
+rebuild. Record: [002](../decisions/002-prebuilt-match-data.md).
 
 ### 2. Keep the prebuilt files in a GitHub release
 
@@ -179,7 +179,7 @@ needs no credentials to read it. *Inferred.*
 
 What it costs: no versioning of the files (an upload overwrites the previous
 one), and the server depends on GitHub being reachable the first time each
-match is loaded. Record: `decisions/003-release-as-data-store.md`.
+match is loaded. Record: [003](../decisions/003-release-as-data-store.md).
 
 ### 3. Download each match lazily, on first request
 
@@ -201,7 +201,7 @@ to a temporary name and renamed, so a reader never sees half a file.
 
 This replaced an earlier design with a single set of fixed-name files, which
 could hold only one match at a time for everyone. Record:
-[multi-user match caching](../multi-user-match-caching.md). Concepts:
+[multi-user match caching](../decisions/001-per-match-cache.md). Concepts:
 [match cache](../concepts/match-cache.md),
 [locks and concurrency](../concepts/locks-and-concurrency.md),
 [atomic writes](../concepts/atomic-writes.md).
@@ -226,7 +226,7 @@ second. Chunks of 300 are the middle ground. *Inferred.*
 
 What it costs: the buffer is a simple insertion-ordered map with one loaded
 range, which gets awkward once a clip has several segments. A proposed
-redesign is in [frame data caching](../frame-data-caching.md).
+redesign is in [frame data caching](../decisions/004-frame-data-caching.md).
 
 ### 7. Compute pitch control on the server and ship it inside each frame
 

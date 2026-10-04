@@ -112,10 +112,12 @@ PlayTactix/
 
 Pitch control is served as an embedded overlay on each frame returned by `/data/frames`, not as a separate endpoint — an earlier standalone `/data/pitch_control_overlay` route was removed (it was broken and unused).
 
-## Design Notes
+## Documentation
 
-- [Frame data caching](./docs/frame-data-caching.md) — proposed tiered cache architecture for tracking-frame playback, and the multi-segment problems it addresses (proposal, not yet implemented).
-- [Multi-user match caching](./docs/multi-user-match-caching.md) — proposed per-match backend cache so concurrent users can load different matches independently, a prerequisite for deploying beyond single-user local use (proposal, not yet implemented).
+Full documentation is in [`docs/`](./docs/README.md): a user guide, how the backend and frontend work, the concepts behind the cache and locking, and the reasons for the main design decisions.
+
+- [System overview](./docs/architecture/system-overview.md): every part on one diagram.
+- [Decisions](./docs/decisions/README.md): why matches are cached per id, why match data is prebuilt, where it is stored, and a proposed frame cache for the browser.
 
 ## License
 

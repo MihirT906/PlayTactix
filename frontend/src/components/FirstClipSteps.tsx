@@ -7,7 +7,7 @@ const STEPS = [
   { title: 'Share the clip', body: 'Export it and send it to whoever you want to convince.' },
 ]
 
-// Sits in the left column that .app-shell--with-steps reserves; the parent must be position: relative.
+// Sits in the right column that .app-shell reserves; the parent must be position: relative.
 export default function FirstClipSteps() {
   return (
     <aside className="first-clip-steps">

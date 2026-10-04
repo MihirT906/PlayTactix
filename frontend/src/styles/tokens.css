@@ -1,5 +1,5 @@
 :root {
-  --font-family-sans: Avenir, Montserrat, Corbel, 'URW Gothic', source-sans-pro, sans-serif;
+  --font-family-sans: 'Inter', Avenir, Montserrat, Corbel, 'URW Gothic', source-sans-pro, sans-serif;
   --color-accent: var(--app-bg-accent);
   --color-accent-soft: var(--app-bg-accent-light);
   --color-accent-scrollbar: color-mix(in srgb, var(--color-accent) 72%, transparent);

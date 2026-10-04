@@ -1,5 +1,5 @@
-.first-clip-steps { position: absolute; top: 0; left: calc(-20rem - 3.5rem); width: 20rem; padding-top: var(--first-clip-steps-offset, 0px); font-family: 'Inter', var(--font-family-sans); color: var(--color-text-primary); }
-.first-clip-steps-heading { font-family: 'Barlow Condensed', var(--font-family-sans); font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; font-size: 1.6rem; line-height: 1; margin: 0 0 1rem; }
+.first-clip-steps { position: absolute; top: 0; right: calc(-1 * (var(--steps-width) + var(--steps-gap))); width: var(--steps-width); padding-top: var(--first-clip-steps-offset, 0px); font-family: var(--font-family-sans); color: var(--color-text-primary); }
+.first-clip-steps-heading { font-family: 'Barlow Condensed', var(--font-family-sans); font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; font-size: 1.4rem; line-height: 1; margin: 0 0 1rem; }
 .first-clip-steps-list { list-style: none; padding: 0; margin: 1rem 0 0; counter-reset: step; }
 .first-clip-steps-list li { counter-increment: step; display: grid; grid-template-columns: 1.75rem 1fr; column-gap: 0.75rem; padding: 0.85rem 0; border-top: 1px solid var(--surface-subtle-border); }
 .first-clip-steps-list li::before { content: counter(step); grid-row: 1 / span 2; font-size: 1.05rem; font-weight: 600; color: var(--color-text-subtle); }

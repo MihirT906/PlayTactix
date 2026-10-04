@@ -222,7 +222,7 @@ function AppContent({
 
     return (
       <StyleConfigProvider matchData={matchMetaData}>
-        <div className={`app-shell ${appView !== 'workspace' ? 'app-shell--with-steps' : ''}`}>
+        <div className="app-shell">
           <header className="app-header">
             <div className="app-title-group">
               <h1 className="app-title">{APP_CONFIG.brand.title}</h1>
@@ -324,6 +324,7 @@ function AppContent({
                   </div>
                 </div>
               </div>
+              <FirstClipSteps />
             </div>
           ) : null}
         </div>

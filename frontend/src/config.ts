@@ -26,6 +26,8 @@ export const APP_CONFIG = {
 		xAxisRange: [-50, 50] as [number, number],
 		yAxisRange: [-50, 50] as [number, number],
 		markerSize: 15,
+		playerNumberFontSize: 9,
+		playerNumberColor: '#ffffff',
 		markerColor: '#d85e1d',
 		focusLineColor: '#d85e1d',
 		focusLineWidth: 2,

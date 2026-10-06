@@ -168,13 +168,14 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     };
   }, [eventVisibility.onBallEngagement, eventVisibility.passingOption, eventVisibility.playerPossession, frameData]);
 
-  // Lookup of player id -> display info (name, position) sourced from matchData
+  // Lookup of player id -> display info (name, position, shirt number) sourced from matchData
   const playerInfoById = useMemo(() => {
-    const map = new Map<number, { name: string; position: string }>()
+    const map = new Map<number, { name: string; position: string; number: number | null }>()
     for (const player of matchData?.players || []) {
       map.set(player.id, {
         name: player.short_name || '',
         position: player.player_role?.acronym || '',
+        number: player.number ?? null,
       })
     }
     return map
@@ -211,6 +212,16 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
         }),
         mode: 'markers+text',
         type: 'scatter',
+        // Shirt number inside the marker, in the number colour of that team's kit.
+        text: visiblePlayerIds.map((playerId) => playerInfoById.get(playerId)?.number?.toString() ?? ''),
+        textposition: 'middle center',
+        textfont: {
+          size: plotConfig.playerNumberFontSize,
+          color: filterByMask(players.team, mask).map((team) => {
+            const kit = team === 'home' ? matchData?.home_team_kit : team === 'away' ? matchData?.away_team_kit : undefined
+            return kit?.number_color || plotConfig.playerNumberColor
+          }),
+        },
         hovertemplate: '%{customdata[1]}<extra></extra>',
         hoverlabel: {
           font: {

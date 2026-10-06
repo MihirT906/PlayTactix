@@ -6,6 +6,8 @@ export type Segment = {
   clipEnd: number
   sourceFrameStart: number
   sourceFrameEnd: number
+  // The placeholder segment a match opens with. The first segment the user adds replaces it.
+  isDefault?: boolean
 }
 
 export type OverlaySegmentKind = 'pitch' | 'pitch_control' | 'pass_option_prob'

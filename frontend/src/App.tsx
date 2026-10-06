@@ -215,8 +215,8 @@ function AppContent({
     }
 
     const handleAddSegment = (start: number, end: number) => {
-      // Appends after the existing setup - existing segments and their
-      // clip-relative annotations stay valid, so nothing is cleared here.
+      // The first segment added replaces the default clip; later ones append after the
+      // existing setup, so their segments and clip-relative annotations stay valid.
       appendSegment(start, end)
       stopPlayback() // Pause playback when a new segment is added
     }

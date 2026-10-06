@@ -1,6 +1,13 @@
 import type { Clip, OverlaySegment, OverlaySegmentKind, ResolvedClipFrame } from '../types/ClipInterfaces'
 
-export const DEFAULT_SEGMENT_SOURCE_RANGE = { start: 10, end: 110 }
+// The clip a match opens with: its first two minutes. Tracking data is 10 frames per second.
+const FRAMES_PER_SECOND = 10
+const DEFAULT_CLIP_SECONDS = 120
+const DEFAULT_SEGMENT_SOURCE_START = 10
+export const DEFAULT_SEGMENT_SOURCE_RANGE = {
+  start: DEFAULT_SEGMENT_SOURCE_START,
+  end: DEFAULT_SEGMENT_SOURCE_START + DEFAULT_CLIP_SECONDS * FRAMES_PER_SECOND,
+}
 export const DEFAULT_CLIP_LENGTH = DEFAULT_SEGMENT_SOURCE_RANGE.end - DEFAULT_SEGMENT_SOURCE_RANGE.start
 
 export function createDefaultClip(matchId: number | null): Clip {
@@ -13,6 +20,7 @@ export function createDefaultClip(matchId: number | null): Clip {
         clipEnd: DEFAULT_SEGMENT_SOURCE_RANGE.end - DEFAULT_SEGMENT_SOURCE_RANGE.start,
         sourceFrameStart: DEFAULT_SEGMENT_SOURCE_RANGE.start,
         sourceFrameEnd: DEFAULT_SEGMENT_SOURCE_RANGE.end,
+        isDefault: true,
       },
     ],
     overlaySegments: [{ type: 'pitch', clipStart: 0, clipEnd: DEFAULT_CLIP_LENGTH }],
@@ -37,29 +45,48 @@ export function addSegment(clip: Clip, matchId: number | null, sourceFrameStart:
   }
 }
 
+// Refits overlays after the clip's length changes: one that spanned the whole clip (e.g. the
+// pitch) follows the new length, any other is clamped so it can't dangle past a shrunk clip.
+function fitOverlaysToLength(overlaySegments: OverlaySegment[], previousLength: number, length: number): OverlaySegment[] {
+  return overlaySegments.map((overlay) => {
+    if (overlay.clipStart === 0 && overlay.clipEnd === previousLength) {
+      return { ...overlay, clipEnd: length }
+    }
+    const nextStart = Math.min(overlay.clipStart, length)
+    return { ...overlay, clipStart: nextStart, clipEnd: Math.max(Math.min(overlay.clipEnd, length), nextStart) }
+  })
+}
+
 // Places a new segment immediately after the last one on the clip's own timeline,
 // growing the clip (and any overlay that currently spans the whole clip, e.g. the
 // pitch) to fit. Existing segments and their annotations are left untouched.
+//
+// The segment a match opens with is only a placeholder: the first segment added replaces
+// it, and the clip is refitted to the new segment. Every later one is appended.
 export function appendSegment(
   clip: Clip,
   matchId: number | null,
   sourceFrameStart: number,
   sourceFrameEnd: number
 ): Clip {
+  const keptSegments = clip.matchSegments.filter((segment) => !segment.isDefault)
+  const replacesDefault = keptSegments.length !== clip.matchSegments.length
+
   const span = Math.max(sourceFrameEnd - sourceFrameStart, 1)
-  const clipStart = clip.matchSegments.reduce((end, segment) => Math.max(end, segment.clipEnd), 0)
+  const clipStart = keptSegments.reduce((end, segment) => Math.max(end, segment.clipEnd), 0)
   const clipEnd = clipStart + span
-  const length = Math.max(clip.length, clipEnd)
+  const length = replacesDefault ? clipEnd : Math.max(clip.length, clipEnd)
 
   return {
     ...clip,
     length,
     matchSegments: [
-      ...clip.matchSegments,
+      ...keptSegments,
       { matchId, clipStart, clipEnd, sourceFrameStart, sourceFrameEnd },
     ],
-    overlaySegments: clip.overlaySegments.map((overlay) =>
-      overlay.clipStart === 0 && overlay.clipEnd === clip.length ? { ...overlay, clipEnd: length } : overlay
+    // Replacing the default can shrink the clip; an overlay left with no length is dropped.
+    overlaySegments: fitOverlaysToLength(clip.overlaySegments, clip.length, length).filter(
+      (overlay) => !replacesDefault || overlay.clipEnd > overlay.clipStart
     ),
   }
 }
@@ -190,13 +217,7 @@ export function setSegmentRange(
   const previousLength = clip.length
   const length = Math.max(1, ...matchSegments.map((current) => current.clipEnd))
 
-  const overlaySegments = clip.overlaySegments.map((overlay) => {
-    if (overlay.clipStart === 0 && overlay.clipEnd === previousLength) {
-      return { ...overlay, clipEnd: length }
-    }
-    const nextStart = Math.min(overlay.clipStart, length)
-    return { ...overlay, clipStart: nextStart, clipEnd: Math.max(Math.min(overlay.clipEnd, length), nextStart) }
-  })
+  const overlaySegments = fitOverlaysToLength(clip.overlaySegments, previousLength, length)
 
   return { ...clip, length, matchSegments, overlaySegments }
 }

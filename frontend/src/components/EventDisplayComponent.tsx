@@ -4,7 +4,9 @@ import { useStyleConfig } from '../context/StyleConfigContext'
 import { APP_CONFIG } from '../config'
 import type { Event } from '../types/FrameDataInterfaces'
 import type { MatchData } from '../types/MatchDataInterfaces'
-import type { MetricTimelineOption, TimelineOption } from '../types/TimelineOption'
+import type { FilterTimelineOption, MetricTimelineOption, TimelineOption } from '../types/TimelineOption'
+import { formatEventValue } from '../constants/eventData'
+import { getClipEvents, matchesFilterTimeline } from '../services/timelineEvents'
 import './EventDisplayComponent.css'
 
 type TimelineEvent = Event & {
@@ -25,14 +27,18 @@ type PossessionBand = {
 
 type FilterTimelineRow = {
   kind: 'filter'
-  timeline: TimelineOption
+  key: string
+  label: string
+  // Whether the row can hold more than one subtype, so events need theirs spelled out.
+  showSubtype: boolean
   events: TimelineEvent[]
   laneCount: number
 }
 
 type MetricTimelineRow = {
   kind: 'metric'
-  timeline: TimelineOption
+  key: string
+  label: string
   points: MetricPoint[]
   min: number
   max: number
@@ -40,7 +46,8 @@ type MetricTimelineRow = {
 
 type PossessionBandRow = {
   kind: 'possessionBand'
-  timeline: TimelineOption
+  key: string
+  label: string
   bands: PossessionBand[]
   min: number
   max: number
@@ -319,46 +326,20 @@ const EventDisplayComponent: React.FC<EventDisplayProps> = ({
     return getComputedStyle(document.documentElement).getPropertyValue('--app-bg-accent').trim() || APP_CONFIG.theme.colors.accent
   }
 
-  const getEventLabel = (event: Event) => {
+  const getEventLabel = (event: Event, showSubtype: boolean) => {
+    if (showSubtype && event.event_subtype) {
+      return `${event.player_name} · ${formatEventValue(event.event_subtype)}`
+    }
+
     return event.player_name
   }
 
-  const visibleEvents = useMemo<Event[]>(() => {
-    if (!eventsData) {
-      return []
-    }
+  const visibleEvents = useMemo<Event[]>(
+    () => getClipEvents(eventsData, { start: scaleStart, end: scaleEnd }, segmentStart),
+    [eventsData, scaleEnd, scaleStart, segmentStart],
+  )
 
-    const uniqueEvents = new Map<string, Event>()
-
-    for (const frameEvents of eventsData.values()) {
-      for (const event of frameEvents) {
-        uniqueEvents.set(event.event_id, {
-          ...event,
-          frame_start: event.frame_start - segmentStart,
-          frame_end: event.frame_end - segmentStart,
-        })
-      }
-    }
-
-    return Array.from(uniqueEvents.values())
-      .filter((event) => event.frame_end >= scaleStart && event.frame_start <= scaleEnd)
-      .sort((left, right) => {
-        if (left.frame_start !== right.frame_start) {
-          return left.frame_start - right.frame_start
-        }
-
-        return left.frame_end - right.frame_end
-      })
-  }, [eventsData, scaleEnd, scaleStart, segmentStart])
-
-  const computeTimelineEvents = (timeline: TimelineOption, sourceEvents: Event[]): TimelineEvent[] => {
-    if (timeline.kind !== 'filter') {
-      return []
-    }
-
-    const matchingEvents = sourceEvents.filter(
-      (event) => event[timeline.condition.column as keyof Event] === timeline.condition.value,
-    )
+  const layoutEvents = (matchingEvents: Event[]): TimelineEvent[] => {
     const laneEndFrames: number[] = []
 
     return matchingEvents.map((event) => {
@@ -447,25 +428,64 @@ const EventDisplayComponent: React.FC<EventDisplayProps> = ({
     return { bands, min: 0, max: 1 }
   }
 
+  const buildFilterRow = (
+    key: string,
+    label: string,
+    showSubtype: boolean,
+    matchingEvents: Event[],
+  ): FilterTimelineRow => {
+    const events = layoutEvents(matchingEvents)
+    const laneCount = Math.max(...events.map((e) => e.laneIndex + 1), 1)
+    return { kind: 'filter', key, label, showSubtype, events, laneCount }
+  }
+
+  const computeFilterRows = (timeline: FilterTimelineOption, sourceEvents: Event[]): FilterTimelineRow[] => {
+    const matchingEvents = sourceEvents.filter((event) => matchesFilterTimeline(timeline, event))
+    const mergedRow = buildFilterRow(timeline.id, timeline.label, timeline.subtypes.length !== 1, matchingEvents)
+
+    if (!timeline.splitBySubtype) {
+      return [mergedRow]
+    }
+
+    // With no subtypes picked, split by whichever ones occur in the clip.
+    const subtypes =
+      timeline.subtypes.length > 0
+        ? timeline.subtypes
+        : Array.from(new Set(matchingEvents.map((event) => event.event_subtype).filter(Boolean))).sort()
+
+    if (subtypes.length === 0) {
+      return [mergedRow]
+    }
+
+    return subtypes.map((subtype) =>
+      buildFilterRow(
+        `${timeline.id}:${subtype}`,
+        `${formatEventValue(timeline.eventType)} · ${formatEventValue(subtype)}`,
+        false,
+        matchingEvents.filter((event) => event.event_subtype === subtype),
+      ),
+    )
+  }
+
   const timelineRows = useMemo<TimelineRow[]>(() => {
-    return timelines.map((timeline) => {
-      if (timeline.kind === 'metric' && timeline.aggregation === 'band') {
-        if (!eventsData) return { kind: 'possessionBand', timeline, bands: [], min: 0, max: 1 }
-        const { bands, min, max } = computePossessionBands(timeline.column, visibleEvents)
-        return { kind: 'possessionBand', timeline, bands, min, max }
-      }
+    return timelines
+      .filter((timeline) => !timeline.hidden)
+      .flatMap((timeline): TimelineRow[] => {
+        const { id: key, label } = timeline
 
-      if (timeline.kind === 'metric') {
-        if (!eventsData) return { kind: 'metric', timeline, points: [], min: 0, max: 1 }
-        const { points, min, max } = computeMetricPoints(timeline, visibleEvents)
-        return { kind: 'metric', timeline, points, min, max }
-      }
+        if (timeline.kind === 'metric' && timeline.aggregation === 'band') {
+          const { bands, min, max } = computePossessionBands(timeline.column, visibleEvents)
+          return [{ kind: 'possessionBand', key, label, bands, min, max }]
+        }
 
-      if (!eventsData) return { kind: 'filter', timeline, events: [], laneCount: 1 }
-      const events = computeTimelineEvents(timeline, visibleEvents)
-      const laneCount = Math.max(...events.map((e) => e.laneIndex + 1), 1)
-      return { kind: 'filter', timeline, events, laneCount }
-    })
+        if (timeline.kind === 'metric') {
+          if (!eventsData) return [{ kind: 'metric', key, label, points: [], min: 0, max: 1 }]
+          const { points, min, max } = computeMetricPoints(timeline, visibleEvents)
+          return [{ kind: 'metric', key, label, points, min, max }]
+        }
+
+        return computeFilterRows(timeline, visibleEvents)
+      })
   }, [eventsData, timelines, visibleEvents])
 
   const currentFrameOffset = ((clipFrame - scaleStart) / visibleFrameSpan) * 100
@@ -485,11 +505,11 @@ const EventDisplayComponent: React.FC<EventDisplayProps> = ({
 
             return (
               <div
-                key={row.timeline.id}
+                key={row.key}
                 className="event-display__row"
                 style={{ gridTemplateColumns: `${TIMELINE_LABEL_WIDTH}px ${timelineTrackWidth}px` }}
               >
-                <div className="event-display__label-row">{row.timeline.label}</div>
+                <div className="event-display__label-row">{row.label}</div>
                 <div className="event-display__track" style={{ height: `${trackHeight}px` }}>
                   <div
                     className="event-display__current-frame"
@@ -498,14 +518,16 @@ const EventDisplayComponent: React.FC<EventDisplayProps> = ({
                   />
                   {row.kind === 'filter'
                     ? row.events.map((event) => {
-                        const eventLabel = getEventLabel(event)
+                        const eventLabel = getEventLabel(event, row.showSubtype)
+                        const teamColor = getEventColor(event.team_id)
                         return (
                           <div
                             key={event.event_id}
                             className="event-display__event"
                             data-label={eventLabel}
                             style={{
-                              background: getEventColor(event.team_id),
+                              background: `color-mix(in srgb, ${teamColor} 35%, transparent)`,
+                              borderColor: teamColor,
                               left: `${event.leftPercent}%`,
                               width: `${event.widthPercent}%`,
                               top: `${event.laneIndex * TIMELINE_LANE_HEIGHT + 2}px`,

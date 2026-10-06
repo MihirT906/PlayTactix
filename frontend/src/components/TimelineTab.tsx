@@ -1,41 +1,15 @@
-import { useEffect, useState } from 'react'
-import { FaChartLine, FaFilter, FaPlus } from 'react-icons/fa'
+import { useEffect, useMemo, useState } from 'react'
+import { FaChartLine, FaChevronDown, FaEye, FaEyeSlash, FaTimes } from 'react-icons/fa'
 import TimelineStore from '../services/TimelineStore'
-import type { AggregationMethod, TimelineOption } from '../types/TimelineOption'
+import { getClipEvents, matchesFilterTimeline } from '../services/timelineEvents'
+import { EVENT_TYPES, formatEventValue } from '../constants/eventData'
+import type { Event } from '../types/FrameDataInterfaces'
+import type { AggregationMethod, FilterTimelineOption, TimelineOption } from '../types/TimelineOption'
 import './TimelineTab.css'
 
 type SelectOption = {
   value: string
   label: string
-}
-
-const filterColumnOptions: SelectOption[] = [
-  { value: 'event_type', label: 'event_type' },
-  { value: 'event_subtype', label: 'event_subtype' },
-]
-
-const filterValueOptionsByColumn: Record<string, SelectOption[]> = {
-  event_type: [
-    { value: 'player_possession', label: 'player_possession' },
-    { value: 'passing_option', label: 'passing_option' },
-    { value: 'on_ball_engagement', label: 'on_ball_engagement' },
-  ],
-  event_subtype: [
-    { value: 'behind', label: 'behind' },
-    { value: 'coming_short', label: 'coming_short' },
-    { value: 'cross_receiver', label: 'cross_receiver' },
-    { value: 'dropping_off', label: 'dropping_off' },
-    { value: 'overlap', label: 'overlap' },
-    { value: 'pulling_half_space', label: 'pulling_half_space' },
-    { value: 'run_ahead_of_the_ball', label: 'run_ahead_of_the_ball' },
-    { value: 'support', label: 'support' },
-    { value: 'underlap', label: 'underlap' },
-    { value: 'pressing', label: 'pressing' },
-    { value: 'pressure', label: 'pressure' },
-    { value: 'counter_press', label: 'counter_press' },
-    { value: 'recovery_press', label: 'recovery_press' },
-    { value: 'other', label: 'other' },
-  ],
 }
 
 type MetricColumnOption = SelectOption & { aggregation: AggregationMethod }
@@ -49,38 +23,53 @@ const metricColumnOptions: MetricColumnOption[] = [
 
 type TimelineTabProps = {
   timelineStore: TimelineStore
+  eventsData: Map<number, Event[]> | null
+  clipRange: { start: number; end: number }
+  segmentStart: number
 }
 
-function TimelineTab({ timelineStore }: TimelineTabProps) {
-  const [isAddMenuOpen, setIsAddMenuOpen] = useState(false)
-  const [activeOptionView, setActiveOptionView] = useState<'filter' | 'metric' | null>(null)
-  const [selectedFilterColumn, setSelectedFilterColumn] = useState('')
-  const [selectedFilterValue, setSelectedFilterValue] = useState('')
+function TimelineTab({ timelineStore, eventsData, clipRange, segmentStart }: TimelineTabProps) {
+  const [isMetricFormOpen, setIsMetricFormOpen] = useState(false)
+  const [expandedTimelineId, setExpandedTimelineId] = useState<string | null>(null)
   const [selectedMetricColumn, setSelectedMetricColumn] = useState('')
-  const [savedTimelines, setSavedTimelines] = useState<TimelineOption[]>(timelineStore.getAll())
+  const [timelines, setTimelines] = useState<TimelineOption[]>(timelineStore.getAll())
 
-  useEffect(() => timelineStore.subscribe(setSavedTimelines), [timelineStore])
+  useEffect(() => timelineStore.subscribe(setTimelines), [timelineStore])
 
-  const handleOptionSelect = (optionType: 'filter' | 'metric') => {
-    setActiveOptionView(optionType)
-    setIsAddMenuOpen(false)
-  }
+  // Subtypes are read from the loaded events rather than hardcoded per event type.
+  const subtypesByEventType = useMemo(() => {
+    const subtypes = new Map<string, Set<string>>()
 
-  const handleSaveFilterTimeline = () => {
-    if (!selectedFilterColumn || !selectedFilterValue) {
-      return
+    for (const frameEvents of eventsData?.values() ?? []) {
+      for (const event of frameEvents) {
+        if (!event.event_subtype) continue
+        if (!subtypes.has(event.event_type)) subtypes.set(event.event_type, new Set())
+        subtypes.get(event.event_type)!.add(event.event_subtype)
+      }
     }
 
-    timelineStore.add({
-      kind: 'filter',
-      label: `${selectedFilterColumn} = ${selectedFilterValue}`,
-      column: selectedFilterColumn,
-      operator: 'equals',
-      value: selectedFilterValue,
-    })
-    setSelectedFilterColumn('')
-    setSelectedFilterValue('')
-    setActiveOptionView(null)
+    return subtypes
+  }, [eventsData])
+
+  const clipEvents = useMemo(
+    () => getClipEvents(eventsData, { start: clipRange.start, end: clipRange.end }, segmentStart),
+    [eventsData, clipRange.start, clipRange.end, segmentStart],
+  )
+
+  const countClipEvents = (eventType: string, subtypes: string[]) =>
+    clipEvents.filter((event) => matchesFilterTimeline({ eventType, subtypes }, event)).length
+
+  const handleAddFilterTimeline = (eventType: string) => {
+    const timeline = timelineStore.add({ kind: 'filter', eventType })
+    setExpandedTimelineId(timeline.id)
+  }
+
+  const handleToggleSubtype = (timeline: FilterTimelineOption, subtype: string) => {
+    const subtypes = timeline.subtypes.includes(subtype)
+      ? timeline.subtypes.filter((selected) => selected !== subtype)
+      : [...timeline.subtypes, subtype]
+
+    timelineStore.updateFilter(timeline.id, { subtypes })
   }
 
   const handleSaveMetricTimeline = () => {
@@ -96,124 +85,165 @@ function TimelineTab({ timelineStore }: TimelineTabProps) {
       aggregation: metricColumn.aggregation,
     })
     setSelectedMetricColumn('')
-    setActiveOptionView(null)
+    setIsMetricFormOpen(false)
   }
 
-  let optionView = null
+  const renderTrackActions = (timeline: TimelineOption) => (
+    <>
+      <button
+        type="button"
+        className="timeline-track-icon-button"
+        onClick={() => timelineStore.setHidden(timeline.id, !timeline.hidden)}
+        aria-label={timeline.hidden ? `Show ${timeline.label}` : `Hide ${timeline.label}`}
+        aria-pressed={Boolean(timeline.hidden)}
+      >
+        {timeline.hidden ? <FaEyeSlash aria-hidden="true" /> : <FaEye aria-hidden="true" />}
+      </button>
+      <button
+        type="button"
+        className="timeline-track-icon-button"
+        onClick={() => timelineStore.remove(timeline.id)}
+        aria-label={`Remove ${timeline.label}`}
+      >
+        <FaTimes aria-hidden="true" />
+      </button>
+    </>
+  )
 
-  if (activeOptionView === 'filter') {
-    optionView = (
-      <div className="timeline-option-form">
-        <p className="timeline-option-placeholder">filter option</p>
-        <label className="timeline-option-field">
-          <span>Column</span>
-          <select
-            value={selectedFilterColumn}
-            onChange={(event) => {
-              setSelectedFilterColumn(event.target.value)
-              setSelectedFilterValue('')
-            }}
+  const renderFilterTrack = (timeline: FilterTimelineOption) => {
+    const isExpanded = expandedTimelineId === timeline.id
+    // Picked subtypes stay listed even when the loaded events no longer contain them.
+    const subtypes = Array.from(
+      new Set([...(subtypesByEventType.get(timeline.eventType) ?? []), ...timeline.subtypes]),
+    ).sort()
+
+    return (
+      <li key={timeline.id} className={`timeline-track${timeline.hidden ? ' is-hidden' : ''}`}>
+        <div className="timeline-track-header">
+          <button
+            type="button"
+            className="timeline-track-toggle"
+            onClick={() => setExpandedTimelineId(isExpanded ? null : timeline.id)}
+            aria-expanded={isExpanded}
           >
-            <option value="" disabled>
-              Select column
-            </option>
-            {filterColumnOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="timeline-option-field">
-          <span>Value</span>
-          <select value={selectedFilterValue} onChange={(event) => setSelectedFilterValue(event.target.value)}>
-            <option value="" disabled>
-              Select value
-            </option>
-            {(filterValueOptionsByColumn[selectedFilterColumn] ?? []).map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button type="button" className="timeline-save-button" onClick={handleSaveFilterTimeline}>
-          Save
-        </button>
-      </div>
-    )
-  }
-
-  if (activeOptionView === 'metric') {
-    optionView = (
-      <div className="timeline-option-form">
-        <p className="timeline-option-placeholder">metric option</p>
-        <label className="timeline-option-field">
-          <span>Column</span>
-          <select value={selectedMetricColumn} onChange={(event) => setSelectedMetricColumn(event.target.value)}>
-            <option value="" disabled>
-              Select column
-            </option>
-            {metricColumnOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button type="button" className="timeline-save-button" onClick={handleSaveMetricTimeline}>
-          Save
-        </button>
-      </div>
+            <FaChevronDown className={`timeline-track-chevron${isExpanded ? ' is-open' : ''}`} aria-hidden="true" />
+            <span className="timeline-track-label">{timeline.label}</span>
+            <span className="timeline-track-count">{countClipEvents(timeline.eventType, timeline.subtypes)}</span>
+          </button>
+          {renderTrackActions(timeline)}
+        </div>
+        {isExpanded ? (
+          <div className="timeline-track-body">
+            {subtypes.length > 0 ? (
+              <>
+                <div className="timeline-chip-group" role="group" aria-label={`${timeline.label} subtypes`}>
+                  <button
+                    type="button"
+                    className="timeline-chip"
+                    aria-pressed={timeline.subtypes.length === 0}
+                    onClick={() => timelineStore.updateFilter(timeline.id, { subtypes: [] })}
+                  >
+                    All
+                  </button>
+                  {subtypes.map((subtype) => (
+                    <button
+                      key={subtype}
+                      type="button"
+                      className="timeline-chip"
+                      aria-pressed={timeline.subtypes.includes(subtype)}
+                      onClick={() => handleToggleSubtype(timeline, subtype)}
+                    >
+                      {formatEventValue(subtype)}
+                      <span className="timeline-chip-count">{countClipEvents(timeline.eventType, [subtype])}</span>
+                    </button>
+                  ))}
+                </div>
+                <label className="timeline-track-split">
+                  <input
+                    type="checkbox"
+                    checked={timeline.splitBySubtype}
+                    onChange={(event) => timelineStore.updateFilter(timeline.id, { splitBySubtype: event.target.checked })}
+                  />
+                  <span>One row per subtype</span>
+                </label>
+              </>
+            ) : (
+              <p className="timeline-track-note">No subtypes for this event type.</p>
+            )}
+          </div>
+        ) : null}
+      </li>
     )
   }
 
   return (
     <div className="timeline-sidebar-placeholder">
       <h2>Timeline</h2>
-      <p>Timeline controls will be added here.</p>
-      {savedTimelines.length > 0 ? (
-        <div className="timeline-option-form" aria-label="Saved timelines">
-          <p className="timeline-option-placeholder">saved timelines</p>
-          {savedTimelines.map((timeline) => (
-            <p key={timeline.id}>{timeline.label}</p>
+      {timelines.length > 0 ? (
+        <ul className="timeline-track-list" aria-label="Timeline tracks">
+          {timelines.map((timeline) =>
+            timeline.kind === 'filter' ? (
+              renderFilterTrack(timeline)
+            ) : (
+              <li key={timeline.id} className={`timeline-track${timeline.hidden ? ' is-hidden' : ''}`}>
+                <div className="timeline-track-header">
+                  <span className="timeline-track-toggle timeline-track-toggle--static">
+                    <FaChartLine aria-hidden="true" />
+                    <span className="timeline-track-label">{timeline.label}</span>
+                  </span>
+                  {renderTrackActions(timeline)}
+                </div>
+              </li>
+            ),
+          )}
+        </ul>
+      ) : (
+        <p className="timeline-track-note">Pick an event type to add it as a track.</p>
+      )}
+      <div className="timeline-add-menu">
+        <span className="timeline-section-label">Add events</span>
+        <div className="timeline-chip-group">
+          {EVENT_TYPES.map((eventType) => (
+            <button
+              key={eventType}
+              type="button"
+              className="timeline-chip"
+              onClick={() => handleAddFilterTimeline(eventType)}
+            >
+              {formatEventValue(eventType)}
+              <span className="timeline-chip-count">{countClipEvents(eventType, [])}</span>
+            </button>
           ))}
         </div>
-      ) : null}
-      <div className="timeline-add-menu">
         <button
           type="button"
-          className="app-header-action workspace-sidebar-action"
-          onClick={() => setIsAddMenuOpen((previousValue) => !previousValue)}
-          aria-expanded={isAddMenuOpen}
-          aria-controls="timeline-add-options"
+          className="app-header-action workspace-sidebar-action timeline-add-option"
+          onClick={() => setIsMetricFormOpen((isOpen) => !isOpen)}
+          aria-expanded={isMetricFormOpen}
         >
-          <FaPlus aria-hidden="true" />
-          <span>Add</span>
+          <FaChartLine aria-hidden="true" />
+          <span>Metric</span>
         </button>
-
-        {isAddMenuOpen ? (
-          <div id="timeline-add-options" className="timeline-add-options" aria-label="Timeline option types">
-            <button
-              type="button"
-              className="app-header-action workspace-sidebar-action timeline-add-option"
-              onClick={() => handleOptionSelect('filter')}
-            >
-              <FaFilter aria-hidden="true" />
-              <span>Filter</span>
-            </button>
-            <button
-              type="button"
-              className="app-header-action workspace-sidebar-action timeline-add-option"
-              onClick={() => handleOptionSelect('metric')}
-            >
-              <FaChartLine aria-hidden="true" />
-              <span>Metric</span>
+        {isMetricFormOpen ? (
+          <div className="timeline-option-form">
+            <label className="timeline-option-field">
+              <span>Column</span>
+              <select value={selectedMetricColumn} onChange={(event) => setSelectedMetricColumn(event.target.value)}>
+                <option value="" disabled>
+                  Select column
+                </option>
+                {metricColumnOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button type="button" className="timeline-save-button" onClick={handleSaveMetricTimeline}>
+              Save
             </button>
           </div>
         ) : null}
-
-        {optionView}
       </div>
     </div>
   )

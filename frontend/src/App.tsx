@@ -295,6 +295,8 @@ function AppContent({
                   }
                   matchData={matchMetaData}
                   timelineStore={timelineStore}
+                  eventsData={eventsData}
+                  clipRange={clipRange}
                   segmentRange={segmentRange}
                   onAddSegment={handleAddSegment}
                   keyMomentsData={keyMomentsData}

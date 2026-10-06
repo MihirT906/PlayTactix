@@ -1,17 +1,9 @@
-import type {
-    AggregationMethod,
-    TimelineCondition,
-    TimelineFilterOperator,
-    TimelineFilterValue,
-    TimelineOption,
-} from '../types/TimelineOption'
+import type { AggregationMethod, FilterTimelineOption, TimelineOption } from '../types/TimelineOption'
+import { getFilterTimelineLabel } from './timelineEvents'
 
 type CreateFilterTimelineInput = {
     kind: 'filter'
-    label: string
-    column: string
-    operator: TimelineFilterOperator
-    value: TimelineFilterValue
+    eventType: string
 }
 
 type CreateMetricTimelineInput = {
@@ -42,6 +34,28 @@ export default class TimelineStore {
         this.notifyListeners()
     }
 
+    updateFilter(id: string, changes: Partial<Pick<FilterTimelineOption, 'subtypes' | 'splitBySubtype'>>): void {
+        this.timelines = this.timelines.map((timeline) => {
+            if (timeline.id !== id || timeline.kind !== 'filter') {
+                return timeline
+            }
+
+            const updated = { ...timeline, ...changes }
+            return { ...updated, label: getFilterTimelineLabel(updated.eventType, updated.subtypes) }
+        })
+        this.notifyListeners()
+    }
+
+    setHidden(id: string, hidden: boolean): void {
+        this.timelines = this.timelines.map((timeline) => (timeline.id === id ? { ...timeline, hidden } : timeline))
+        this.notifyListeners()
+    }
+
+    remove(id: string): void {
+        this.timelines = this.timelines.filter((timeline) => timeline.id !== id)
+        this.notifyListeners()
+    }
+
     getAll(): TimelineOption[] {
         return [...this.timelines]
     }
@@ -68,17 +82,13 @@ export default class TimelineStore {
         const id = this.createTimelineId()
 
         if (input.kind === 'filter') {
-            const condition: TimelineCondition = {
-                column: input.column,
-                operator: input.operator,
-                value: input.value,
-            }
-
             return {
                 id,
-                label: input.label,
+                label: getFilterTimelineLabel(input.eventType, []),
                 kind: 'filter',
-                condition,
+                eventType: input.eventType,
+                subtypes: [],
+                splitBySubtype: false,
             }
         }
 

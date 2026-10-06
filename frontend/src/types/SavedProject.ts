@@ -2,7 +2,7 @@ import type { Clip } from './ClipInterfaces'
 import type { TimelineOption } from './TimelineOption'
 
 export const PROJECT_FORMAT = 'playtactix-project'
-export const SCHEMA_VERSION = 1
+export const SCHEMA_VERSION = 2
 
 export type SavedAnnotation = {
   key: string
@@ -79,7 +79,12 @@ function isTimeline(value: unknown): value is TimelineOption {
     isObject(value) &&
     typeof value.id === 'string' &&
     typeof value.label === 'string' &&
-    (value.kind === 'filter' ? isObject(value.condition) : value.kind === 'metric' && typeof value.column === 'string')
+    (value.kind === 'filter'
+      ? typeof value.eventType === 'string' &&
+        Array.isArray(value.subtypes) &&
+        value.subtypes.every((subtype: unknown) => typeof subtype === 'string') &&
+        typeof value.splitBySubtype === 'boolean'
+      : value.kind === 'metric' && typeof value.column === 'string')
   )
 }
 
@@ -96,7 +101,32 @@ function isStyle(value: unknown): value is SavedStyle {
 
 // Each entry upgrades a project from version N to N + 1. Add one whenever SCHEMA_VERSION
 // is bumped so files saved by older builds keep loading.
-const MIGRATIONS: Record<number, (raw: Record<string, unknown>) => Record<string, unknown>> = {}
+const MIGRATIONS: Record<number, (raw: Record<string, unknown>) => Record<string, unknown>> = {
+  // v1 filter timelines held a single `column equals value` condition.
+  1: (raw) => ({
+    ...raw,
+    timelines: Array.isArray(raw.timelines) ? raw.timelines.map(migrateV1Timeline) : raw.timelines,
+  }),
+}
+
+const V1_ENGAGEMENT_SUBTYPES = ['pressing', 'pressure', 'counter_press', 'recovery_press', 'other']
+
+function migrateV1Timeline(timeline: unknown): unknown {
+  if (!isObject(timeline) || timeline.kind !== 'filter' || !isObject(timeline.condition)) {
+    return timeline
+  }
+
+  const { condition, ...rest } = timeline
+  const value = String(condition.value)
+
+  if (condition.column === 'event_subtype') {
+    // v1 did not record the event type, so it is inferred from the subtype.
+    const eventType = V1_ENGAGEMENT_SUBTYPES.includes(value) ? 'on_ball_engagement' : 'passing_option'
+    return { ...rest, eventType, subtypes: [value], splitBySubtype: false }
+  }
+
+  return { ...rest, eventType: value, subtypes: [], splitBySubtype: false }
+}
 
 export function isSavedProject(value: unknown): value is SavedProject {
   return (

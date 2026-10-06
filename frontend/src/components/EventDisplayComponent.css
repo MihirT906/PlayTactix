@@ -107,8 +107,9 @@
   height: 18px;
   padding: 0 8px;
   border-radius: var(--match-section-radius);
-  background: linear-gradient(90deg, rgba(56, 189, 248, 0.88), rgba(14, 165, 233, 0.72));
-  color: #082f49;
+  border: 1px solid transparent;
+  box-sizing: border-box;
+  color: #f8fafc;
   display: flex;
   align-items: center;
   overflow: hidden;
@@ -143,7 +144,9 @@
   white-space: nowrap;
   padding: 8px 10px;
   border-radius: var(--match-section-radius);
-  background: inherit;
+  background: rgb(15, 23, 42);
+  border: 1px solid;
+  border-color: inherit;
   color: inherit;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
 }

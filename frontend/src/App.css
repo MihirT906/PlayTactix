@@ -134,7 +134,7 @@
 }
 
 .app-container--settings-open {
-  grid-template-columns: minmax(424px, 456px) minmax(0, 1fr);
+  grid-template-columns: minmax(318px, 342px) minmax(0, 1fr);
 }
 
 .app-header, .app-container {

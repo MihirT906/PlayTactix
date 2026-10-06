@@ -268,7 +268,7 @@
 }
 
 .settings-sidebar-panel {
-  width: min(100%, 324px);
+  width: min(100%, 210px);
   display: flex;
 }
 

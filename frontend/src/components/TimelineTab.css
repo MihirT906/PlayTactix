@@ -1,14 +1,58 @@
+/* Shared by the Timeline and Overlays tabs; styled to match the Settings and Search panels. */
 .timeline-sidebar-placeholder {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 14px;
+  gap: 18px;
   width: 100%;
+  min-width: 0;
+  padding: 14px 10px 12px;
+  background: var(--match-section-background);
+  border-top: var(--match-section-border-top);
+  border-bottom: var(--match-section-border-bottom);
+  box-shadow: var(--match-section-shadow);
+  font-family: var(--font-family-sans);
+  color: var(--color-text-secondary);
 }
 
 .timeline-sidebar-placeholder h2,
+.timeline-sidebar-placeholder h3,
 .timeline-sidebar-placeholder p {
   margin: 0;
+}
+
+.timeline-sidebar-placeholder h2 {
+  width: 100%;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--surface-subtle-border);
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--color-text-primary);
+}
+
+.timeline-sidebar-placeholder p {
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: var(--color-text-muted);
+}
+
+.timeline-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+}
+
+.timeline-section-label {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--surface-subtle-border);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-subtle);
 }
 
 .timeline-add-menu {
@@ -41,74 +85,60 @@
 }
 
 .timeline-add-option {
-  font-size: 1rem;
-}
-
-.timeline-option-placeholder {
-  margin: 0;
-  padding-left: 28px;
+  font-size: 0.9rem;
 }
 
 .timeline-option-form {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 12px;
+  gap: 8px;
   width: 100%;
 }
 
-.timeline-option-field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+.timeline-option-form select {
   width: 100%;
-  padding-left: 28px;
-}
-
-.timeline-option-field select {
-  width: min(100%, 220px);
-  padding: 8px 10px;
-  border: 1px solid color-mix(in srgb, var(--color-text-primary) 18%, transparent);
-  border-radius: 999px;
-  appearance: none;
+  padding: 0.32rem 0.62rem;
+  border: 1px solid var(--surface-subtle-border);
+  border-radius: var(--match-section-radius, 0);
   background-color: transparent;
   color: var(--color-text-primary);
   font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
 }
 
-.timeline-option-field select option {
-  background-color: transparent;
+.timeline-option-form select:hover {
+  border-color: var(--surface-subtle-border-hover);
+}
+
+.timeline-option-form select option {
+  background-color: var(--app-bg-primary);
   color: var(--color-text-primary);
 }
 
 .timeline-save-button {
-  margin-left: 28px;
-  padding: 8px 16px;
+  width: 100%;
+  padding: 0.45rem 0.8rem;
   border: 1px solid color-mix(in srgb, var(--color-accent) 72%, transparent);
   border-radius: 999px;
   background: var(--color-accent);
-  color: var(--color-text-primary);
+  color: var(--color-text-inverse);
   font: inherit;
+  font-size: 0.85rem;
   cursor: pointer;
-  transition: border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
 
-.timeline-save-button:hover {
+.timeline-save-button:hover:not(:disabled) {
+  transform: translateY(-1px);
   border-color: color-mix(in srgb, var(--color-accent) 88%, white);
   background: color-mix(in srgb, var(--color-accent) 88%, white);
-  color: var(--color-text-primary);
 }
 
-.timeline-save-button:focus-visible {
-  outline: 2px solid var(--focus-outline-color);
-  outline-offset: 3px;
-}
-
-.timeline-section-label {
-  font-size: 0.75rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--color-text-subtle);
+.timeline-save-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .timeline-track-list {
@@ -122,9 +152,10 @@
 }
 
 .timeline-track {
-  border: 1px solid color-mix(in srgb, var(--color-text-primary) 14%, transparent);
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--color-text-primary) 4%, transparent);
+  background: var(--surface-subtle-background);
+  border-top: 1px solid var(--surface-subtle-border);
+  border-bottom: 1px solid var(--surface-subtle-border);
+  box-shadow: var(--surface-subtle-shadow);
 }
 
 .timeline-track.is-hidden .timeline-track-toggle {
@@ -135,21 +166,22 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 6px 8px;
+  padding: 0.4rem 0.4rem 0.4rem 0.5rem;
 }
 
 .timeline-track-toggle {
   display: flex;
   flex: 1;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
-  padding: 4px;
+  padding: 2px;
   border: 0;
   background: transparent;
   color: var(--color-text-primary);
   font: inherit;
-  font-size: 0.9rem;
+  font-size: 0.82rem;
+  font-weight: 600;
   text-align: left;
   cursor: pointer;
 }
@@ -160,8 +192,9 @@
 
 .timeline-track-toggle svg {
   flex-shrink: 0;
-  width: 12px;
-  height: 12px;
+  width: 0.7rem;
+  height: 0.7rem;
+  color: var(--color-text-subtle);
 }
 
 .timeline-track-chevron {
@@ -181,26 +214,36 @@
 
 .timeline-track-count,
 .timeline-chip-count {
-  color: var(--color-text-subtle);
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
+  color: var(--color-text-subtle);
 }
 
+/* A smaller version of the visibility button in Settings. */
 .timeline-track-icon-button {
   display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: 22px;
+  height: 22px;
   padding: 0;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--color-text-muted);
+  border: 1px solid var(--surface-subtle-border);
+  border-radius: 999px;
+  background: var(--surface-subtle-background);
+  color: var(--color-text-soft);
   cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+
+.timeline-track-icon-button svg {
+  width: 0.65rem;
+  height: 0.65rem;
 }
 
 .timeline-track-icon-button:hover {
-  background: color-mix(in srgb, var(--color-text-primary) 10%, transparent);
+  background: var(--surface-subtle-background-hover);
+  border-color: var(--surface-subtle-border-hover);
   color: var(--color-text-primary);
 }
 
@@ -208,7 +251,8 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 4px 12px 12px;
+  padding: 0.5rem;
+  border-top: 1px solid var(--surface-subtle-border);
 }
 
 .timeline-chip-group {
@@ -217,54 +261,65 @@
   gap: 6px;
 }
 
+/* Square-cornered like the segmented controls in the Search panel. */
 .timeline-chip {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
-  border: 1px solid color-mix(in srgb, var(--color-text-primary) 18%, transparent);
-  border-radius: 999px;
+  max-width: 100%;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--surface-subtle-border);
+  border-radius: var(--match-section-radius, 0);
   background: transparent;
-  color: var(--color-text-secondary);
+  color: var(--color-text-muted);
   font: inherit;
-  font-size: 0.82rem;
+  font-size: 0.76rem;
+  font-weight: 500;
+  text-align: left;
   cursor: pointer;
-  transition: border-color 0.2s ease, background-color 0.2s ease;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
-.timeline-chip:hover {
-  border-color: color-mix(in srgb, var(--color-accent) 72%, transparent);
+.timeline-chip:hover:not([aria-pressed='true']) {
+  background: var(--surface-subtle-background-hover);
+  border-color: var(--surface-subtle-border-hover);
+  color: var(--color-text-primary);
 }
 
 .timeline-chip[aria-pressed='true'] {
   border-color: var(--color-accent);
-  background: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 24%, transparent);
   color: var(--color-text-primary);
+  font-weight: 600;
 }
 
 .timeline-chip[aria-pressed='true'] .timeline-chip-count {
-  color: inherit;
-  opacity: 0.8;
+  color: var(--color-text-soft);
 }
 
 .timeline-track-split {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.82rem;
-  color: var(--color-text-muted);
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
   cursor: pointer;
 }
 
-.timeline-track-note {
+.timeline-track-split input[type='checkbox'] {
   margin: 0;
-  font-size: 0.85rem;
-  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.timeline-sidebar-placeholder .timeline-track-note {
+  font-size: 0.82rem;
 }
 
 .timeline-track-toggle:focus-visible,
 .timeline-track-icon-button:focus-visible,
-.timeline-chip:focus-visible {
+.timeline-chip:focus-visible,
+.timeline-save-button:focus-visible,
+.timeline-option-form select:focus-visible {
   outline: 2px solid var(--focus-outline-color);
   outline-offset: 2px;
 }

@@ -43,8 +43,11 @@
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-bottom: none;
   border-radius: 10px 10px 0 0;
-  background: rgba(15, 23, 42, 0.82);
-  backdrop-filter: blur(6px);
+  /* Same layers as the match segments card, made opaque so the pitch doesn't show through. */
+  background:
+    linear-gradient(rgba(15, 23, 42, 0.22), rgba(15, 23, 42, 0.22)),
+    var(--match-section-background),
+    var(--app-bg-primary);
   color: #f8fafc;
   font-size: 0.72rem;
   font-weight: 600;
@@ -72,8 +75,11 @@
 .plot-layout__timeline-panel {
   max-height: 0;
   overflow: hidden;
-  background: rgba(15, 23, 42, 0.92);
-  backdrop-filter: blur(8px);
+  /* Same layers as the match segments card, made opaque so the pitch doesn't show through. */
+  background:
+    linear-gradient(rgba(15, 23, 42, 0.22), rgba(15, 23, 42, 0.22)),
+    var(--match-section-background),
+    var(--app-bg-primary);
   border-top: 1px solid rgba(255, 255, 255, 0.14);
   transition: max-height 260ms ease;
 }

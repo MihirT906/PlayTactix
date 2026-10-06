@@ -29,7 +29,6 @@ type TimelineTabProps = {
 }
 
 function TimelineTab({ timelineStore, eventsData, clipRange, segmentStart }: TimelineTabProps) {
-  const [isMetricFormOpen, setIsMetricFormOpen] = useState(false)
   const [expandedTimelineId, setExpandedTimelineId] = useState<string | null>(null)
   const [selectedMetricColumn, setSelectedMetricColumn] = useState('')
   const [timelines, setTimelines] = useState<TimelineOption[]>(timelineStore.getAll())
@@ -85,7 +84,6 @@ function TimelineTab({ timelineStore, eventsData, clipRange, segmentStart }: Tim
       aggregation: metricColumn.aggregation,
     })
     setSelectedMetricColumn('')
-    setIsMetricFormOpen(false)
   }
 
   const renderTrackActions = (timeline: TimelineOption) => (
@@ -179,29 +177,36 @@ function TimelineTab({ timelineStore, eventsData, clipRange, segmentStart }: Tim
   return (
     <div className="timeline-sidebar-placeholder">
       <h2>Timeline</h2>
-      {timelines.length > 0 ? (
-        <ul className="timeline-track-list" aria-label="Timeline tracks">
-          {timelines.map((timeline) =>
-            timeline.kind === 'filter' ? (
-              renderFilterTrack(timeline)
-            ) : (
-              <li key={timeline.id} className={`timeline-track${timeline.hidden ? ' is-hidden' : ''}`}>
-                <div className="timeline-track-header">
-                  <span className="timeline-track-toggle timeline-track-toggle--static">
-                    <FaChartLine aria-hidden="true" />
-                    <span className="timeline-track-label">{timeline.label}</span>
-                  </span>
-                  {renderTrackActions(timeline)}
-                </div>
-              </li>
-            ),
-          )}
-        </ul>
-      ) : (
-        <p className="timeline-track-note">Pick an event type to add it as a track.</p>
-      )}
-      <div className="timeline-add-menu">
-        <span className="timeline-section-label">Add events</span>
+      <section className="timeline-section" aria-labelledby="timeline-tracks-heading">
+        <h3 id="timeline-tracks-heading" className="timeline-section-label">
+          Tracks
+        </h3>
+        {timelines.length > 0 ? (
+          <ul className="timeline-track-list">
+            {timelines.map((timeline) =>
+              timeline.kind === 'filter' ? (
+                renderFilterTrack(timeline)
+              ) : (
+                <li key={timeline.id} className={`timeline-track${timeline.hidden ? ' is-hidden' : ''}`}>
+                  <div className="timeline-track-header">
+                    <span className="timeline-track-toggle timeline-track-toggle--static">
+                      <FaChartLine aria-hidden="true" />
+                      <span className="timeline-track-label">{timeline.label}</span>
+                    </span>
+                    {renderTrackActions(timeline)}
+                  </div>
+                </li>
+              ),
+            )}
+          </ul>
+        ) : (
+          <p className="timeline-track-note">No tracks yet. Add events or a metric below.</p>
+        )}
+      </section>
+      <section className="timeline-section" aria-labelledby="timeline-add-events-heading">
+        <h3 id="timeline-add-events-heading" className="timeline-section-label">
+          Add events
+        </h3>
         <div className="timeline-chip-group">
           {EVENT_TYPES.map((eventType) => (
             <button
@@ -215,36 +220,36 @@ function TimelineTab({ timelineStore, eventsData, clipRange, segmentStart }: Tim
             </button>
           ))}
         </div>
-        <button
-          type="button"
-          className="app-header-action workspace-sidebar-action timeline-add-option"
-          onClick={() => setIsMetricFormOpen((isOpen) => !isOpen)}
-          aria-expanded={isMetricFormOpen}
-        >
-          <FaChartLine aria-hidden="true" />
-          <span>Metric</span>
-        </button>
-        {isMetricFormOpen ? (
-          <div className="timeline-option-form">
-            <label className="timeline-option-field">
-              <span>Column</span>
-              <select value={selectedMetricColumn} onChange={(event) => setSelectedMetricColumn(event.target.value)}>
-                <option value="" disabled>
-                  Select column
-                </option>
-                {metricColumnOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button type="button" className="timeline-save-button" onClick={handleSaveMetricTimeline}>
-              Save
-            </button>
-          </div>
-        ) : null}
-      </div>
+      </section>
+      <section className="timeline-section" aria-labelledby="timeline-add-metric-heading">
+        <h3 id="timeline-add-metric-heading" className="timeline-section-label">
+          Add metric
+        </h3>
+        <div className="timeline-option-form">
+          <select
+            aria-label="Metric"
+            value={selectedMetricColumn}
+            onChange={(event) => setSelectedMetricColumn(event.target.value)}
+          >
+            <option value="" disabled>
+              Select metric
+            </option>
+            {metricColumnOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            className="timeline-save-button"
+            onClick={handleSaveMetricTimeline}
+            disabled={!selectedMetricColumn}
+          >
+            Add
+          </button>
+        </div>
+      </section>
     </div>
   )
 }

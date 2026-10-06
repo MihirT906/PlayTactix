@@ -5,6 +5,7 @@ import AnnotationStore from './services/AnnotationStore-optimized'
 import TimelineStore from './services/TimelineStore'
 import LandingPage from './pages/Landing/LandingPage'
 import FirstClipSteps from './components/FirstClipSteps'
+import WorkspaceGuide from './components/WorkspaceGuide'
 import { APP_CONFIG, SLEEP_INTERVAL, THEME_CSS_VARIABLES } from './config'
 import type { MatchData } from './types/MatchDataInterfaces';
 import type { FrameData, Event } from './types/FrameDataInterfaces'
@@ -324,7 +325,7 @@ function AppContent({
                   </div>
                 </div>
               </div>
-              <FirstClipSteps />
+              <WorkspaceGuide />
             </div>
           ) : null}
         </div>

@@ -1,15 +1,12 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { FaChevronDown } from 'react-icons/fa'
 import type { KeyMomentsData } from '../types/KeyMomentsDataInterfaces'
 import type { MatchData } from '../types/MatchDataInterfaces'
 import {
   IN_POSSESSION_PHASE_TYPES,
   OUT_OF_POSSESSION_PHASE_TYPES,
-  LEAD_TO_GOAL_VALUES,
-  LEAD_TO_SHOT_VALUES,
   formatEventValue,
 } from '../constants/eventData'
-import type { InPossessionPhaseType, OutOfPossessionPhaseType } from '../constants/eventData'
 import MultiSelectDropdown from './MultiSelectDropdown'
 import './KeyMomentFinderComponent.css'
 
@@ -23,24 +20,62 @@ interface KeyMomentFinderComponentProps {
 // type KeyMomentItem = KeyMomentsData['goals'][number] | KeyMomentsData['shots'][number] | KeyMomentsData['pops'][number]
 type KeyMomentItem = KeyMomentsData['pops'][number]
 
+type LedTo = 'any' | 'shot' | 'goal'
+
 interface FilterConfig {
-  lead_to_goal: boolean[]
-  lead_to_shot: boolean[]
-  team_id: number[]
-  team_in_possession_phase_type: InPossessionPhaseType[]
-  team_out_of_possession_phase_type: OutOfPossessionPhaseType[]
+  // The defending team is always the other one, so only the attacking side is stored.
+  attacking_team_id: number | null
+  attacking_phase_types: string[]
+  defending_phase_types: string[]
+  period: number | null
+  led_to: LedTo
 }
 
-const CHIP_FILTERS: Array<{
-  key: keyof Omit<FilterConfig, 'team_id'>
-  label: string
-  values: readonly (string | boolean)[]
-}> = [
-  { key: 'lead_to_goal', label: 'Lead to Goal', values: LEAD_TO_GOAL_VALUES },
-  { key: 'lead_to_shot', label: 'Lead to Shot', values: LEAD_TO_SHOT_VALUES },
-  { key: 'team_in_possession_phase_type', label: 'In Possession', values: IN_POSSESSION_PHASE_TYPES },
-  { key: 'team_out_of_possession_phase_type', label: 'Out of Possession', values: OUT_OF_POSSESSION_PHASE_TYPES },
+const LED_TO_OPTIONS: Array<{ value: LedTo; label: string }> = [
+  { value: 'any', label: 'Any' },
+  { value: 'shot', label: 'Shot' },
+  { value: 'goal', label: 'Goal' },
 ]
+
+const PERIOD_LABELS: Record<number, string> = { 1: '1st', 2: '2nd' }
+
+function FilterRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="key-moment-filter-row">
+      <span className="key-moment-filter-row-label">{label}</span>
+      {children}
+    </div>
+  )
+}
+
+function SegmentedControl<T extends string | number | null>({
+  ariaLabel,
+  options,
+  value,
+  onChange,
+}: {
+  ariaLabel: string
+  options: Array<{ value: T; label: string; title?: string }>
+  value: T
+  onChange: (value: T) => void
+}) {
+  return (
+    <div className="key-moment-segmented" role="group" aria-label={ariaLabel}>
+      {options.map((option) => (
+        <button
+          key={String(option.value)}
+          type="button"
+          className={`key-moment-segment${option.value === value ? ' is-active' : ''}`}
+          aria-pressed={option.value === value}
+          title={option.title}
+          onClick={() => onChange(option.value)}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  )
+}
 
 function KeyMomentFinderComponent({ segmentRange, onAddSegment, keyMomentsData, matchData }: KeyMomentFinderComponentProps) {
   const [startFrame, setStartFrame] = useState(segmentRange.start.toString())
@@ -48,14 +83,14 @@ function KeyMomentFinderComponent({ segmentRange, onAddSegment, keyMomentsData, 
   const [expandedGroups, setExpandedGroups] = useState({
     // Goals: false,
     // Shots: false,
-    'Phases of Play': false,
+    'Passages of Play': false,
   })
   const [filters, setFilters] = useState<FilterConfig>({
-    lead_to_goal: [],
-    lead_to_shot: [],
-    team_id: [],
-    team_in_possession_phase_type: [],
-    team_out_of_possession_phase_type: [],
+    attacking_team_id: null,
+    attacking_phase_types: [],
+    defending_phase_types: [],
+    period: null,
+    led_to: 'any',
   })
 
   const handleAddSegment = () => {
@@ -69,19 +104,39 @@ function KeyMomentFinderComponent({ segmentRange, onAddSegment, keyMomentsData, 
     onAddSegment(start, end)
   }
 
+  const periods = matchData?.match_periods ?? []
+  const teams = matchData ? [matchData.home_team, matchData.away_team] : []
+  const teamOptions = [
+    { value: null, label: 'Any' },
+    ...teams.map((team) => ({ value: team.id, label: team.acronym ?? team.short_name, title: team.short_name })),
+  ]
+  // Picking one side fixes the other: if a team attacks, the other one defends.
+  const otherTeamId = (teamId: number | null) =>
+    teamId === null ? null : (teams.find((team) => team.id !== teamId)?.id ?? null)
+
   const applyFilters = (moments: KeyMomentItem[]) =>
     moments.filter((moment) => {
-      if (filters.lead_to_goal.length > 0 && !filters.lead_to_goal.includes(moment.lead_to_goal)) return false
-      if (filters.lead_to_shot.length > 0 && !filters.lead_to_shot.includes(moment.lead_to_shot)) return false
-      if (filters.team_id.length > 0 && !filters.team_id.includes(moment.team_id)) return false
+      if (filters.led_to === 'goal' && !moment.lead_to_goal) return false
+      if (filters.led_to === 'shot' && !moment.lead_to_shot && !moment.lead_to_goal) return false
+
+      // moment.team_id is the team on the ball.
+      if (filters.attacking_team_id !== null && moment.team_id !== filters.attacking_team_id) return false
+
       if (
-        filters.team_in_possession_phase_type.length > 0 &&
-        !filters.team_in_possession_phase_type.includes(moment.team_in_possession_phase_type as InPossessionPhaseType)
+        filters.attacking_phase_types.length > 0 &&
+        !filters.attacking_phase_types.includes(moment.team_in_possession_phase_type)
       ) return false
       if (
-        filters.team_out_of_possession_phase_type.length > 0 &&
-        !filters.team_out_of_possession_phase_type.includes(moment.team_out_of_possession_phase_type as OutOfPossessionPhaseType)
+        filters.defending_phase_types.length > 0 &&
+        !filters.defending_phase_types.includes(moment.team_out_of_possession_phase_type)
       ) return false
+
+      if (filters.period !== null) {
+        const period = periods.find((p) => p.period === filters.period)
+        // Frame ranges are padded at both ends, so place the passage by its midpoint.
+        const midFrame = (moment.frame_start + moment.frame_end) / 2
+        if (period && (midFrame < period.start_frame || midFrame > period.end_frame)) return false
+      }
       return true
     })
 
@@ -130,7 +185,7 @@ function KeyMomentFinderComponent({ segmentRange, onAddSegment, keyMomentsData, 
                       onAddSegment(moment.frame_start, moment.frame_end)
                     }}
                   >
-                    <span className="key-moment-primary">Phase {moment.phase_index}</span>
+                    <span className="key-moment-primary">Passage {moment.phase_index}</span>
                     <span className="key-moment-meta">Time {moment.time_end}</span>
 
                     <span className="key-moment-meta">{home_team_name} : {moment.team_id === home_team_id ? moment.team_in_possession_phase_type : moment.team_out_of_possession_phase_type}</span>
@@ -160,33 +215,75 @@ function KeyMomentFinderComponent({ segmentRange, onAddSegment, keyMomentsData, 
 
       {keyMomentsData ? (
         <div className="key-moment-groups">
-          <div className="key-moment-filters">
+          <section className="key-moment-filter-section" aria-labelledby="key-moment-filter-heading">
+            <h3 id="key-moment-filter-heading" className="key-moment-filter-title">
+              Filters
+            </h3>
             {matchData && (
-              <MultiSelectDropdown
-                label="Team"
-                options={[matchData.home_team, matchData.away_team]}
-                selected={[matchData.home_team, matchData.away_team].filter((team) => filters.team_id.includes(team.id))}
-                onChange={(teams) => setFilters((f) => ({ ...f, team_id: teams.map((team) => team.id) }))}
-                formatOption={(team) => team.short_name}
-                getKey={(team) => String(team.id)}
-              />
+              <>
+                <FilterRow label="Attacking team">
+                  <SegmentedControl<number | null>
+                    ariaLabel="Attacking team"
+                    options={teamOptions}
+                    value={filters.attacking_team_id}
+                    onChange={(attacking_team_id) => setFilters((f) => ({ ...f, attacking_team_id }))}
+                  />
+                </FilterRow>
+                <FilterRow label="Defending team">
+                  <SegmentedControl<number | null>
+                    ariaLabel="Defending team"
+                    options={teamOptions}
+                    value={otherTeamId(filters.attacking_team_id)}
+                    onChange={(defending_team_id) =>
+                      setFilters((f) => ({ ...f, attacking_team_id: otherTeamId(defending_team_id) }))
+                    }
+                  />
+                </FilterRow>
+              </>
             )}
-
-            {CHIP_FILTERS.map(({ key, label, values }) => (
+            <FilterRow label="Attacking phase">
               <MultiSelectDropdown
-                key={key}
-                label={label}
-                options={values}
-                selected={filters[key] as (string | boolean)[]}
-                onChange={(selected) => setFilters((f) => ({ ...f, [key]: selected }))}
+                ariaLabel="Attacking phase"
+                options={IN_POSSESSION_PHASE_TYPES}
+                selected={filters.attacking_phase_types}
+                onChange={(attacking_phase_types) => setFilters((f) => ({ ...f, attacking_phase_types }))}
                 formatOption={formatEventValue}
-                getKey={String}
               />
-            ))}
-          </div>
+            </FilterRow>
+            <FilterRow label="Defending phase">
+              <MultiSelectDropdown
+                ariaLabel="Defending phase"
+                options={OUT_OF_POSSESSION_PHASE_TYPES}
+                selected={filters.defending_phase_types}
+                onChange={(defending_phase_types) => setFilters((f) => ({ ...f, defending_phase_types }))}
+                formatOption={formatEventValue}
+              />
+            </FilterRow>
+            {periods.length > 1 && (
+              <FilterRow label="Half">
+                <SegmentedControl<number | null>
+                  ariaLabel="Half"
+                  options={[
+                    { value: null, label: 'Any' },
+                    ...periods.map((p) => ({ value: p.period, label: PERIOD_LABELS[p.period] ?? formatEventValue(p.name) })),
+                  ]}
+                  value={filters.period}
+                  onChange={(period) => setFilters((f) => ({ ...f, period }))}
+                />
+              </FilterRow>
+            )}
+            <FilterRow label="Led to">
+              <SegmentedControl
+                ariaLabel="Led to"
+                options={LED_TO_OPTIONS}
+                value={filters.led_to}
+                onChange={(led_to) => setFilters((f) => ({ ...f, led_to }))}
+              />
+            </FilterRow>
+          </section>
           {/* {renderMomentGroup('Goals', keyMomentsData.goals)}
           {renderMomentGroup('Shots', keyMomentsData.shots)} */}
-          {renderMomentGroup('Phases of Play', keyMomentsData.pops)}
+          {renderMomentGroup('Passages of Play', keyMomentsData.pops)}
         </div>
       ) : (
         <p className="key-moment-empty">No key moments loaded.</p>

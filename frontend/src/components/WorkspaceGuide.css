@@ -1,0 +1,17 @@
+.workspace-guide { padding-bottom: 3rem; }
+.workspace-guide strong { font-weight: 600; color: var(--color-text-secondary); }
+.workspace-guide-docs-heading { margin-top: 2.5rem; }
+.workspace-guide-docs { border-bottom: 1px solid var(--surface-subtle-border); }
+.workspace-guide-topic { border-top: 1px solid var(--surface-subtle-border); }
+.workspace-guide-topic summary { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.75rem 0; list-style: none; cursor: pointer; font-size: 1rem; font-weight: 600; letter-spacing: 0.01em; color: var(--color-text-primary); }
+.workspace-guide-topic summary::-webkit-details-marker { display: none; }
+.workspace-guide-topic summary:hover { color: var(--color-accent); }
+.workspace-guide-topic summary:focus-visible { outline: 2px solid var(--focus-outline-color); outline-offset: 2px; }
+.workspace-guide-arrow { flex: none; font-size: 0.75rem; color: var(--color-text-subtle); transition: transform 0.15s ease; }
+.workspace-guide-topic[open] .workspace-guide-arrow { transform: rotate(180deg); }
+.workspace-guide-topic-body { padding: 0 0 0.9rem; font-size: 0.94rem; line-height: 1.5; color: var(--color-text-muted); }
+.workspace-guide-topic-body p { margin: 0 0 0.6rem; }
+.workspace-guide-topic-body ul { margin: 0 0 0.6rem; padding-left: 1.1rem; }
+.workspace-guide-topic-body li { margin-bottom: 0.4rem; }
+.workspace-guide-topic-body > :last-child { margin-bottom: 0; }
+.workspace-guide-topic-body code { font-size: 0.85em; overflow-wrap: anywhere; }

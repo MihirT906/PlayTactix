@@ -242,51 +242,81 @@
   padding: 0.5rem 0;
 }
 
-.key-moment-filter-label {
-  font-size: 0.76rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--color-text-subtle);
+.key-moment-filter-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.key-moment-filter-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--surface-subtle-border);
+}
+
+.key-moment-filter-row:last-child {
+  border-bottom: 0;
+}
+
+.key-moment-filter-row-label {
+  font-size: 0.94rem;
+  line-height: 1.35;
+  color: var(--color-text-secondary);
   white-space: nowrap;
 }
 
-.key-moment-filter-chip-row {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
+.key-moment-filter-row .multi-select-dropdown {
+  width: 9.5rem;
 }
 
-.key-moment-filter-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
+/* The trigger sits at the right edge of the panel, so open the menu leftwards. */
+.key-moment-filter-row .multi-select-dropdown-menu {
+  left: auto;
+  right: 0;
 }
 
-.key-moment-chip {
-  padding: 0.22rem 0.62rem;
+.key-moment-segmented {
+  display: inline-flex;
   border: 1px solid var(--surface-subtle-border);
-  border-radius: 999px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.key-moment-segment {
+  padding: 0.32rem 0.62rem;
+  border: 0;
+  border-left: 1px solid var(--surface-subtle-border);
+  border-radius: 0;
   background: transparent;
   color: var(--color-text-muted);
   font: inherit;
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 500;
+  white-space: nowrap;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
-.key-moment-chip:hover:not(.is-active) {
+.key-moment-segment:first-child {
+  border-left: 0;
+}
+
+.key-moment-segment:hover:not(.is-active) {
   background: var(--surface-subtle-background-hover);
   color: var(--color-text-primary);
-  border-color: var(--surface-subtle-border-hover);
 }
 
-.key-moment-chip.is-active {
-  background: var(--color-accent);
-  color: var(--color-text-inverse);
-  border-color: var(--color-accent);
+.key-moment-segment.is-active {
+  background: color-mix(in srgb, var(--color-accent) 24%, transparent);
+  color: var(--color-text-primary);
   font-weight: 600;
+}
+
+.key-moment-segment:focus-visible {
+  outline: 2px solid var(--focus-outline-color);
+  outline-offset: -2px;
 }
 
 .key-moment-custom-section {
@@ -297,6 +327,7 @@
   border-top: 1px solid var(--surface-subtle-border);
 }
 
+.key-moment-filter-title,
 .key-moment-custom-title {
   margin: 0;
   padding-bottom: 12px;

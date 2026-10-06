@@ -3,7 +3,9 @@ import { FaChevronDown } from 'react-icons/fa'
 import './MultiSelectDropdown.css'
 
 type MultiSelectDropdownProps<T> = {
-  label: string
+  label?: string
+  // Names the trigger for assistive tech when no visible label is rendered.
+  ariaLabel?: string
   options: readonly T[]
   selected: T[]
   onChange: (values: T[]) => void
@@ -13,6 +15,7 @@ type MultiSelectDropdownProps<T> = {
 
 function MultiSelectDropdown<T>({
   label,
+  ariaLabel,
   options,
   selected,
   onChange,
@@ -47,12 +50,13 @@ function MultiSelectDropdown<T>({
 
   return (
     <div className="multi-select-dropdown" ref={containerRef}>
-      <span className="multi-select-dropdown-label">{label}</span>
+      {label ? <span className="multi-select-dropdown-label">{label}</span> : null}
       <button
         type="button"
         className={`multi-select-dropdown-trigger${selected.length > 0 ? ' is-active' : ''}`}
         onClick={() => setIsOpen((current) => !current)}
         aria-expanded={isOpen}
+        aria-label={ariaLabel}
       >
         <span className="multi-select-dropdown-summary">{summary}</span>
         <FaChevronDown className={`multi-select-dropdown-arrow${isOpen ? ' is-expanded' : ''}`} aria-hidden="true" />

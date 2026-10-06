@@ -68,15 +68,20 @@
   position: sticky;
   left: 0;
   z-index: 3;
-  padding: 12px;
+  /* Matches the height of a single-lane track, borders included. */
+  height: 24px;
+  padding: 0 8px;
   border-radius: var(--match-section-radius);
   background: rgba(15, 23, 42, 0.16);
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 12px 0 18px rgba(15, 23, 42, 0.2);
   box-sizing: border-box;
   color: #f8fafc;
-  font-size: 0.9rem;
-  line-height: 1.4;
+  font-size: 0.72rem;
+  line-height: 22px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .event-display__track {

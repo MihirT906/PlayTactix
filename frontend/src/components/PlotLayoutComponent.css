@@ -79,7 +79,7 @@
 }
 
 .plot-layout__timeline-panel.is-open {
-  max-height: 180px;
+  max-height: 90px;
   overflow-y: auto;
 }
 

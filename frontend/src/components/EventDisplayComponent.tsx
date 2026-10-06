@@ -58,7 +58,7 @@ type TimelineRow = FilterTimelineRow | MetricTimelineRow | PossessionBandRow
 const POSSESSION_BAND_MIN_WIDTH = 6
 
 const TIMELINE_LANE_HEIGHT = 22
-const TIMELINE_LABEL_WIDTH = 220
+const TIMELINE_LABEL_WIDTH = 140
 const TIMELINE_ROW_GAP = 12
 const TIMELINE_MIN_TRACK_WIDTH = 960
 const TIMELINE_PIXELS_PER_FRAME = 2
@@ -509,7 +509,7 @@ const EventDisplayComponent: React.FC<EventDisplayProps> = ({
                 className="event-display__row"
                 style={{ gridTemplateColumns: `${TIMELINE_LABEL_WIDTH}px ${timelineTrackWidth}px` }}
               >
-                <div className="event-display__label-row">{row.label}</div>
+                <div className="event-display__label-row" title={row.label}>{row.label}</div>
                 <div className="event-display__track" style={{ height: `${trackHeight}px` }}>
                   <div
                     className="event-display__current-frame"

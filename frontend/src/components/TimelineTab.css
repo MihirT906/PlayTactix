@@ -240,6 +240,17 @@
   color: var(--color-text-soft);
 }
 
+.timeline-track-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.timeline-track-field-label {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+}
+
 .timeline-track-split {
   display: flex;
   align-items: center;

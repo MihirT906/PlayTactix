@@ -245,3 +245,13 @@
   font-family: monospace;
   pointer-events: none;
 }
+
+.event-display__value-bar {
+  stroke-width: 1;
+  cursor: default;
+}
+
+.event-display__value-baseline {
+  stroke: rgba(248, 250, 252, 0.25);
+  stroke-width: 1;
+}

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { FaChartLine, FaChevronDown, FaEye, FaEyeSlash, FaTimes } from 'react-icons/fa'
 import TimelineStore from '../services/TimelineStore'
-import { getClipEvents, matchesFilterTimeline } from '../services/timelineEvents'
+import { HEIGHT_COLUMNS, getClipEvents, getEventMetricValue, matchesFilterTimeline } from '../services/timelineEvents'
 import { EVENT_TYPES, formatEventValue } from '../constants/eventData'
 import type { Event } from '../types/FrameDataInterfaces'
 import type { AggregationMethod, FilterTimelineOption, MetricTimelineOption, TimelineOption } from '../types/TimelineOption'
@@ -42,19 +42,27 @@ function TimelineTab({ timelineStore, eventsData, clipRange, segmentStart }: Tim
 
   useEffect(() => timelineStore.subscribe(setTimelines), [timelineStore])
 
-  // Subtypes are read from the loaded events rather than hardcoded per event type.
-  const subtypesByEventType = useMemo(() => {
+  // Subtypes, and the columns that can set bar height, are read from the loaded events rather than
+  // hardcoded per event type.
+  const { subtypesByEventType, heightColumnsByEventType } = useMemo(() => {
     const subtypes = new Map<string, Set<string>>()
+    const heightColumns = new Map<string, Set<string>>()
 
     for (const frameEvents of eventsData?.values() ?? []) {
       for (const event of frameEvents) {
+        for (const column of HEIGHT_COLUMNS) {
+          if (getEventMetricValue(event, column) == null) continue
+          if (!heightColumns.has(event.event_type)) heightColumns.set(event.event_type, new Set())
+          heightColumns.get(event.event_type)!.add(column)
+        }
+
         if (!event.event_subtype) continue
         if (!subtypes.has(event.event_type)) subtypes.set(event.event_type, new Set())
         subtypes.get(event.event_type)!.add(event.event_subtype)
       }
     }
 
-    return subtypes
+    return { subtypesByEventType: subtypes, heightColumnsByEventType: heightColumns }
   }, [eventsData])
 
   const clipEvents = useMemo(
@@ -123,6 +131,9 @@ function TimelineTab({ timelineStore, eventsData, clipRange, segmentStart }: Tim
     const subtypes = Array.from(
       new Set([...(subtypesByEventType.get(timeline.eventType) ?? []), ...timeline.subtypes]),
     ).sort()
+    const heightColumns = HEIGHT_COLUMNS.filter(
+      (column) => heightColumnsByEventType.get(timeline.eventType)?.has(column) || timeline.heightBy === column,
+    )
 
     return (
       <li key={timeline.id} className={`timeline-track${timeline.hidden ? ' is-hidden' : ''}`}>
@@ -177,6 +188,32 @@ function TimelineTab({ timelineStore, eventsData, clipRange, segmentStart }: Tim
             ) : (
               <p className="timeline-track-note">No subtypes for this event type.</p>
             )}
+            {heightColumns.length > 0 ? (
+              <div className="timeline-track-field">
+                <span className="timeline-track-field-label">Bar height</span>
+                <div className="timeline-chip-group" role="group" aria-label={`${timeline.label} bar height`}>
+                  <button
+                    type="button"
+                    className="timeline-chip"
+                    aria-pressed={!timeline.heightBy}
+                    onClick={() => timelineStore.updateFilter(timeline.id, { heightBy: null })}
+                  >
+                    Fixed
+                  </button>
+                  {heightColumns.map((column) => (
+                    <button
+                      key={column}
+                      type="button"
+                      className="timeline-chip"
+                      aria-pressed={timeline.heightBy === column}
+                      onClick={() => timelineStore.updateFilter(timeline.id, { heightBy: column })}
+                    >
+                      {column}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </div>
         ) : null}
       </li>

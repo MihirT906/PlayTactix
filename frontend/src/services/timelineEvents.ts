@@ -59,3 +59,17 @@ export function matchesFilterTimeline(
     (timeline.subtypes.length === 0 || timeline.subtypes.includes(event.event_subtype))
   )
 }
+
+// Event columns that can set the bar height of an event track.
+export const HEIGHT_COLUMNS = [
+  'xthreat',
+  'xpass_completion',
+  'player_targeted_xthreat',
+  'player_targeted_xpass_completion',
+] as const
+
+// Returns the event's value for a metric column, or null when it has none (the data uses -1 for missing).
+export function getEventMetricValue(event: Event, column: string): number | null {
+  const value = event[column as keyof Event]
+  return typeof value === 'number' && Number.isFinite(value) && value !== -1 ? value : null
+}

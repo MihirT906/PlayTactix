@@ -7,6 +7,8 @@ export interface FilterTimelineOption {
   subtypes: string[]
   // Draws one row per subtype instead of a single merged row.
   splitBySubtype: boolean
+  // Numeric event column whose value sets the height of each bar.
+  heightBy?: string | null
   hidden?: boolean
 }
 

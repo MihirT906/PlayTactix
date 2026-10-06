@@ -34,7 +34,7 @@ export default class TimelineStore {
         this.notifyListeners()
     }
 
-    updateFilter(id: string, changes: Partial<Pick<FilterTimelineOption, 'subtypes' | 'splitBySubtype'>>): void {
+    updateFilter(id: string, changes: Partial<Pick<FilterTimelineOption, 'subtypes' | 'splitBySubtype' | 'heightBy'>>): void {
         this.timelines = this.timelines.map((timeline) => {
             if (timeline.id !== id || timeline.kind !== 'filter') {
                 return timeline

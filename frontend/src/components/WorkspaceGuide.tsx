@@ -8,26 +8,9 @@ const RECIPE: { title: string; body: ReactNode }[] = [
     title: 'Pull in a moment',
     body: (
       <>
-        Open <strong>Search</strong> in the left sidebar. Narrow the passages of play by team, type of play, or whether
-        they led to a shot or goal, then click one to add it to your clip.
-      </>
-    ),
-  },
-  {
-    title: 'Watch it back',
-    body: (
-      <>
-        Press play above the pitch. Use <strong>0.5x</strong> and <strong>2x</strong> to change speed, or drag the
-        slider to scrub to the exact frame you care about.
-      </>
-    ),
-  },
-  {
-    title: 'Trim and combine',
-    body: (
-      <>
-        Under the pitch, drag the ends of the bar in <strong>Match Segments</strong> to cut the moment down. Click
-        more passages in Search to add them to the same clip.
+        Open <strong>Search</strong> in the left sidebar. Use the filters to find the moment you're after, then click
+        it to add it to your clip. Drag the ends of its bar in <strong>Match Segments</strong> under the pitch to
+        adjust it, and add as many segments as you like.
       </>
     ),
   },

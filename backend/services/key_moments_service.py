@@ -42,9 +42,21 @@ class KeyMomentsService:
             
             return grouped_data.to_dict("records")
     
+    @staticmethod
+    def _most_common(values):
+        modes = values.mode()
+        return modes.iloc[0] if not modes.empty else None
+
     def _get_all_pops(self, events_data):
-        grouped_data = events_data.groupby("phase_index").agg({'frame_start': 'min', 'frame_end': 'max', 'time_end': 'last', 'team_id': 'first', 'team_in_possession_phase_type': 'first', 'team_out_of_possession_phase_type': 'first', 'lead_to_goal': 'last', 'lead_to_shot': 'last'}).reset_index()
-        
+        # A phase mixes rows from both teams (on_ball_engagement rows belong to the defender) and can
+        # contain a brief 'disruption' touch by the opponent, so the first row does not reliably describe
+        # the phase. Use the most common phase types, and the team with the most possession events.
+        grouped_data = events_data.groupby("phase_index").agg({'frame_start': 'min', 'frame_end': 'max', 'time_end': 'last', 'team_id': 'first', 'team_in_possession_phase_type': self._most_common, 'team_out_of_possession_phase_type': self._most_common, 'lead_to_goal': 'last', 'lead_to_shot': 'last'}).reset_index()
+
+        possession_team = events_data[events_data['event_type'] == 'player_possession'].groupby("phase_index")['team_id'].agg(self._most_common)
+        # Phases without a possession event keep the first row's team.
+        grouped_data['team_id'] = grouped_data['phase_index'].map(possession_team).fillna(grouped_data['team_id']).astype(int)
+
         if "frame_start" in grouped_data.columns:
             start_buffer = 30  # Buffer of 30 frames before the start of the sequence
             grouped_data["frame_start"] = (

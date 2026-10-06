@@ -1,4 +1,4 @@
-import type { AggregationMethod, FilterTimelineOption, TimelineOption } from '../types/TimelineOption'
+import type { AggregationMethod, FilterTimelineOption, MetricTimelineOption, TimelineOption } from '../types/TimelineOption'
 import { getFilterTimelineLabel } from './timelineEvents'
 
 type CreateFilterTimelineInput = {
@@ -43,6 +43,13 @@ export default class TimelineStore {
             const updated = { ...timeline, ...changes }
             return { ...updated, label: getFilterTimelineLabel(updated.eventType, updated.subtypes) }
         })
+        this.notifyListeners()
+    }
+
+    updateMetric(id: string, changes: Pick<MetricTimelineOption, 'aggregation'>): void {
+        this.timelines = this.timelines.map((timeline) =>
+            timeline.id === id && timeline.kind === 'metric' ? { ...timeline, ...changes } : timeline,
+        )
         this.notifyListeners()
     }
 

@@ -238,3 +238,10 @@
     gap: 8px;
   }
 }
+
+.event-display__metric-scale {
+  fill: rgba(248, 250, 252, 0.55);
+  font-size: 9px;
+  font-family: monospace;
+  pointer-events: none;
+}

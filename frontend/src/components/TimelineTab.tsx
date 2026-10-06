@@ -4,22 +4,30 @@ import TimelineStore from '../services/TimelineStore'
 import { getClipEvents, matchesFilterTimeline } from '../services/timelineEvents'
 import { EVENT_TYPES, formatEventValue } from '../constants/eventData'
 import type { Event } from '../types/FrameDataInterfaces'
-import type { AggregationMethod, FilterTimelineOption, TimelineOption } from '../types/TimelineOption'
+import type { AggregationMethod, FilterTimelineOption, MetricTimelineOption, TimelineOption } from '../types/TimelineOption'
 import './TimelineTab.css'
 
-type SelectOption = {
-  value: string
+type MetricDefinition = {
+  column: string
   label: string
+  aggregation: AggregationMethod
 }
 
-type MetricColumnOption = SelectOption & { aggregation: AggregationMethod }
-
-const metricColumnOptions: MetricColumnOption[] = [
-  { value: 'xpass_completion', label: 'xpass_completion', aggregation: 'average' },
-  { value: 'xthreat', label: 'xthreat', aggregation: 'max' },
-  { value: 'xloss_player_possession', label: 'xloss_player_possession', aggregation: 'band' },
-  { value: 'xshot_player_possession', label: 'xshot_player_possession', aggregation: 'band' },
+const METRICS: MetricDefinition[] = [
+  { column: 'xpass_completion', label: 'xpass_completion', aggregation: 'average' },
+  { column: 'xthreat', label: 'xthreat', aggregation: 'max' },
+  { column: 'xloss_player_possession', label: 'xloss_player_possession', aggregation: 'band' },
+  { column: 'xshot_player_possession', label: 'xshot_player_possession', aggregation: 'band' },
 ]
+
+// Band metrics are drawn per possession, so only line metrics offer a choice.
+const LINE_AGGREGATIONS: { value: AggregationMethod; label: string; description: string }[] = [
+  { value: 'max', label: 'Max', description: 'Highest value among the events active at each moment.' },
+  { value: 'average', label: 'Average', description: 'Average value across the events active at each moment.' },
+  { value: 'latest', label: 'Latest', description: 'Value of the most recently started event at each moment.' },
+]
+
+const BAND_DESCRIPTION = 'Start, end and peak value for each possession.'
 
 type TimelineTabProps = {
   timelineStore: TimelineStore
@@ -30,7 +38,6 @@ type TimelineTabProps = {
 
 function TimelineTab({ timelineStore, eventsData, clipRange, segmentStart }: TimelineTabProps) {
   const [expandedTimelineId, setExpandedTimelineId] = useState<string | null>(null)
-  const [selectedMetricColumn, setSelectedMetricColumn] = useState('')
   const [timelines, setTimelines] = useState<TimelineOption[]>(timelineStore.getAll())
 
   useEffect(() => timelineStore.subscribe(setTimelines), [timelineStore])
@@ -71,19 +78,21 @@ function TimelineTab({ timelineStore, eventsData, clipRange, segmentStart }: Tim
     timelineStore.updateFilter(timeline.id, { subtypes })
   }
 
-  const handleSaveMetricTimeline = () => {
-    const metricColumn = metricColumnOptions.find((option) => option.value === selectedMetricColumn)
-    if (!metricColumn) {
+  const handleToggleMetric = (metric: MetricDefinition) => {
+    const existing = timelines.filter((timeline) => timeline.kind === 'metric' && timeline.column === metric.column)
+
+    if (existing.length > 0) {
+      existing.forEach((timeline) => timelineStore.remove(timeline.id))
       return
     }
 
-    timelineStore.add({
+    const timeline = timelineStore.add({
       kind: 'metric',
-      label: metricColumn.label,
-      column: metricColumn.value,
-      aggregation: metricColumn.aggregation,
+      label: metric.label,
+      column: metric.column,
+      aggregation: metric.aggregation,
     })
-    setSelectedMetricColumn('')
+    setExpandedTimelineId(timeline.id)
   }
 
   const renderTrackActions = (timeline: TimelineOption) => (
@@ -174,6 +183,52 @@ function TimelineTab({ timelineStore, eventsData, clipRange, segmentStart }: Tim
     )
   }
 
+  const renderMetricTrack = (timeline: MetricTimelineOption) => {
+    const isExpanded = expandedTimelineId === timeline.id
+    const isBand = timeline.aggregation === 'band'
+    const description = isBand
+      ? BAND_DESCRIPTION
+      : LINE_AGGREGATIONS.find((option) => option.value === timeline.aggregation)?.description
+
+    return (
+      <li key={timeline.id} className={`timeline-track${timeline.hidden ? ' is-hidden' : ''}`}>
+        <div className="timeline-track-header">
+          <button
+            type="button"
+            className="timeline-track-toggle"
+            onClick={() => setExpandedTimelineId(isExpanded ? null : timeline.id)}
+            aria-expanded={isExpanded}
+          >
+            <FaChevronDown className={`timeline-track-chevron${isExpanded ? ' is-open' : ''}`} aria-hidden="true" />
+            <span className="timeline-track-label">{timeline.label}</span>
+            <FaChartLine aria-hidden="true" />
+          </button>
+          {renderTrackActions(timeline)}
+        </div>
+        {isExpanded ? (
+          <div className="timeline-track-body">
+            {isBand ? null : (
+              <div className="timeline-chip-group" role="group" aria-label={`${timeline.label} aggregation`}>
+                {LINE_AGGREGATIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className="timeline-chip"
+                    aria-pressed={timeline.aggregation === option.value}
+                    onClick={() => timelineStore.updateMetric(timeline.id, { aggregation: option.value })}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            )}
+            <p className="timeline-track-note">{description}</p>
+          </div>
+        ) : null}
+      </li>
+    )
+  }
+
   return (
     <div className="timeline-sidebar-placeholder">
       <h2>Timeline</h2>
@@ -184,19 +239,7 @@ function TimelineTab({ timelineStore, eventsData, clipRange, segmentStart }: Tim
         {timelines.length > 0 ? (
           <ul className="timeline-track-list">
             {timelines.map((timeline) =>
-              timeline.kind === 'filter' ? (
-                renderFilterTrack(timeline)
-              ) : (
-                <li key={timeline.id} className={`timeline-track${timeline.hidden ? ' is-hidden' : ''}`}>
-                  <div className="timeline-track-header">
-                    <span className="timeline-track-toggle timeline-track-toggle--static">
-                      <FaChartLine aria-hidden="true" />
-                      <span className="timeline-track-label">{timeline.label}</span>
-                    </span>
-                    {renderTrackActions(timeline)}
-                  </div>
-                </li>
-              ),
+              timeline.kind === 'filter' ? renderFilterTrack(timeline) : renderMetricTrack(timeline),
             )}
           </ul>
         ) : (
@@ -225,29 +268,18 @@ function TimelineTab({ timelineStore, eventsData, clipRange, segmentStart }: Tim
         <h3 id="timeline-add-metric-heading" className="timeline-section-label">
           Add metric
         </h3>
-        <div className="timeline-option-form">
-          <select
-            aria-label="Metric"
-            value={selectedMetricColumn}
-            onChange={(event) => setSelectedMetricColumn(event.target.value)}
-          >
-            <option value="" disabled>
-              Select metric
-            </option>
-            {metricColumnOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            className="timeline-save-button"
-            onClick={handleSaveMetricTimeline}
-            disabled={!selectedMetricColumn}
-          >
-            Add
-          </button>
+        <div className="timeline-chip-group">
+          {METRICS.map((metric) => (
+            <button
+              key={metric.column}
+              type="button"
+              className="timeline-chip"
+              aria-pressed={timelines.some((timeline) => timeline.kind === 'metric' && timeline.column === metric.column)}
+              onClick={() => handleToggleMetric(metric)}
+            >
+              {metric.label}
+            </button>
+          ))}
         </div>
       </section>
     </div>

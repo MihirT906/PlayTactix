@@ -88,59 +88,6 @@
   font-size: 0.9rem;
 }
 
-.timeline-option-form {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-  width: 100%;
-}
-
-.timeline-option-form select {
-  width: 100%;
-  padding: 0.32rem 0.62rem;
-  border: 1px solid var(--surface-subtle-border);
-  border-radius: var(--match-section-radius, 0);
-  background-color: transparent;
-  color: var(--color-text-primary);
-  font: inherit;
-  font-size: 0.82rem;
-  cursor: pointer;
-}
-
-.timeline-option-form select:hover {
-  border-color: var(--surface-subtle-border-hover);
-}
-
-.timeline-option-form select option {
-  background-color: var(--app-bg-primary);
-  color: var(--color-text-primary);
-}
-
-.timeline-save-button {
-  width: 100%;
-  padding: 0.45rem 0.8rem;
-  border: 1px solid color-mix(in srgb, var(--color-accent) 72%, transparent);
-  border-radius: 999px;
-  background: var(--color-accent);
-  color: var(--color-text-inverse);
-  font: inherit;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
-}
-
-.timeline-save-button:hover:not(:disabled) {
-  transform: translateY(-1px);
-  border-color: color-mix(in srgb, var(--color-accent) 88%, white);
-  background: color-mix(in srgb, var(--color-accent) 88%, white);
-}
-
-.timeline-save-button:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
 .timeline-track-list {
   display: flex;
   flex-direction: column;
@@ -184,10 +131,6 @@
   font-weight: 600;
   text-align: left;
   cursor: pointer;
-}
-
-.timeline-track-toggle--static {
-  cursor: default;
 }
 
 .timeline-track-toggle svg {
@@ -317,9 +260,7 @@
 
 .timeline-track-toggle:focus-visible,
 .timeline-track-icon-button:focus-visible,
-.timeline-chip:focus-visible,
-.timeline-save-button:focus-visible,
-.timeline-option-form select:focus-visible {
+.timeline-chip:focus-visible {
   outline: 2px solid var(--focus-outline-color);
   outline-offset: 2px;
 }

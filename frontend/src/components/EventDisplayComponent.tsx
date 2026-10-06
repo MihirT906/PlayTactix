@@ -143,6 +143,8 @@ const MetricTrack: React.FC<MetricTrackProps> = ({ row, scaleStart, visibleFrame
       onMouseMove={handleMouseMove}
       onMouseLeave={() => setHover(null)}
     >
+      <text x={4} y={10} className="event-display__metric-scale">{max.toFixed(3)}</text>
+      <text x={4} y={TIMELINE_METRIC_TRACK_HEIGHT - 3} className="event-display__metric-scale">{min.toFixed(3)}</text>
       {segments.map((pts, i) => (
         <polyline key={i} points={pts.join(' ')} className="event-display__metric-line" />
       ))}
@@ -244,6 +246,8 @@ const PossessionBandTrack: React.FC<PossessionBandTrackProps> = ({
       onMouseMove={handleMouseMove}
       onMouseLeave={() => setHover(null)}
     >
+      <text x={4} y={10} className="event-display__metric-scale">{max.toFixed(3)}</text>
+      <text x={4} y={TIMELINE_METRIC_TRACK_HEIGHT - 3} className="event-display__metric-scale">{min.toFixed(3)}</text>
       {segments.map((segment, index) => (
         <line
           key={index}
@@ -400,7 +404,14 @@ const EventDisplayComponent: React.FC<EventDisplayProps> = ({
         return { frame, value }
       })
 
-    return { points, min: 0, max: 1 }
+    // Fit the scale to the values in the clip; a constant line falls back to a zero baseline.
+    const values = points.flatMap((point) => (point.value == null ? [] : [point.value]))
+    if (values.length === 0) return { points, min: 0, max: 1 }
+
+    const max = Math.max(...values)
+    const min = Math.min(...values)
+
+    return { points, min: min === max ? Math.min(0, min) : min, max }
   }
 
   const computePossessionBands = (
@@ -425,7 +436,10 @@ const EventDisplayComponent: React.FC<EventDisplayProps> = ({
 
     if (bands.length === 0) return { bands: [], min: 0, max: 1 }
 
-    return { bands, min: 0, max: 1 }
+    // Bands rest on the zero line, so only the top of the scale is fitted to the clip.
+    const values = bands.flatMap((band) => [band.start, band.end, band.max])
+
+    return { bands, min: Math.min(0, ...values), max: Math.max(...values) }
   }
 
   const buildFilterRow = (

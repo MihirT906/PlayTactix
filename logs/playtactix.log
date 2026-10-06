@@ -1,17 +1,22 @@
-2026-10-06 16:17:20 | INFO     | playtactix | Log cleared — new data download started
-2026-10-06 16:17:20 | INFO     | playtactix.routes.data_routes | Downloading match data for match_id=1874553
-2026-10-06 16:17:20 | INFO     | playtactix.services.match_cache | match_id=1874553 already cached, skipping download
-2026-10-06 16:17:20 | INFO     | playtactix.routes.data_routes | Fetching match metadata for match_id=1874553
-2026-10-06 16:17:20 | INFO     | playtactix.services.frame_data_service | Retrieving metadata for match_id=1874553 from stored data
-2026-10-06 16:17:20 | INFO     | playtactix.routes.data_routes | Fetching frames match_id=1874553 start=10 end=310
-2026-10-06 16:17:20 | INFO     | playtactix.services.frame_data_service | Reading data files for match_id=1874553
-2026-10-06 16:17:20 | INFO     | playtactix.services.frame_data_service | Filtering frames for match_id=1874553 to range 10-310
-2026-10-06 16:17:20 | WARNING  | playtactix.services.frame_data_service | Pitch control failed for match_id=1874553 frame=18: array must not contain infs or NaNs
-2026-10-06 16:17:25 | INFO     | playtactix.services.frame_data_service | Returning frames for match_id=1874553
+2026-10-06 16:38:05 | INFO     | playtactix | Log cleared — new data download started
+2026-10-06 16:38:05 | INFO     | playtactix.routes.data_routes | Downloading match data for match_id=1874553
+2026-10-06 16:38:05 | INFO     | playtactix.services.match_cache | match_id=1874553 already cached, skipping download
+2026-10-06 16:38:06 | INFO     | playtactix.routes.data_routes | Fetching frames match_id=1874553 start=10 end=310
+2026-10-06 16:38:06 | INFO     | playtactix.services.frame_data_service | Reading data files for match_id=1874553
+2026-10-06 16:38:06 | INFO     | playtactix.services.frame_data_service | Filtering frames for match_id=1874553 to range 10-310
+2026-10-06 16:38:06 | WARNING  | playtactix.services.frame_data_service | Pitch control failed for match_id=1874553 frame=18: array must not contain infs or NaNs
+2026-10-06 16:38:11 | INFO     | playtactix.services.frame_data_service | Returning frames for match_id=1874553
 NoneType: None
-2026-10-06 16:17:27 | INFO     | playtactix.routes.data_routes | Fetching key moments for match_id=1874553
-2026-10-06 16:17:27 | INFO     | playtactix.services.key_moments_service | Fetching key moments for match_id=1874553
-2026-10-06 16:17:27 | INFO     | playtactix.services.key_moments_service | Key moments computed goals=7
-2026-10-06 16:17:27 | INFO     | playtactix.services.key_moments_service | Key moments computed shots=29
-2026-10-06 16:17:27 | INFO     | playtactix.services.key_moments_service | Key moments computed pops=360
-2026-10-06 16:17:27 | INFO     | playtactix.services.key_moments_service | Key moments computed events=4915
+2026-10-06 16:38:12 | INFO     | playtactix.routes.data_routes | Fetching match metadata for match_id=1874553
+2026-10-06 16:38:12 | INFO     | playtactix.services.frame_data_service | Retrieving metadata for match_id=1874553 from stored data
+2026-10-06 16:38:12 | INFO     | playtactix.routes.data_routes | Fetching key moments for match_id=1874553
+2026-10-06 16:38:12 | INFO     | playtactix.services.key_moments_service | Fetching key moments for match_id=1874553
+2026-10-06 16:38:12 | INFO     | playtactix.services.key_moments_service | Key moments computed goals=7
+2026-10-06 16:38:12 | INFO     | playtactix.services.key_moments_service | Key moments computed shots=29
+2026-10-06 16:38:12 | INFO     | playtactix.services.key_moments_service | Key moments computed pops=360
+2026-10-06 16:38:12 | INFO     | playtactix.services.key_moments_service | Key moments computed events=4915
+2026-10-06 16:38:44 | INFO     | playtactix.routes.data_routes | Fetching frames match_id=1874553 start=29193 end=29493
+2026-10-06 16:38:44 | INFO     | playtactix.services.frame_data_service | Reading data files for match_id=1874553
+2026-10-06 16:38:44 | INFO     | playtactix.services.frame_data_service | Filtering frames for match_id=1874553 to range 29193-29493
+2026-10-06 16:38:48 | INFO     | playtactix.services.frame_data_service | Returning frames for match_id=1874553
+NoneType: None

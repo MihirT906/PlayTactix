@@ -8,6 +8,7 @@ import backgroundImage from '../assets/background_image.png';
 import type { MatchData } from '../types/MatchDataInterfaces'
 import { useStyleConfig } from '../context/StyleConfigContext'
 import { useMatchSession } from '../context/MatchSessionContext'
+import { findOverlayAt } from '../services/clipManager'
 import { buildPassOptionProbOverlay } from '../plot/overlays/passOptionProbOverlay'
 import { buildPitchControlOverlay } from '../plot/overlays/pitchControlOverlay.ts'
 import { buildEventVisualisationOverlay } from '../plot/overlays/eventVisualisationOverlay'
@@ -63,21 +64,10 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
   const dragDepsRef = useRef({ frameData, isPlaying, positionOverrides, editMode: session.ui.editMode })
   dragDepsRef.current = { frameData, isPlaying, positionOverrides, editMode: session.ui.editMode }
   const image_src = backgroundImage; // Set the background image source
-  const pitchOverlay = session.playback.clip.overlaySegments.find((overlay) => overlay.type === 'pitch')
-  const isPitchBackgroundActive =
-    pitchOverlay !== undefined &&
-    clipFrame >= pitchOverlay.clipStart &&
-    clipFrame <= pitchOverlay.clipEnd
-  const pitchControlOverlaySegment = session.playback.clip.overlaySegments.find((overlay) => overlay.type === 'pitch_control')
-  const isPitchControlActive =
-    pitchControlOverlaySegment !== undefined &&
-    clipFrame >= pitchControlOverlaySegment.clipStart &&
-    clipFrame <= pitchControlOverlaySegment.clipEnd
-  const passOptionProbOverlaySegment = session.playback.clip.overlaySegments.find((overlay) => overlay.type === 'pass_option_prob')
-  const isPassOptionProbActive =
-    passOptionProbOverlaySegment !== undefined &&
-    clipFrame >= passOptionProbOverlaySegment.clipStart &&
-    clipFrame <= passOptionProbOverlaySegment.clipEnd
+  // A type can have several segments on the clip; it shows when any of them covers this frame.
+  const isPitchBackgroundActive = findOverlayAt(session.playback.clip, 'pitch', clipFrame) !== undefined
+  const isPitchControlActive = findOverlayAt(session.playback.clip, 'pitch_control', clipFrame) !== undefined
+  const isPassOptionProbActive = findOverlayAt(session.playback.clip, 'pass_option_prob', clipFrame) !== undefined
   const editMode = session.ui.editMode;
 
   // Utility function to filter arrays based on a boolean mask

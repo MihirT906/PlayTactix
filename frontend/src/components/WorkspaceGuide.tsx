@@ -18,7 +18,7 @@ const RECIPE: { title: string; body: ReactNode }[] = [
     title: 'Add an overlay',
     body: (
       <>
-        Open <strong>Overlays</strong>, press <strong>Add</strong> and pick Pitch Control or Pass Probability. Drag
+        Open <strong>Overlays</strong> and pick Pitch Control or Pass Probability. Drag
         its bar under the pitch to choose when it shows.
       </>
     ),
@@ -116,7 +116,8 @@ const DOCS: { title: string; body: ReactNode }[] = [
     body: (
       <>
         <p>
-          Open <strong>Overlays</strong> and press <strong>Add</strong>. Click an overlay again to turn it off.
+          Open <strong>Overlays</strong> and click an overlay to add it from the current frame to the end of the clip.
+          To remove one, right-click its bar under the pitch and choose Delete.
         </p>
         <ul>
           <li>

@@ -68,7 +68,7 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
     setOverlaySegmentRange,
     setSegmentRange,
     removeSegment,
-    setActiveOverlaySegment,
+    removeOverlaySegment,
   } = useMatchSession()
   const { homeTeamColor, awayTeamColor } = useStyleConfig()
 
@@ -143,9 +143,9 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
         {overlaySegments.length === 0 ? (
           <div className="annotation-timeline__empty">No overlays</div>
         ) : (
-          overlaySegments.map((overlay) => (
+          overlaySegments.map((overlay, index) => (
             <BackgroundRow
-              key={overlay.type}
+              key={`${overlay.type}-${index}`}
               overlay={overlay}
               scaleStart={scaleStart}
               scaleEnd={scaleEnd}
@@ -154,8 +154,8 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
               labelWidth={TIMELINE_LABEL_WIDTH}
               trackWidth={trackWidth}
               currentFrameOffsetPercent={currentFrameOffsetPercent}
-              onRangeChange={(clipStart, clipEnd) => setOverlaySegmentRange(overlay.type, clipStart, clipEnd)}
-              onDelete={() => setActiveOverlaySegment(overlay.type, false)}
+              onRangeChange={(clipStart, clipEnd) => setOverlaySegmentRange(index, clipStart, clipEnd)}
+              onDelete={() => removeOverlaySegment(index)}
               barStyle={getOverlayBarStyle(overlay)}
             />
           ))

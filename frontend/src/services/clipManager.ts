@@ -1,4 +1,4 @@
-import type { Clip, OverlaySegmentKind, ResolvedClipFrame } from '../types/ClipInterfaces'
+import type { Clip, OverlaySegment, OverlaySegmentKind, ResolvedClipFrame } from '../types/ClipInterfaces'
 
 export const DEFAULT_SEGMENT_SOURCE_RANGE = { start: 10, end: 110 }
 export const DEFAULT_CLIP_LENGTH = DEFAULT_SEGMENT_SOURCE_RANGE.end - DEFAULT_SEGMENT_SOURCE_RANGE.start
@@ -92,9 +92,32 @@ export function resolveClipFrame(clip: Clip, clipFrame: number): ResolvedClipFra
   }
 }
 
-// Adds (or replaces) the overlay of the given type on the clip, spanning the full
-// clip whenever it's (re)activated, same as a freshly placed segment would start at clipStart 0.
-// Only one overlay per type is supported at a time.
+// The overlay of the given type that is showing at a clip frame, if any.
+export function findOverlayAt(clip: Clip, type: OverlaySegmentKind, clipFrame: number): OverlaySegment | undefined {
+  return clip.overlaySegments.find(
+    (overlay) => overlay.type === type && clipFrame >= overlay.clipStart && clipFrame <= overlay.clipEnd
+  )
+}
+
+// Adds an overlay of the given type starting at clipFrame and running to the end of the clip,
+// or up to the next overlay of the same type so two never overlap. The clip is returned
+// unchanged when that type is already showing at clipFrame, or there is no clip left after it.
+export function addOverlayFrom(clip: Clip, type: OverlaySegmentKind, clipFrame: number): Clip {
+  if (findOverlayAt(clip, type, clipFrame)) return clip
+
+  const clipEnd = clip.overlaySegments
+    .filter((overlay) => overlay.type === type && overlay.clipStart > clipFrame)
+    .reduce((end, overlay) => Math.min(end, overlay.clipStart), clip.length)
+  if (clipEnd <= clipFrame) return clip
+
+  return {
+    ...clip,
+    overlaySegments: [...clip.overlaySegments, { type, clipStart: clipFrame, clipEnd }],
+  }
+}
+
+// Replaces every overlay of the given type with a single one spanning the full clip,
+// same as a freshly placed segment would start at clipStart 0.
 export function addOverlay(clip: Clip, type: OverlaySegmentKind): Clip {
   return {
     ...clip,
@@ -105,6 +128,7 @@ export function addOverlay(clip: Clip, type: OverlaySegmentKind): Clip {
   }
 }
 
+// Removes every overlay of the given type.
 export function removeOverlay(clip: Clip, type: OverlaySegmentKind): Clip {
   return {
     ...clip,
@@ -112,11 +136,20 @@ export function removeOverlay(clip: Clip, type: OverlaySegmentKind): Clip {
   }
 }
 
-export function setOverlayRange(clip: Clip, type: OverlaySegmentKind, clipStart: number, clipEnd: number): Clip {
+// Removes the single overlay segment at the given index.
+export function removeOverlayAt(clip: Clip, index: number): Clip {
   return {
     ...clip,
-    overlaySegments: clip.overlaySegments.map((overlay) =>
-      overlay.type === type ? { ...overlay, clipStart, clipEnd } : overlay
+    overlaySegments: clip.overlaySegments.filter((_, i) => i !== index),
+  }
+}
+
+// A type can have several segments, so a segment is addressed by its index.
+export function setOverlayRange(clip: Clip, index: number, clipStart: number, clipEnd: number): Clip {
+  return {
+    ...clip,
+    overlaySegments: clip.overlaySegments.map((overlay, i) =>
+      i === index ? { ...overlay, clipStart, clipEnd } : overlay
     ),
   }
 }

@@ -98,7 +98,9 @@ type MatchSessionContextValue = {
   setAutoDisappearEvents: (autoDisappear: boolean) => void
 
   setActiveOverlaySegment: (kind: OverlaySegmentKind, active: boolean) => void
-  setOverlaySegmentRange: (kind: OverlaySegmentKind, clipStart: number, clipEnd: number) => void
+  addOverlaySegmentFrom: (kind: OverlaySegmentKind, clipFrame: number) => void
+  removeOverlaySegment: (index: number) => void
+  setOverlaySegmentRange: (index: number, clipStart: number, clipEnd: number) => void
 
   setFrameLoading: (isLoading: boolean) => void
   setLoadedFrameRange: (range: { start: number; end: number } | null) => void
@@ -471,15 +473,43 @@ export function MatchSessionProvider({
             })
         },
 
-        setOverlaySegmentRange: (kind: OverlaySegmentKind, clipStart: number, clipEnd: number) => {
+        addOverlaySegmentFrom: (kind: OverlaySegmentKind, clipFrame: number) => {
             setSession((prev) => {
-                logger.info('Clip overlay segment range changed', { kind, clipStart, clipEnd })
+                logger.info('Clip overlay segment added', { kind, clipFrame })
 
                 return {
                     ...prev,
                     playback: {
                         ...prev.playback,
-                        clip: clipManager.setOverlayRange(prev.playback.clip, kind, clipStart, clipEnd),
+                        clip: clipManager.addOverlayFrom(prev.playback.clip, kind, clipFrame),
+                    },
+                }
+            })
+        },
+
+        removeOverlaySegment: (index: number) => {
+            setSession((prev) => {
+                logger.info('Clip overlay segment removed', { index })
+
+                return {
+                    ...prev,
+                    playback: {
+                        ...prev.playback,
+                        clip: clipManager.removeOverlayAt(prev.playback.clip, index),
+                    },
+                }
+            })
+        },
+
+        setOverlaySegmentRange: (index: number, clipStart: number, clipEnd: number) => {
+            setSession((prev) => {
+                logger.info('Clip overlay segment range changed', { index, clipStart, clipEnd })
+
+                return {
+                    ...prev,
+                    playback: {
+                        ...prev.playback,
+                        clip: clipManager.setOverlayRange(prev.playback.clip, index, clipStart, clipEnd),
                     },
                 }
             })

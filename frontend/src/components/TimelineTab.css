@@ -27,6 +27,18 @@
   padding-left: 28px;
 }
 
+/* The Overlays tab lists its options directly, with no Add button to indent under. */
+.timeline-add-options.overlays-options {
+  padding-left: 0;
+}
+
+.overlays-notice {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: var(--color-text-muted);
+}
+
 .timeline-add-option {
   font-size: 1rem;
 }

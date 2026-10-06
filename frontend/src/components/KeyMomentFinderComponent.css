@@ -207,6 +207,129 @@
   color: var(--color-text-muted);
 }
 
+.key-moment-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.key-moment-headline {
+  justify-content: flex-start;
+}
+
+.key-moment-when {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.key-moment-when .key-moment-primary {
+  font-variant-numeric: tabular-nums;
+}
+
+.key-moment-when .key-moment-meta + .key-moment-meta::before {
+  content: '·';
+  margin-right: 0.5rem;
+  color: var(--color-text-subtle);
+}
+
+/* Square-cornered like the panels around it. */
+.key-moment-outcome {
+  flex-shrink: 0;
+  padding: 0.14rem 0.5rem;
+  border: 1px solid var(--surface-subtle-border);
+  border-radius: var(--match-section-radius, 0);
+  background: var(--surface-subtle-background);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-text-soft);
+}
+
+/* Only shown for the passage being hovered (or focused from the keyboard). */
+.key-moment-chain {
+  display: none;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.4rem;
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+}
+
+.key-moment-button:hover .key-moment-chain,
+.key-moment-button:focus-visible .key-moment-chain {
+  display: flex;
+}
+
+/* Each step carries its leading arrow, so a wrapped line never ends on one. */
+.key-moment-chain-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+}
+
+.key-moment-chain-action {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.key-moment-chain-skipped {
+  color: var(--color-text-subtle);
+}
+
+/* Attacking side on the left edge, defending side on the right. */
+.key-moment-story {
+  flex-wrap: wrap;
+  row-gap: 0.15rem;
+}
+
+.key-moment-side {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+/* Stays on the right edge when the row wraps. */
+.key-moment-side.is-defending {
+  margin-left: auto;
+}
+
+/* The outer border carries the team's kit colour, set inline. */
+.key-moment-team {
+  padding-left: 0.4rem;
+  border-left: 3px solid transparent;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--color-text-primary);
+}
+
+.key-moment-side.is-defending .key-moment-team {
+  padding-left: 0;
+  padding-right: 0.4rem;
+  border-left: 0;
+  border-right: 3px solid transparent;
+}
+
+.key-moment-phase {
+  font-size: 0.92rem;
+  color: var(--color-text-secondary);
+}
+
+.key-moment-versus-arrow {
+  width: 0.6rem;
+  height: 0.6rem;
+  flex-shrink: 0;
+  color: var(--color-text-subtle);
+}
+
 .key-moment-checkbox-row {
   flex-direction: row;
   align-items: center;
@@ -280,7 +403,7 @@
 .key-moment-segmented {
   display: inline-flex;
   border: 1px solid var(--surface-subtle-border);
-  border-radius: 8px;
+  border-radius: var(--match-section-radius, 0);
   overflow: hidden;
 }
 

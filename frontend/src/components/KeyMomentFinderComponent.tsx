@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react'
-import { FaChevronDown } from 'react-icons/fa'
+import { FaArrowRight, FaChevronDown } from 'react-icons/fa'
+import { useStyleConfig } from '../context/StyleConfigContext'
 import type { KeyMomentsData } from '../types/KeyMomentsDataInterfaces'
 import type { MatchData } from '../types/MatchDataInterfaces'
 import {
@@ -38,6 +39,58 @@ const LED_TO_OPTIONS: Array<{ value: LedTo; label: string }> = [
 ]
 
 const PERIOD_LABELS: Record<number, string> = { 1: '1st', 2: '2nd' }
+
+const formatDuration = (seconds: number) => {
+  const rounded = Math.round(seconds)
+  if (rounded < 1) return '<1s'
+  if (rounded < 60) return `${rounded}s`
+  return `${Math.floor(rounded / 60)}m ${String(rounded % 60).padStart(2, '0')}s`
+}
+
+// How a passage began and ended, where that says more than "received a pass" / "passed it on".
+const START_LABELS: Record<string, string> = {
+  recovery: 'won ball',
+  pass_interception: 'intercepted',
+  throw_in_reception: 'from throw-in',
+  free_kick_reception: 'from free kick',
+  goal_kick_reception: 'from goal kick',
+  corner_reception: 'from corner',
+  throw_in_interception: 'intercepted throw-in',
+  free_kick_interception: 'intercepted free kick',
+  goal_kick_interception: 'intercepted goal kick',
+  corner_interception: 'intercepted corner',
+}
+
+const END_LABELS: Record<string, string> = {
+  shot: 'shot',
+  possession_loss: 'lost possession',
+  foul_suffered: 'won foul',
+  clearance: 'cleared',
+}
+
+const MAX_CHAIN_PLAYERS = 4
+
+type ChainStep = { name: string; action?: string } | { skipped: number }
+
+// Everyone who had the ball, in order. Long chains keep both ends and count the middle.
+const buildChain = (moment: KeyMomentItem): ChainStep[] => {
+  const players = moment.players ?? []
+  if (players.length === 0) return []
+
+  const startAction = START_LABELS[moment.start_type ?? '']
+  const endAction = END_LABELS[moment.end_type ?? '']
+  const last = players.length - 1
+  const steps: ChainStep[] = players.map((name, i) => ({
+    name,
+    action: i === 0 ? startAction : i === last ? endAction : undefined,
+  }))
+
+  // One player on the ball throughout: the end action has no second name to sit on.
+  if (last === 0) return endAction ? [...steps, { name: '', action: endAction }] : steps
+
+  if (players.length <= MAX_CHAIN_PLAYERS) return steps
+  return [...steps.slice(0, 2), { skipped: players.length - MAX_CHAIN_PLAYERS }, ...steps.slice(-2)]
+}
 
 function FilterRow({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -78,6 +131,7 @@ function SegmentedControl<T extends string | number | null>({
 }
 
 function KeyMomentFinderComponent({ segmentRange, onAddSegment, keyMomentsData, matchData }: KeyMomentFinderComponentProps) {
+  const { homeTeamColor, awayTeamColor } = useStyleConfig()
   const [startFrame, setStartFrame] = useState(segmentRange.start.toString())
   const [endFrame, setEndFrame] = useState(segmentRange.end.toString())
   const [expandedGroups, setExpandedGroups] = useState({
@@ -114,10 +168,16 @@ function KeyMomentFinderComponent({ segmentRange, onAddSegment, keyMomentsData, 
   const otherTeamId = (teamId: number | null) =>
     teamId === null ? null : (teams.find((team) => team.id !== teamId)?.id ?? null)
 
+  const periodOf = (moment: KeyMomentItem) => {
+    // Frame ranges are padded at both ends, so place the passage by its midpoint.
+    const midFrame = (moment.frame_start + moment.frame_end) / 2
+    return periods.find((p) => midFrame >= p.start_frame && midFrame <= p.end_frame)
+  }
+
   const applyFilters = (moments: KeyMomentItem[]) =>
     moments.filter((moment) => {
       if (filters.led_to === 'goal' && !moment.lead_to_goal) return false
-      if (filters.led_to === 'shot' && !moment.lead_to_shot && !moment.lead_to_goal) return false
+      if (filters.led_to === 'shot' && !moment.lead_to_shot && !moment.lead_to_goal && !moment.has_shot) return false
 
       // moment.team_id is the team on the ball.
       if (filters.attacking_team_id !== null && moment.team_id !== filters.attacking_team_id) return false
@@ -131,21 +191,12 @@ function KeyMomentFinderComponent({ segmentRange, onAddSegment, keyMomentsData, 
         !filters.defending_phase_types.includes(moment.team_out_of_possession_phase_type)
       ) return false
 
-      if (filters.period !== null) {
-        const period = periods.find((p) => p.period === filters.period)
-        // Frame ranges are padded at both ends, so place the passage by its midpoint.
-        const midFrame = (moment.frame_start + moment.frame_end) / 2
-        if (period && (midFrame < period.start_frame || midFrame > period.end_frame)) return false
-      }
+      if (filters.period !== null && periodOf(moment)?.period !== filters.period) return false
       return true
     })
 
   const renderMomentGroup = (title: keyof typeof expandedGroups, moments: KeyMomentItem[]) => {
     const isExpanded = expandedGroups[title]
-    const home_team_id = matchData?.home_team.id
-    const home_team_name = matchData?.home_team.short_name
-    const away_team_id = matchData?.away_team.id
-    const away_team_name = matchData?.away_team.short_name
 
     const filteredMoments = applyFilters(moments)
 
@@ -174,7 +225,13 @@ function KeyMomentFinderComponent({ segmentRange, onAddSegment, keyMomentsData, 
           <>
             {filteredMoments.length > 0 ? (
               <div className="key-moment-list" id={`key-moment-panel-${title.toLowerCase()}`}>
-                {filteredMoments.map((moment) => (
+                {filteredMoments.map((moment) => {
+                  const isHomeAttacking = moment.team_id === matchData?.home_team.id
+                  const attackingTeam = isHomeAttacking ? matchData?.home_team : matchData?.away_team
+                  const defendingTeam = isHomeAttacking ? matchData?.away_team : matchData?.home_team
+                  const chain = buildChain(moment)
+
+                  return (
                   <button
                     key={`${title}-${moment.phase_index}-${moment.frame_start}-${moment.frame_end}`}
                     type="button"
@@ -185,13 +242,64 @@ function KeyMomentFinderComponent({ segmentRange, onAddSegment, keyMomentsData, 
                       onAddSegment(moment.frame_start, moment.frame_end)
                     }}
                   >
-                    <span className="key-moment-primary">Passage {moment.phase_index}</span>
-                    <span className="key-moment-meta">Time {moment.time_end}</span>
-
-                    <span className="key-moment-meta">{home_team_name} : {moment.team_id === home_team_id ? moment.team_in_possession_phase_type : moment.team_out_of_possession_phase_type}</span>
-                    <span className="key-moment-meta">{away_team_name} : {moment.team_id === away_team_id ? moment.team_in_possession_phase_type : moment.team_out_of_possession_phase_type}</span>
+                    <span className="key-moment-row key-moment-headline">
+                      <span className="key-moment-when">
+                        <span className="key-moment-primary">{moment.time_start}</span>
+                        <span className="key-moment-meta">{formatDuration(moment.duration_seconds)}</span>
+                      </span>
+                      {/* "Led to" marks an earlier passage of a move whose shot came later. */}
+                      {moment.lead_to_goal ? (
+                        <span className="key-moment-outcome">
+                          {moment.has_shot ? 'Goal' : 'Led to goal'}
+                        </span>
+                      ) : moment.lead_to_shot || moment.has_shot ? (
+                        <span className="key-moment-outcome">
+                          {moment.has_shot ? 'Shot' : 'Led to shot'}
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="key-moment-row key-moment-story">
+                      <span className="key-moment-side">
+                        <span
+                          className="key-moment-team"
+                          style={{ borderLeftColor: isHomeAttacking ? homeTeamColor : awayTeamColor }}
+                          title={attackingTeam?.short_name}
+                        >
+                          {attackingTeam?.acronym ?? attackingTeam?.short_name}
+                        </span>
+                        <span className="key-moment-phase">{formatEventValue(moment.team_in_possession_phase_type)}</span>
+                      </span>
+                      <span className="key-moment-side is-defending">
+                        <span className="key-moment-phase">{formatEventValue(moment.team_out_of_possession_phase_type)}</span>
+                        <span
+                          className="key-moment-team"
+                          style={{ borderRightColor: isHomeAttacking ? awayTeamColor : homeTeamColor }}
+                          title={defendingTeam?.short_name}
+                        >
+                          {defendingTeam?.acronym ?? defendingTeam?.short_name}
+                        </span>
+                      </span>
+                    </span>
+                    {chain.length > 0 ? (
+                      <span className="key-moment-row key-moment-chain">
+                        {chain.map((step, i) => (
+                          <span key={i} className="key-moment-chain-step">
+                            {i > 0 ? <FaArrowRight className="key-moment-versus-arrow" aria-hidden="true" /> : null}
+                            {'skipped' in step ? (
+                              <span className="key-moment-chain-skipped">+{step.skipped}</span>
+                            ) : (
+                              <>
+                                {step.name ? <span>{step.name}</span> : null}
+                                {step.action ? <span className="key-moment-chain-action">{step.action}</span> : null}
+                              </>
+                            )}
+                          </span>
+                        ))}
+                      </span>
+                    ) : null}
                   </button>
-                ))}
+                  )
+                })}
               </div>
             ) : (
               <p className="key-moment-empty" id={`key-moment-panel-${title.toLowerCase()}`}>

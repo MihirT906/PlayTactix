@@ -11,11 +11,17 @@ interface PhasesOfPlay {
     frame_start: number,
     frame_end: number,
     time_end: string,
+    time_start: string,
+    duration_seconds: number,
     team_id: number,
     team_in_possession_phase_type: string,
     team_out_of_possession_phase_type: string,
     lead_to_shot: boolean,
-    lead_to_goal: boolean
+    lead_to_goal: boolean,
+    players: string[],
+    start_type: string | null,
+    end_type: string | null,
+    has_shot: boolean
 }
 
 interface Goal {

@@ -7,6 +7,8 @@ import pandas as pd
 
 from paths import events_data_path
 
+FRAME_RATE = 10  # SkillCorner tracking frames per second
+
 class KeyMomentsService:
     def _get_lead_to_goals(self, events_data):
             events_data = events_data[(events_data['lead_to_goal'] == True) & (events_data['event_type'] == 'player_possession')]
@@ -56,6 +58,18 @@ class KeyMomentsService:
         possession_team = events_data[events_data['event_type'] == 'player_possession'].groupby("phase_index")['team_id'].agg(self._most_common)
         # Phases without a possession event keep the first row's team.
         grouped_data['team_id'] = grouped_data['phase_index'].map(possession_team).fillna(grouped_data['team_id']).astype(int)
+
+        # Rows only carry the match clock at their end ("MM:SS.s"), so walk each one back by its own
+        # length to find when the phase started. Done before the frame range is padded below.
+        clock_parts = events_data['time_end'].str.split(':', expand=True).astype(float)
+        event_start_seconds = (
+            clock_parts[0] * 60 + clock_parts[1]
+            - (events_data['frame_end'] - events_data['frame_start']) / FRAME_RATE
+        )
+        phase_start_seconds = event_start_seconds.groupby(events_data['phase_index']).min().clip(lower=0)
+        start_seconds = grouped_data['phase_index'].map(phase_start_seconds)
+        grouped_data['time_start'] = start_seconds.map(lambda s: f"{int(s // 60):02d}:{int(s % 60):02d}")
+        grouped_data['duration_seconds'] = (grouped_data['frame_end'] - grouped_data['frame_start']) / FRAME_RATE
 
         if "frame_start" in grouped_data.columns:
             start_buffer = 30  # Buffer of 30 frames before the start of the sequence

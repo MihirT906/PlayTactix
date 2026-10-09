@@ -73,7 +73,7 @@ const EventDisplayComponent: React.FC<EventDisplayProps> = ({
   return (
     <section className="event-display">
       <div className="event-display__header">
-        <h3>Event Timelines</h3>
+        <h3>Insights</h3>
       </div>
       <div className="event-display__scroll">
         <div className="event-display__body" style={{ minWidth: `${timelineContentWidth}px` }}>

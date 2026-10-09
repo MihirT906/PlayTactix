@@ -100,10 +100,10 @@ function PlotLayoutComponent({
               className={`plot-layout__timeline-toggle${timelinesOpen ? ' is-open' : ''}`}
               onClick={() => setTimelinesOpen((open) => !open)}
               aria-expanded={timelinesOpen}
-              aria-label={timelinesOpen ? 'Hide event timelines' : 'Show event timelines'}
+              aria-label={timelinesOpen ? 'Hide insights' : 'Show insights'}
             >
               <span className="plot-layout__timeline-chevron" aria-hidden="true">▲</span>
-              <span className="plot-layout__timeline-toggle-text">Event Timelines</span>
+              <span className="plot-layout__timeline-toggle-text">Insights</span>
             </button>
 
             <div className={`plot-layout__timeline-panel${timelinesOpen ? ' is-open' : ''}`}>

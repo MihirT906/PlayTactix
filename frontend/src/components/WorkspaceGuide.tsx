@@ -15,20 +15,22 @@ const RECIPE: { title: string; body: ReactNode }[] = [
     ),
   },
   {
-    title: 'Add an overlay',
+    title: 'Discover the clip',
     body: (
       <>
-        Open <strong>Overlays</strong> and pick Pitch Control or Pass Probability. Drag
-        its bar under the pitch to choose when it shows.
+        Open <strong>Insights</strong> in the sidebar and add event and metric tracks, then press{' '}
+        <strong>Insights</strong> at the bottom of the pitch. The tracks show what is behind the clip: which players
+        were involved, what they did and how metrics such as xthreat moved.
       </>
     ),
   },
   {
-    title: 'Draw on the play',
+    title: 'Make the clip yours',
     body: (
       <>
-        Pause on the frame where your point starts, pick a tool under <strong>Annotations</strong> and mark the
-        pitch. Drag the annotation's bar under the pitch to set how long it stays.
+        Open <strong>Overlays</strong> to add analytical layers such as Pitch Control or Pass Probability, then pick
+        a tool under <strong>Annotations</strong> and mark the pitch to convey your story. Drag each bar under the
+        pitch to set when it shows.
       </>
     ),
   },
@@ -168,15 +170,15 @@ const DOCS: { title: string; body: ReactNode }[] = [
     ),
   },
   {
-    title: 'Event timelines',
+    title: 'Insights',
     body: (
       <>
         <p>
-          Press <strong>Event Timelines</strong> at the bottom of the pitch to see what was happening across the clip.
+          Press <strong>Insights</strong> at the bottom of the pitch to see what was happening across the clip.
         </p>
         <p>
-          Add rows from <strong>Timeline</strong> in the sidebar. A <strong>Filter</strong> row shows when a type of
-          event happened, such as pressing or an overlap. A <strong>Metric</strong> row charts a value such as
+          Add tracks from <strong>Insights</strong> in the sidebar. An event track shows when a type of event
+          happened, such as pressing or an overlap, and who was involved. A metric track charts a value such as
           xthreat.
         </p>
       </>

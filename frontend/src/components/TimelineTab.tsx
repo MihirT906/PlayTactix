@@ -268,7 +268,7 @@ function TimelineTab({ timelineStore, eventsData, clipRange, segmentStart }: Tim
 
   return (
     <div className="timeline-sidebar-placeholder">
-      <h2>Timeline</h2>
+      <h2>Insights</h2>
       <section className="timeline-section" aria-labelledby="timeline-tracks-heading">
         <h3 id="timeline-tracks-heading" className="timeline-section-label">
           Tracks

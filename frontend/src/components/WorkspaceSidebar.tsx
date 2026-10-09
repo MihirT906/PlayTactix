@@ -83,10 +83,10 @@ function WorkspaceSidebar({
             onClick={() => onActivePanelChange(isTimelinePanelOpen ? null : 'timeline')}
             aria-expanded={isTimelinePanelOpen}
             aria-controls="timeline-sidebar-panel"
-            aria-label={isTimelinePanelOpen ? 'Close timeline panel' : 'Open timeline panel'}
+            aria-label={isTimelinePanelOpen ? 'Close insights panel' : 'Open insights panel'}
           >
             <FaStream aria-hidden="true" />
-            <span>Timeline</span>
+            <span>Insights</span>
           </button>
         </nav>
         <span className="app-kicker workspace-sidebar-kicker">Layers</span>

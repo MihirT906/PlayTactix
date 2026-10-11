@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import Plot from 'react-plotly.js'
-import { Pitch } from '@pitchkit/react'
+import { Arrows, Pitch } from '@pitchkit/react'
 import AnnotationStore from '../services/AnnotationStore-optimized'
 import type { FrameData } from '../types/FrameDataInterfaces'
 import { APP_CONFIG, SELECTED_POINTS_OPACITY } from '../config'
@@ -44,6 +44,32 @@ const PITCHKIT_STYLE = {
 const BACKDROP_STYLE: React.CSSProperties = { position: 'absolute', inset: 0, pointerEvents: 'none', background: PLOT_BACKGROUND }
 const BACKDROP_PLOT_AREA_STYLE: React.CSSProperties = { position: 'absolute', inset: PLOT_MARGIN, background: PLOT_BACKGROUND }
 
+// A second, see-through PitchKit pitch stacked over the Plotly plot: it only carries the arrow annotations.
+const ARROW_LAYER_STYLE = {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  pointerEvents: 'none',
+  '--pitch-surface': 'transparent',
+  '--pitch-stripe': 'transparent',
+  '--pitch-lines': 'transparent',
+} as React.CSSProperties
+// Catches the drag that draws an arrow, so Plotly doesn't start a selection underneath.
+const ARROW_CAPTURE_STYLE: React.CSSProperties = { position: 'absolute', inset: 0, cursor: 'crosshair' }
+const MIN_ARROW_LENGTH = 1 // metres; anything shorter is treated as a stray click
+
+type ArrowShape = { x0: number; y0: number; x1: number; y1: number }
+
+// Plot-relative pixels -> pitch metres, the inverse of the Plotly axis mapping set up in the layout below.
+const pixelToPitch = (px: number, py: number) => {
+  const x = -X_HALF_RANGE + ((px - PLOT_MARGIN) / (PLOT_WIDTH - 2 * PLOT_MARGIN)) * 2 * X_HALF_RANGE
+  const y = Y_HALF_RANGE - ((py - PLOT_MARGIN) / (PLOT_HEIGHT - 2 * PLOT_MARGIN)) * 2 * Y_HALF_RANGE
+  return {
+    x: Math.max(-X_HALF_RANGE, Math.min(X_HALF_RANGE, x)),
+    y: Math.max(-Y_HALF_RANGE, Math.min(Y_HALF_RANGE, y)),
+  }
+}
+
 // Plotly bug workaround: every frame change hands Plotly new data arrays, so it does a full redraw, and a
 // full redraw (shapes.draw) clears the 'above' and 'below' shape layers but never the 'between' layer that
 // player lines are drawn in. Any 'between' shape whose index no longer exists in layout.shapes (a line
@@ -77,6 +103,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
   // Bumped whenever the annotation store is edited from this component, so the derived lines/shapes below recompute
   const [annotationTick, setAnnotationTick] = useState(0)
   const [dragMode, setDragMode] = useState<string>('select')
+  const [draftArrow, setDraftArrow] = useState<ArrowShape | null>(null) // Arrow being dragged out, not yet in the store
   const [overlayTraces, setOverlayTraces] = useState<any[]>([]);
   // Temporary, visualisation-only position edits keyed by player id. These are
   // layered on top of frameData while playback is paused and are wiped whenever
@@ -410,7 +437,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
   // Annotation shapes for the current frame, derived (never stored) so they cannot go stale: the
   // store's active set is rebuilt for this clip frame, and player lines are placed from this frame's
   // positions. Lines whose players aren't in the frame (e.g. missing data) are skipped.
-  const { lines, shapes } = useMemo(() => {
+  const { lines, shapes, arrows } = useMemo(() => {
     annotationStore.reconstruct_active_annotations(clipFrame)
     const lines: any[] = []
     for (const [firstPoint, secondPoint] of annotationStore.getPlayerLineAnnotations(clipFrame) as [number, number][]) {
@@ -441,7 +468,11 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
         name: `Player1:${firstPoint},Player2:${secondPoint}`, // Using this name to identify the players connected by the line
       })
     }
-    return { lines, shapes: Array.from(annotationStore.getDrawAnnotations(clipFrame)) as any[] }
+    return {
+      lines,
+      shapes: Array.from(annotationStore.getDrawAnnotations(clipFrame)) as any[],
+      arrows: annotationStore.getArrowAnnotations(clipFrame),
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [annotationStore, clipFrame, frameData, positionOverrides, annotationTick, annotationVersion])
 
@@ -586,6 +617,32 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
       if (resources.plotActions.eraseActiveShape) resources.plotActions.eraseActiveShape = null
     }
   }, [resources])
+
+  // Draws an arrow by dragging on the pitch: press for the tail, release for the head
+  const handleArrowMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    const rect = e.currentTarget.getBoundingClientRect()
+    const toPitch = (ev: { clientX: number; clientY: number }) => pixelToPitch(ev.clientX - rect.left, ev.clientY - rect.top)
+    const start = toPitch(e)
+    let end = start
+    setDraftArrow({ x0: start.x, y0: start.y, x1: end.x, y1: end.y })
+
+    const onMove = (ev: MouseEvent) => {
+      end = toPitch(ev)
+      setDraftArrow({ x0: start.x, y0: start.y, x1: end.x, y1: end.y })
+    }
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove, true)
+      window.removeEventListener('mouseup', onUp, true)
+      setDraftArrow(null)
+      if (Math.hypot(end.x - start.x, end.y - start.y) < MIN_ARROW_LENGTH) return
+      annotationStore.addArrowAnnotation(start.x, start.y, end.x, end.y, clipFrame)
+      setAnnotationTick((tick) => tick + 1)
+      onAnnotationUpdate?.()
+    }
+    window.addEventListener('mousemove', onMove, true)
+    window.addEventListener('mouseup', onUp, true)
+  }
 
   // Allows the user to 'Focus' on a player or draw lines between them
   const handleClick = (event: any) => {
@@ -754,6 +811,28 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
           onInitialized={handleGraphDiv}
           onUpdate={handleGraphDiv}
         />
+        {(arrows.length > 0 || draftArrow) && (
+          <Pitch
+            type="skillcorner"
+            width={PLOT_WIDTH}
+            height={PLOT_HEIGHT}
+            dimensions={pitchKitProps.dimensions}
+            padding={pitchKitProps.padding}
+            style={ARROW_LAYER_STYLE}
+          >
+            <Arrows
+              data={draftArrow ? [...arrows, draftArrow] : arrows}
+              x={(d) => d.x0}
+              y={(d) => d.y0}
+              x2={(d) => d.x1}
+              y2={(d) => d.y1}
+              stroke={plotConfig.arrowColor}
+              strokeWidth={plotConfig.arrowWidth}
+              headSize={plotConfig.arrowHeadSize}
+            />
+          </Pitch>
+        )}
+        {editMode === 'draw_arrow' && <div style={ARROW_CAPTURE_STYLE} onMouseDown={handleArrowMouseDown} />}
       </div>
     </div>
   )

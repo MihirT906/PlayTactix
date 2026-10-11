@@ -28,6 +28,11 @@ function newPlayerLineKey(): string {
     return `playerLine|${Date.now().toString(36)}-${(playerLineCounter++).toString(36)}`;
 }
 
+let arrowCounter = 0;
+function newArrowKey(): string {
+    return `arrow|${Date.now().toString(36)}-${(arrowCounter++).toString(36)}`;
+}
+
 function samePair(a: number[], b: number[]): boolean {
     const norm = (p: number[]) => [...p].sort((x, y) => x - y).join(',');
     return norm(a) === norm(b);
@@ -131,6 +136,22 @@ export default class AnnotationStore {
         }
         this.update_active_annotation(currentFrame)
 
+    }
+
+    addArrowAnnotation(x0: number, y0: number, x1: number, y1: number, currentFrame: number) {
+        // Arrows are drawn by PitchKit rather than Plotly, so they never pass through handleAnnotationRelayout
+        logger.info("Added arrow annotation at frame:", currentFrame);
+        this.annotations.set(newArrowKey(), {
+            type: 'arrow',
+            frameStart: currentFrame,
+            frameEnd: undefined,
+            shape: { x0, y0, x1, y1 },
+        });
+        this.update_active_annotation(currentFrame)
+    }
+
+    getArrowAnnotations(_currentFrame: number): Array<{ x0: number; y0: number; x1: number; y1: number }> {
+        return Array.from(this.active_annotations.values()).filter(annotation => annotation.type === 'arrow').map(annotation => annotation.shape);
     }
 
     getPlayerLineAnnotations(_currentFrame: number) {

@@ -20,7 +20,7 @@ export type LoadStatus = 'idle' | 'loading' | 'ready' | 'error'
 // Only event_visualisation still uses the single "active" overlay slot; pitch,
 // pitch_control and pass_option_prob live as independent OverlaySegments instead.
 export type OverlayKind = 'event_visualisation'
-export type EditMode = 'draw_line' | 'draw_rect' | 'player_focus' | 'draw_line_players'
+export type EditMode = 'draw_line' | 'draw_rect' | 'draw_arrow' | 'player_focus' | 'draw_line_players'
 export type { OverlaySegmentKind }
 
 export type MatchSessionState = {

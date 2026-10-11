@@ -8,6 +8,7 @@ const LANE_HEIGHT = 22
 const ROW_LABELS: Record<string, string> = {
   playerLine: 'Player Lines',
   draw: 'Draw Shapes',
+  arrow: 'Arrows',
 }
 
 const getAnnotationLabel = (annotation: { type: string; shape: any }) => {
@@ -15,6 +16,8 @@ const getAnnotationLabel = (annotation: { type: string; shape: any }) => {
     const [player1, player2] = annotation.shape.players ?? []
     return `P${player1 ?? '?'} ↔ P${player2 ?? '?'}`
   }
+
+  if (annotation.type === 'arrow') return 'Arrow'
 
   return annotation.shape?.type ? `Draw (${annotation.shape.type})` : 'Draw'
 }

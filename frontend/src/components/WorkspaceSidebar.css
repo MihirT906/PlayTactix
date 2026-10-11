@@ -234,6 +234,49 @@
   color: inherit;
 }
 
+.workspace-sidebar-action--draw-arrow {
+  --da-color: #B388FF;
+  --da-color-glow: rgba(179, 136, 255, 0.4);
+
+  padding: 7px 12px;
+  border-radius: 0;
+  border: 1px solid #B388FF;
+  background: transparent;
+  color: #B388FF;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.1s ease;
+  width: 100%;
+}
+
+.workspace-sidebar-action--draw-arrow:hover {
+  color: #B388FF;
+  border-color: color-mix(in srgb, #B388FF 70%, white);
+}
+
+.workspace-sidebar-action--draw-arrow:active {
+  color: #B388FF;
+  transform: scale(0.97);
+}
+
+.workspace-sidebar-action--draw-arrow.is-active {
+  color: #B388FF;
+  border-color: color-mix(in srgb, #B388FF 70%, white);
+  border-width: 2px;
+}
+
+.workspace-sidebar-action--draw-arrow.is-active:hover {
+  color: #B388FF;
+}
+
+.workspace-sidebar-action--draw-arrow svg {
+  color: inherit;
+}
+
 .workspace-sidebar-action--erase-shape {
   --es-color: #FFFFFF;
   --es-color-glow: rgba(255, 255, 255, 0.4);

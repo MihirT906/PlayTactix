@@ -1,4 +1,4 @@
-import { FaCog, FaSearch, FaStream, FaStreetView, FaProjectDiagram, FaVectorSquare, FaSlash, FaEraser } from 'react-icons/fa'
+import { FaCog, FaSearch, FaStream, FaStreetView, FaProjectDiagram, FaVectorSquare, FaSlash, FaLongArrowAltRight, FaEraser } from 'react-icons/fa'
 import { BiAddToQueue } from "react-icons/bi";
 import './WorkspaceSidebar.css'
 import Settings from './Settings.tsx'
@@ -46,6 +46,7 @@ function WorkspaceSidebar({
   const isDrawLinePlayersActive = session.ui.editMode === 'draw_line_players'
   const isDrawRectActive = session.ui.editMode === 'draw_rect'
   const isDrawLineActive = session.ui.editMode === 'draw_line'
+  const isDrawArrowActive = session.ui.editMode === 'draw_arrow'
 
   return (
     <aside className={`left-panel settings-sidebar ${isSidebarPanelOpen ? 'is-open' : ''}`} aria-label="Settings sidebar">
@@ -143,6 +144,16 @@ function WorkspaceSidebar({
           >
             <FaSlash aria-hidden="true" />
             <span>Draw Line</span>
+          </button>
+          <button
+            type="button"
+            className={`app-header-action workspace-sidebar-action workspace-sidebar-action--draw-arrow ${isDrawArrowActive ? 'is-active' : ''}`}
+            onClick={() => setEditMode(isDrawArrowActive ? null : 'draw_arrow')}
+            aria-pressed={isDrawArrowActive}
+            aria-label={isDrawArrowActive ? 'Disable draw arrow mode' : 'Enable draw arrow mode'}
+          >
+            <FaLongArrowAltRight aria-hidden="true" />
+            <span>Draw Arrow</span>
           </button>
           <button
             type="button"

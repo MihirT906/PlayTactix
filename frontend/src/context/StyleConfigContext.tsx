@@ -17,6 +17,8 @@ type EventStyle = {
 
 type EventStyleKey = keyof typeof APP_CONFIG.events;
 type TeamVisibilityKey = 'home' | 'away';
+// How the pitch background is drawn: the pre-rendered PNG, or live with PitchKit.
+type PitchRenderer = 'image' | 'pitchkit';
 // type OverlayVisibilityKey = 'pass_option_prob' | 'pitch_control';
 
 type VisibilityState<T extends string> = Record<T, boolean>;
@@ -27,6 +29,7 @@ type StyleConfigContextValue = {
 	eventStyles: Record<EventStyleKey, EventStyle>;
 	teamVisibility: VisibilityState<TeamVisibilityKey>;
 	eventVisibility: VisibilityState<EventStyleKey>;
+	pitchRenderer: PitchRenderer;
 	// overlayVisibility: VisibilityState<OverlayVisibilityKey>;
 	setAllStyle: (style: SavedStyle) => void;
 	setHomeTeamColor: (color: string) => void;
@@ -34,6 +37,7 @@ type StyleConfigContextValue = {
 	setEventStyleColor: (eventKey: EventStyleKey, color: string) => void;
 	setTeamVisibility: (teamKey: TeamVisibilityKey, visible: boolean) => void;
 	setEventVisibility: (eventKey: EventStyleKey, visible: boolean) => void;
+	setPitchRenderer: (renderer: PitchRenderer) => void;
 	// setOverlayVisibility: (overlayKey: OverlayVisibilityKey, visible: boolean) => void;
 };
 
@@ -63,6 +67,7 @@ const DEFAULT_STYLE_CONFIG = {
 		onBallEngagement: true,
 		offBallRun: true,
 	},
+	pitchRenderer: 'image',
 	// overlayVisibility: {
 	// 	pass_option_prob: false,
 	// 	pitch_control: false,
@@ -73,6 +78,7 @@ const DEFAULT_STYLE_CONFIG = {
 	eventStyles: Record<EventStyleKey, EventStyle>;
 	teamVisibility: VisibilityState<TeamVisibilityKey>;
 	eventVisibility: VisibilityState<EventStyleKey>;
+	pitchRenderer: PitchRenderer;
 	// overlayVisibility: VisibilityState<OverlayVisibilityKey>;
 };
 
@@ -84,6 +90,7 @@ export const StyleConfigProvider = ({ children, matchData }: StyleConfigProvider
 	const [eventStyles, setEventStyles] = useState(DEFAULT_STYLE_CONFIG.eventStyles);
 	const [teamVisibility, setTeamVisibilityState] = useState(DEFAULT_STYLE_CONFIG.teamVisibility);
 	const [eventVisibility, setEventVisibilityState] = useState(DEFAULT_STYLE_CONFIG.eventVisibility);
+	const [pitchRenderer, setPitchRenderer] = useState<PitchRenderer>(DEFAULT_STYLE_CONFIG.pitchRenderer);
 	// const [overlayVisibility, setOverlayVisibilityState] = useState<VisibilityState<OverlayVisibilityKey>>(DEFAULT_STYLE_CONFIG.overlayVisibility);
 
 	// The match whose kit colours a loaded project has already overridden, so the
@@ -113,6 +120,7 @@ export const StyleConfigProvider = ({ children, matchData }: StyleConfigProvider
 				eventStyles,
 				teamVisibility,
 				eventVisibility,
+				pitchRenderer,
 				// overlayVisibility,
 				setAllStyle: (style) => {
 					restoredForMatchData.current = matchData;
@@ -129,6 +137,8 @@ export const StyleConfigProvider = ({ children, matchData }: StyleConfigProvider
 					});
 					setTeamVisibilityState((current) => ({ ...current, ...style.teamVisibility }));
 					setEventVisibilityState((current) => ({ ...current, ...style.eventVisibility }));
+					// Absent in files saved before the renderer choice existed.
+					setPitchRenderer(style.pitchRenderer === 'pitchkit' ? 'pitchkit' : DEFAULT_STYLE_CONFIG.pitchRenderer);
 				},
 				setHomeTeamColor: (color: string) => setHomeTeamColor(normalizeColor(color)),
 				setAwayTeamColor: (color: string) => setAwayTeamColor(normalizeColor(color)),
@@ -153,6 +163,7 @@ export const StyleConfigProvider = ({ children, matchData }: StyleConfigProvider
 						[eventKey]: visible,
 					}));
 				},
+				setPitchRenderer,
 				// setOverlayVisibility: (overlayKey, visible) => {
 				// 	setOverlayVisibilityState((currentVisibility) => {
 				// 		if (!visible) {
@@ -188,4 +199,4 @@ export const useStyleConfig = () => {
 	return context;
 };
 
-export type { EventStyleKey, TeamVisibilityKey };
+export type { EventStyleKey, TeamVisibilityKey, PitchRenderer };

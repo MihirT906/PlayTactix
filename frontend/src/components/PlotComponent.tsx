@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import Plot from 'react-plotly.js'
+import { Pitch } from '@pitchkit/react'
 import AnnotationStore from '../services/AnnotationStore-optimized'
 import type { FrameData } from '../types/FrameDataInterfaces'
 import { APP_CONFIG, SELECTED_POINTS_OPACITY } from '../config'
@@ -16,6 +17,32 @@ import { buildEventVisualisationOverlay } from '../plot/overlays/eventVisualisat
 import { getLogger } from "../services/logger";
 
 const logger = getLogger("PlotComponent");
+
+// Plot geometry, shared by the Plotly layout and the PitchKit background so the two stay aligned.
+const PLOT_WIDTH = 900
+const PLOT_HEIGHT = 620
+const PLOT_MARGIN = 20
+const X_HALF_RANGE = 56.5 // metres from the centre spot to the edge of the plot area
+const Y_HALF_RANGE = 38
+const PLOT_BACKGROUND = 'rgba(0, 0, 0, 0.3)'
+const DEFAULT_PITCH_LENGTH = 105
+const DEFAULT_PITCH_WIDTH = 68
+
+// Colours of the pre-rendered pitch image, so both renderers look alike.
+const PITCHKIT_STYLE = {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  opacity: 0.4,
+  '--pitch-surface': '#4cbb17',
+  '--pitch-stripe': '#008000',
+  '--pitch-lines': 'rgba(255, 255, 255, 0.75)',
+  '--pitch-line-width': '1.5',
+} as React.CSSProperties
+
+// Layered beneath the Plotly plot when PitchKit draws the pitch.
+const BACKDROP_STYLE: React.CSSProperties = { position: 'absolute', inset: 0, pointerEvents: 'none', background: PLOT_BACKGROUND }
+const BACKDROP_PLOT_AREA_STYLE: React.CSSProperties = { position: 'absolute', inset: PLOT_MARGIN, background: PLOT_BACKGROUND }
 
 // Plotly bug workaround: every frame change hands Plotly new data arrays, so it does a full redraw, and a
 // full redraw (shapes.draw) clears the 'above' and 'below' shape layers but never the 'between' layer that
@@ -40,7 +67,7 @@ interface PlotComponentProps {
 
 const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, matchData, frameData, annotationStore, onAnnotationUpdate, annotationVersion }) => {
   const plotConfig = APP_CONFIG.plot
-  const { homeTeamColor, awayTeamColor, eventStyles, teamVisibility, eventVisibility } = useStyleConfig()
+  const { homeTeamColor, awayTeamColor, eventStyles, teamVisibility, eventVisibility, pitchRenderer } = useStyleConfig()
   const { session, resources, setEditMode } = useMatchSession()
   const overlayManager = resources.overlayManager
   const overlay = session.overlays.active
@@ -69,6 +96,21 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
   const isPitchControlActive = findOverlayAt(session.playback.clip, 'pitch_control', clipFrame) !== undefined
   const isPassOptionProbActive = findOverlayAt(session.playback.clip, 'pass_option_prob', clipFrame) !== undefined
   const editMode = session.ui.editMode;
+  const usePitchKit = pitchRenderer === 'pitchkit'
+
+  // Padding that places the PitchKit pitch exactly where Plotly's axes put the same metres.
+  const pitchKitProps = useMemo(() => {
+    const inRange = (value: number | undefined, halfRange: number): value is number =>
+      typeof value === 'number' && value > 0 && value / 2 <= halfRange
+    const length = inRange(matchData?.pitch_length, X_HALF_RANGE) ? matchData.pitch_length : DEFAULT_PITCH_LENGTH
+    const width = inRange(matchData?.pitch_width, Y_HALF_RANGE) ? matchData.pitch_width : DEFAULT_PITCH_WIDTH
+    const insetX = PLOT_MARGIN + ((X_HALF_RANGE - length / 2) * (PLOT_WIDTH - 2 * PLOT_MARGIN)) / (2 * X_HALF_RANGE)
+    const insetY = PLOT_MARGIN + ((Y_HALF_RANGE - width / 2) * (PLOT_HEIGHT - 2 * PLOT_MARGIN)) / (2 * Y_HALF_RANGE)
+    return {
+      dimensions: { length, width },
+      padding: { top: insetY, right: insetX, bottom: insetY, left: insetX },
+    }
+  }, [matchData?.pitch_length, matchData?.pitch_width])
 
   // Utility function to filter arrays based on a boolean mask
   const filterByMask = <T,>(arr: T[], mask: boolean[]) =>
@@ -428,8 +470,8 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     let x = xa.p2c(e.clientX - rect.left - xa._offset)
     let y = ya.p2c(e.clientY - rect.top - ya._offset)
     // Keep the player within the pitch bounds used by the layout axes
-    x = Math.max(-56.5, Math.min(56.5, x))
-    y = Math.max(-38, Math.min(38, y))
+    x = Math.max(-X_HALF_RANGE, Math.min(X_HALF_RANGE, x))
+    y = Math.max(-Y_HALF_RANGE, Math.min(Y_HALF_RANGE, y))
     setPositionOverrides((prev) => {
       const next = new Map(prev)
       next.set(drag.playerId, { x, y })
@@ -623,77 +665,96 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
 
   return (
     <div className="plot-container">
-      <Plot
-        data={[
-          ...overlayTraces,
-          ...playerTraces,
-          ...(offBallRunTrace ? [offBallRunTrace] : []),
-          {
-            x: [frameData?.ball.ball_x],
-            y: [frameData?.ball.ball_y],
-            mode: 'markers+text',
-            type: 'scatter',
-            hovertemplate: 'Ball<extra></extra>',
-            marker: {
-              size: plotConfig.ballMarkerSize,
-              color: plotConfig.ballMarkerColor,
-              line: {
-                color: '#000000',
-                width: 1,
-              },
-            },
-          } as any,
-        ]}
-        layout={{
-          // title: { text: plotConfig.title },
-          xaxis: { range: [-56.5, 56.5], showgrid: false, visible: false },
-          yaxis: { range: [-38, 38], showgrid: false, visible: false },
-          width: 900,
-          height: 620,
-          margin: { l: 20, r: 20, t: 20, b: 20 },
-          paper_bgcolor: 'rgba(0, 0, 0, 0.3)',
-          plot_bgcolor: 'rgba(0, 0, 0, 0.3)',
-          showlegend: false,
-          hovermode: 'closest',
-          hoverdistance: 1,
-          dragmode: dragMode as any,
-          newshape: {
-            line: {
-              color: plotConfig.rectLineColor,
-              width: plotConfig.rectLineWidth,
-            },
-            fillcolor: plotConfig.rectFillColor,
-          } as any,
-          shapes: [...lines, ...shapes], // Contains player focus lines
-          images: isPitchBackgroundActive
-            ? [
-                {
-                  source: image_src,
-                  xref: 'x',
-                  yref: 'y',
-                  x: -56.5,
-                  y: 38,
-                  sizex: 113,
-                  sizey: 76,
-                  layer: 'below',
-                  opacity: 0.4,
-                  sizing: 'stretch',
+      <div style={{ position: 'relative', display: 'flex' }}>
+        {usePitchKit && (
+          // Plotly's own backgrounds are transparent in this mode, so the same tints are painted here, under the pitch.
+          <div style={BACKDROP_STYLE}>
+            <div style={BACKDROP_PLOT_AREA_STYLE} />
+            {isPitchBackgroundActive && (
+              <Pitch
+                type="skillcorner"
+                width={PLOT_WIDTH}
+                height={PLOT_HEIGHT}
+                dimensions={pitchKitProps.dimensions}
+                padding={pitchKitProps.padding}
+                appearance={{ stripes: true }}
+                style={PITCHKIT_STYLE}
+              />
+            )}
+          </div>
+        )}
+        <Plot
+          data={[
+            ...overlayTraces,
+            ...playerTraces,
+            ...(offBallRunTrace ? [offBallRunTrace] : []),
+            {
+              x: [frameData?.ball.ball_x],
+              y: [frameData?.ball.ball_y],
+              mode: 'markers+text',
+              type: 'scatter',
+              hovertemplate: 'Ball<extra></extra>',
+              marker: {
+                size: plotConfig.ballMarkerSize,
+                color: plotConfig.ballMarkerColor,
+                line: {
+                  color: '#000000',
+                  width: 1,
                 },
-              ]
-            : [],
-        }}
+              },
+            } as any,
+          ]}
+          layout={{
+            // title: { text: plotConfig.title },
+            xaxis: { range: [-X_HALF_RANGE, X_HALF_RANGE], showgrid: false, visible: false },
+            yaxis: { range: [-Y_HALF_RANGE, Y_HALF_RANGE], showgrid: false, visible: false },
+            width: PLOT_WIDTH,
+            height: PLOT_HEIGHT,
+            margin: { l: PLOT_MARGIN, r: PLOT_MARGIN, t: PLOT_MARGIN, b: PLOT_MARGIN },
+            paper_bgcolor: usePitchKit ? 'rgba(0, 0, 0, 0)' : PLOT_BACKGROUND,
+            plot_bgcolor: usePitchKit ? 'rgba(0, 0, 0, 0)' : PLOT_BACKGROUND,
+            showlegend: false,
+            hovermode: 'closest',
+            hoverdistance: 1,
+            dragmode: dragMode as any,
+            newshape: {
+              line: {
+                color: plotConfig.rectLineColor,
+                width: plotConfig.rectLineWidth,
+              },
+              fillcolor: plotConfig.rectFillColor,
+            } as any,
+            shapes: [...lines, ...shapes], // Contains player focus lines
+            // images: isPitchBackgroundActive && !usePitchKit
+            //   ? [
+            //       {
+            //         source: image_src,
+            //         xref: 'x',
+            //         yref: 'y',
+            //         x: -X_HALF_RANGE,
+            //         y: Y_HALF_RANGE,
+            //         sizex: 2 * X_HALF_RANGE,
+            //         sizey: 2 * Y_HALF_RANGE,
+            //         layer: 'below',
+            //         opacity: 0.4,
+            //         sizing: 'stretch',
+            //       },
+            //     ]
+            //   : [],
+          }}
 
-        config={{
-          editable: false,
-          displayModeBar: true,
-          modeBarButtonsToAdd: [...plotConfig.modeBarButtonsToAdd as any],
-          modeBarButtonsToRemove: [...plotConfig.modeBarButtonsToRemove as any],
-        }}
-        onClick={handleClick}
-        onRelayout={handleRelayout}
-        onInitialized={handleGraphDiv}
-        onUpdate={handleGraphDiv}
-      />
+          config={{
+            editable: false,
+            displayModeBar: true,
+            modeBarButtonsToAdd: [...plotConfig.modeBarButtonsToAdd as any],
+            modeBarButtonsToRemove: [...plotConfig.modeBarButtonsToRemove as any],
+          }}
+          onClick={handleClick}
+          onRelayout={handleRelayout}
+          onInitialized={handleGraphDiv}
+          onUpdate={handleGraphDiv}
+        />
+      </div>
     </div>
   )
 }

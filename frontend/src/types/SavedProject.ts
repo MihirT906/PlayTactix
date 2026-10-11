@@ -18,6 +18,7 @@ export type SavedStyle = {
   eventStyles: Record<string, { color: string; width: number }>
   teamVisibility: Record<string, boolean>
   eventVisibility: Record<string, boolean>
+  pitchRenderer?: string
 }
 
 // Match data (frames, events, metadata) is deliberately not embedded: the file only

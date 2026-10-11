@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@pitchkit/react": "^0.7.0",
     "axios": "^1.13.2",
     "mathjs": "^15.2.0",
     "object-hash": "^3.0.0",

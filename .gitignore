@@ -31,3 +31,6 @@ out/
 
 # Ignore data directory
 data/
+
+# PitchKit skill (symlink into node_modules)
+frontend/.claude/skills/pitchkit

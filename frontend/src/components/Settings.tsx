@@ -2,7 +2,7 @@ import React, { useId, useRef } from "react";
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import "./Settings.css";
 import type { MatchData } from '../types/MatchDataInterfaces';
-import { useStyleConfig } from '../context/StyleConfigContext';
+import { useStyleConfig, type PitchRenderer } from '../context/StyleConfigContext';
 import { useMatchSession } from '../context/MatchSessionContext'
 
 
@@ -59,6 +59,11 @@ const SettingsRow: React.FC<SettingsRowProps> = ({ label, color, visible, onChan
     );
 };
 
+const PITCH_RENDERER_OPTIONS: { value: PitchRenderer; label: string }[] = [
+    { value: 'image', label: 'Image' },
+    { value: 'pitchkit', label: 'PitchKit' },
+];
+
 const Settings: React.FC<{ matchData: MatchData | null }> = ({ matchData }) => {
     const {
         homeTeamColor,
@@ -71,6 +76,8 @@ const Settings: React.FC<{ matchData: MatchData | null }> = ({ matchData }) => {
         setEventStyleColor,
         setTeamVisibility,
         setEventVisibility,
+        pitchRenderer,
+        setPitchRenderer,
     } = useStyleConfig();
 
     const {
@@ -101,6 +108,25 @@ const Settings: React.FC<{ matchData: MatchData | null }> = ({ matchData }) => {
                 <SettingsRow label={'Pass Option Probability'} color={null} visible={isPassOptionProbActive} onChange={setHomeTeamColor} onToggleVisibility={(visible) => setActiveOverlaySegment('pass_option_prob', visible)} />
                 <SettingsRow label={'Pitch Control'} color={null} visible={isPitchControlActive} onChange={setHomeTeamColor} onToggleVisibility={(visible) => setActiveOverlaySegment('pitch_control', visible)} />
 
+            </div>
+            <div className="settings-box settings-box--flat">
+                <div className="settings-section-heading">Pitch</div>
+                <div className="settings-row">
+                    <div className="settings-row-label">Pitch Background</div>
+                    <div className="settings-row-control settings-segmented" role="group" aria-label="Pitch background renderer">
+                        {PITCH_RENDERER_OPTIONS.map((option) => (
+                            <button
+                                key={option.value}
+                                type="button"
+                                className="settings-segmented-button"
+                                aria-pressed={pitchRenderer === option.value}
+                                onClick={() => setPitchRenderer(option.value)}
+                            >
+                                {option.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
             </div>
         </div>
     );

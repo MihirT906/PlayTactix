@@ -5,7 +5,7 @@ import type { KeyMomentsData } from '../types/KeyMomentsDataInterfaces'
 import type { MatchData } from '../types/MatchDataInterfaces'
 import { OVERLAY_SEGMENT_LABELS, type OverlaySegmentKind } from '../types/ClipInterfaces'
 import { findOverlayAt } from '../services/clipManager'
-import EventVisualisationTab from './EventVisualisationTab'
+import EventMapPanel from './EventMapPanel'
 import './TimelineTab.css'
 
 type OverlaysTabProps = {
@@ -17,14 +17,14 @@ function OverlaysTab({
   keyMomentsData,
   matchData,
 }: OverlaysTabProps) {
-  const [isEventsDropdownOpen, setIsEventsDropdownOpen] = useState(false)
+  const [isEventMapOpen, setIsEventMapOpen] = useState(false)
   // The overlay type whose last click was refused, so the reason can be shown.
   const [refusedKind, setRefusedKind] = useState<OverlaySegmentKind | null>(null)
-  const { session, addOverlaySegmentFrom, toggleSelectedEvent, setSelectedEvents, setAutoDisappearEvents } = useMatchSession()
+  const { session, addOverlaySegmentFrom } = useMatchSession()
   const { clip, currentClipFrame } = session.playback
 
-  const handleEventsSelect = () => {
-    setIsEventsDropdownOpen((previousValue) => !previousValue)
+  const handleEventMapSelect = () => {
+    setIsEventMapOpen((previousValue) => !previousValue)
   }
 
   const alreadyShowing = (kind: OverlaySegmentKind) => findOverlayAt(clip, kind, currentClipFrame) !== undefined
@@ -91,12 +91,12 @@ function OverlaysTab({
           <button
             type="button"
             className="app-header-action workspace-sidebar-action timeline-add-option"
-            aria-expanded={isEventsDropdownOpen}
-            aria-controls="events-overlay-panel"
-            onClick={handleEventsSelect}
+            aria-expanded={isEventMapOpen}
+            aria-controls="event-map-panel"
+            onClick={handleEventMapSelect}
           >
             <GiFlagObjective aria-hidden="true" />
-            <span>Events</span>
+            <span>Event Map</span>
           </button>
         </div>
 
@@ -106,16 +106,10 @@ function OverlaysTab({
           </p>
         ) : null}
 
-        {isEventsDropdownOpen ? (
-          <EventVisualisationTab
-            keyMomentsData={keyMomentsData}
-            matchData={matchData}
-            selectedEvents={session.overlays.selectedEvents}
-            onToggleEvent={toggleSelectedEvent}
-            onSetSelectedEvents={setSelectedEvents}
-            autoDisappearEvents={session.overlays.autoDisappearEvents}
-            onToggleAutoDisappearEvents={setAutoDisappearEvents}
-          />
+        {isEventMapOpen ? (
+          <div id="event-map-panel">
+            <EventMapPanel keyMomentsData={keyMomentsData} matchData={matchData} />
+          </div>
         ) : null}
       </div>
     </div>

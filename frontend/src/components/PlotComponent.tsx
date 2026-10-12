@@ -12,9 +12,8 @@ import { useMatchSession } from '../context/MatchSessionContext'
 import { findOverlayAt } from '../services/clipManager'
 import { buildPassOptionProbOverlay } from '../plot/overlays/passOptionProbOverlay'
 import { buildPitchControlOverlay } from '../plot/overlays/pitchControlOverlay.ts'
-import { buildEventVisualisationOverlay } from '../plot/overlays/eventVisualisationOverlay'
+import { buildEventMapItems, resolveEventMap } from '../plot/overlays/eventMapOverlay'
 import { EMPTY_SEQUENCE_TRAIL, buildTrailLinks, getSequenceTrailAt } from '../plot/overlays/sequenceTrailsOverlay'
-import type { TrailLink } from '../plot/overlays/sequenceTrailsOverlay'
 
 import { getLogger } from "../services/logger";
 
@@ -46,7 +45,7 @@ const PITCHKIT_STYLE = {
 const BACKDROP_STYLE: React.CSSProperties = { position: 'absolute', inset: 0, pointerEvents: 'none', background: PLOT_BACKGROUND }
 const BACKDROP_PLOT_AREA_STYLE: React.CSSProperties = { position: 'absolute', inset: PLOT_MARGIN, background: PLOT_BACKGROUND }
 
-// A see-through PitchKit pitch stacked with the Plotly plot: it only carries PitchKit marks (arrow annotations, sequence trails).
+// A see-through PitchKit pitch stacked with the Plotly plot: it only carries PitchKit marks (arrow annotations, sequence trails, the event map).
 const ARROW_LAYER_STYLE = {
   position: 'absolute',
   top: 0,
@@ -99,7 +98,6 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
   const { homeTeamColor, awayTeamColor, eventStyles, teamVisibility, eventVisibility, pitchRenderer } = useStyleConfig()
   const { session, resources, setEditMode } = useMatchSession()
   const overlayManager = resources.overlayManager
-  const overlay = session.overlays.active
   const [focusPoints, setFocusPoints] = useState<number[]>([]) // Points that are highlighted on click
   const [firstPoint, setFirstPoint] = useState<number | null>(null) // First point selected when drawing a line between two players
   // const [focusEnabled, setFocusEnabled] = useState(false) // 'Player Focus' mode toggled to draw lines
@@ -374,20 +372,6 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
         traces.push(...(pitchControlTraces || []));
       }
 
-      if (overlay === 'event_visualisation') {
-        const visibleEvents = session.overlays.autoDisappearEvents
-          ? session.overlays.selectedEvents.filter((event) => currentFrame <= event.frame_end)
-          : session.overlays.selectedEvents;
-        traces.push(
-          ...(buildEventVisualisationOverlay(visibleEvents, eventStyles.playerPossession.color, {
-            homeTeamId: matchData?.home_team.id,
-            awayTeamId: matchData?.away_team.id,
-            homeTeamColor,
-            awayTeamColor,
-          }) || []),
-        );
-      }
-
       if (!cancelled) {
         setOverlayTraces(traces);
       }
@@ -398,7 +382,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     return () => {
       cancelled = true;
     };
-  }, [overlay, isPassOptionProbActive, isPitchControlActive, frameData, currentFrame, overlayManager, eventStyles.passingOption.color, eventStyles.playerPossession.color, homeTeamColor, awayTeamColor, matchData, session.overlays.selectedEvents, session.overlays.autoDisappearEvents]);
+  }, [isPassOptionProbActive, isPitchControlActive, frameData, currentFrame, overlayManager, eventStyles.passingOption.color, homeTeamColor, awayTeamColor, matchData]);
 
   // Reset transient UI state whenever the frame changes
   useEffect(() => {
@@ -499,7 +483,30 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trailLinks, sequenceTrailsOverlay, session.playback.clip.matchSegments, currentFrame, clipFrame, frameData, positionOverrides])
-  const sequenceTrailColor = (link: TrailLink) => (link.teamId === matchData?.away_team.id ? awayTeamColor : homeTeamColor)
+  const teamColor = <T extends { teamId: number }>(item: T) => (item.teamId === matchData?.away_team.id ? awayTeamColor : homeTeamColor)
+
+  const eventMapItems = useMemo(() => buildEventMapItems(matchEvents), [matchEvents])
+  const eventMapDrawn = useMemo(
+    () =>
+      resolveEventMap(
+        eventMapItems,
+        session.overlays.eventMapFilters,
+        session.overlays.eventMapExcludedIds,
+        session.playback.clip.matchSegments,
+      ).drawn,
+    [eventMapItems, session.overlays.eventMapFilters, session.overlays.eventMapExcludedIds, session.playback.clip.matchSegments],
+  )
+  // The Event Map split by how it is drawn: the ball moving (a pass) as a comet, a player moving (a
+  // carry or an off ball run) as an arrow.
+  const eventMap = useMemo(() => {
+    const visible = session.overlays.autoDisappearEvents
+      ? eventMapDrawn.filter((event) => currentFrame <= event.frameEnd)
+      : eventMapDrawn
+    return {
+      passes: visible.filter((event) => event.kind === 'pass'),
+      movements: visible.filter((event) => event.kind !== 'pass'),
+    }
+  }, [eventMapDrawn, session.overlays.autoDisappearEvents, currentFrame])
 
   // --- Drag-to-reposition players while paused -----------------------------
   // Plotly can't drag individual scatter points, so we hit-test the player
@@ -765,8 +772,8 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
             )}
           </div>
         )}
-        {(sequenceTrail.carries.length > 0 || sequenceTrail.passes.length > 0) && (
-          // Sequence trails sit on their own see-through pitch beneath the Plotly plot, so players stay on top.
+        {(sequenceTrail.carries.length > 0 || sequenceTrail.passes.length > 0 || eventMap.passes.length > 0 || eventMap.movements.length > 0) && (
+          // Sequence trails and the event map sit on their own see-through pitch beneath the Plotly plot, so players stay on top.
           <Pitch
             type="skillcorner"
             width={PLOT_WIDTH}
@@ -781,7 +788,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
               y={(d) => d.y}
               x2={(d) => d.x2}
               y2={(d) => d.y2}
-              color={sequenceTrailColor}
+              color={teamColor}
               endWidth={plotConfig.sequenceTrailPassWidth}
               gradient
             />
@@ -791,9 +798,30 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
               y={(d) => d.y}
               x2={(d) => d.x2}
               y2={(d) => d.y2}
-              stroke={sequenceTrailColor}
+              stroke={teamColor}
               strokeWidth={plotConfig.sequenceTrailCarryWidth}
               headSize={plotConfig.sequenceTrailCarryHeadSize}
+            />
+            <Comet
+              data={eventMap.passes}
+              x={(d) => d.x}
+              y={(d) => d.y}
+              x2={(d) => d.x2}
+              y2={(d) => d.y2}
+              color={teamColor}
+              endWidth={plotConfig.eventMapPassWidth}
+              gradient
+            />
+            <Arrows
+              data={eventMap.movements}
+              x={(d) => d.x}
+              y={(d) => d.y}
+              x2={(d) => d.x2}
+              y2={(d) => d.y2}
+              stroke={teamColor}
+              strokeWidth={plotConfig.eventMapArrowWidth}
+              strokeOpacity={(d) => (d.kind === 'off_ball_run' ? plotConfig.eventMapRunOpacity : 1)}
+              headSize={plotConfig.eventMapArrowHeadSize}
             />
           </Pitch>
         )}

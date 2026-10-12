@@ -1,8 +1,9 @@
 import type { Clip } from './ClipInterfaces'
 import type { TimelineOption } from './TimelineOption'
+import { DEFAULT_EVENT_MAP_FILTERS, EVENT_MAP_KINDS, type EventMapFilters } from '../plot/overlays/eventMapOverlay'
 
 export const PROJECT_FORMAT = 'playtactix-project'
-export const SCHEMA_VERSION = 2
+export const SCHEMA_VERSION = 3
 
 export type SavedAnnotation = {
   key: string
@@ -32,7 +33,10 @@ export type SavedProject = {
     source: 'skillcorner-github'
   }
   clip: Clip
-  selectedEventIds: string[]
+  eventMap: {
+    filters: EventMapFilters
+    excludedIds: string[]
+  }
   autoDisappearEvents: boolean
   annotations: SavedAnnotation[]
   timelines: TimelineOption[]
@@ -61,6 +65,28 @@ function isClip(value: unknown): value is Clip {
     value.overlaySegments.every(
       (o: unknown) => isObject(o) && typeof o.type === 'string' && isNumber(o.clipStart) && isNumber(o.clipEnd)
     )
+  )
+}
+
+const isArrayOf = (value: unknown, type: 'string' | 'number'): boolean =>
+  Array.isArray(value) && value.every((entry) => typeof entry === type)
+
+function isEventMap(value: unknown): value is SavedProject['eventMap'] {
+  if (!isObject(value) || !isObject(value.filters) || !isArrayOf(value.excludedIds, 'string')) return false
+  const filters = value.filters
+  return (
+    (filters.scope === 'clip' || filters.scope === 'match') &&
+    Array.isArray(filters.kinds) &&
+    filters.kinds.every((kind: unknown) => (EVENT_MAP_KINDS as unknown[]).includes(kind)) &&
+    (filters.teamId === null || isNumber(filters.teamId)) &&
+    isArrayOf(filters.playerIds, 'number') &&
+    (filters.ledTo === 'any' || filters.ledTo === 'shot' || filters.ledTo === 'goal') &&
+    isArrayOf(filters.channels, 'string') &&
+    isArrayOf(filters.thirds, 'string') &&
+    isArrayOf(filters.positions, 'string') &&
+    isArrayOf(filters.runTypes, 'string') &&
+    isArrayOf(filters.carryStartTypes, 'string') &&
+    isArrayOf(filters.carryEndTypes, 'string')
   )
 }
 
@@ -108,6 +134,13 @@ const MIGRATIONS: Record<number, (raw: Record<string, unknown>) => Record<string
     ...raw,
     timelines: Array.isArray(raw.timelines) ? raw.timelines.map(migrateV1Timeline) : raw.timelines,
   }),
+  // v2 held a hand-ticked list of events. The Event Map is now driven by filters, which a list of
+  // ids cannot be turned back into, so an upgraded project opens with an empty map.
+  2: (raw) => {
+    const upgraded: Record<string, unknown> = { ...raw, eventMap: { filters: DEFAULT_EVENT_MAP_FILTERS, excludedIds: [] } }
+    delete upgraded.selectedEventIds
+    return upgraded
+  },
 }
 
 const V1_ENGAGEMENT_SUBTYPES = ['pressing', 'pressure', 'counter_press', 'recovery_press', 'other']
@@ -137,8 +170,7 @@ export function isSavedProject(value: unknown): value is SavedProject {
     isObject(value.match) &&
     isNumber(value.match.id) &&
     isClip(value.clip) &&
-    Array.isArray(value.selectedEventIds) &&
-    value.selectedEventIds.every((id: unknown) => typeof id === 'string') &&
+    isEventMap(value.eventMap) &&
     typeof value.autoDisappearEvents === 'boolean' &&
     Array.isArray(value.annotations) &&
     value.annotations.every(isAnnotation) &&

@@ -14,6 +14,8 @@ export type TrailLink = {
   y: number
   x2: number
   y2: number
+  event: Event // The possession the link belongs to, or leaves from
+  nextEvent?: Event // The possession it arrives at, for a link joining two possessions
 }
 
 export type SequenceTrail = {
@@ -55,6 +57,7 @@ export function buildTrailLinks(events: Event[] | null | undefined): TrailLink[]
         y: possession.y_start,
         x2: end.x,
         y2: end.y,
+        event: possession,
       })
     }
 
@@ -74,6 +77,8 @@ export function buildTrailLinks(events: Event[] | null | undefined): TrailLink[]
       y: end.y,
       x2: next.x_start,
       y2: next.y_start,
+      event: possession,
+      nextEvent: next,
     })
   })
 

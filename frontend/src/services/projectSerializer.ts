@@ -21,7 +21,10 @@ export function serializeProject({ session, style, annotationStore, timelineStor
     savedAt: new Date().toISOString(),
     match: { id: session.match.id, source: 'skillcorner-github' },
     clip: session.playback.clip,
-    selectedEventIds: session.overlays.selectedEvents.map((event) => event.event_id),
+    eventMap: {
+      filters: session.overlays.eventMapFilters,
+      excludedIds: session.overlays.eventMapExcludedIds,
+    },
     autoDisappearEvents: session.overlays.autoDisappearEvents,
     annotations: annotationStore.getAllAnnotations(),
     timelines: timelineStore.getAll(),

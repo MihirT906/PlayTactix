@@ -9,7 +9,7 @@ import {
 import type DataManager from '../services/DataManager'
 import type { SidebarPanel } from '../components/WorkspaceSidebar'
 import type OverlayManager from '../services/OverlayManager'
-import type { Event } from '../types/FrameDataInterfaces'
+import { DEFAULT_EVENT_MAP_FILTERS, type EventMapFilters } from '../plot/overlays/eventMapOverlay'
 import type { Clip, OverlaySegmentKind } from '../types/ClipInterfaces'
 import * as clipManager from '../services/clipManager'
 import { getLogger } from '../services/logger'
@@ -17,9 +17,6 @@ import { getLogger } from '../services/logger'
 const logger = getLogger('Clip')
 
 export type LoadStatus = 'idle' | 'loading' | 'ready' | 'error'
-// Only event_visualisation still uses the single "active" overlay slot; pitch,
-// pitch_control and pass_option_prob live as independent OverlaySegments instead.
-export type OverlayKind = 'event_visualisation'
 export type EditMode = 'draw_line' | 'draw_rect' | 'draw_arrow' | 'player_focus' | 'draw_line_players'
 export type { OverlaySegmentKind }
 
@@ -41,9 +38,8 @@ export type MatchSessionState = {
     loadedFrameRange: { start: number; end: number } | null
   }
   overlays: {
-    active: OverlayKind | null
-    status: Record<OverlayKind, LoadStatus>
-    selectedEvents: Event[]
+    eventMapFilters: EventMapFilters // The Event Map draws everything matching these
+    eventMapExcludedIds: string[] // Matching events the user has unticked
     autoDisappearEvents: boolean
   }
   // Overlays are also expressed as OverlaySegments on the clip's own timeline (see
@@ -74,7 +70,12 @@ type MatchSessionContextValue = {
   resources: MatchSessionResources
 
   selectMatch: (matchId: number) => void
-  restoreSession: (restored: { clip: Clip; selectedEvents: Event[]; autoDisappearEvents: boolean }) => void
+  restoreSession: (restored: {
+    clip: Clip
+    eventMapFilters: EventMapFilters
+    eventMapExcludedIds: string[]
+    autoDisappearEvents: boolean
+  }) => void
   setCurrentMatchFrame: (frame: number) => void
   setCurrentClipFrame: (clipFrame: number) => void
   advanceFrame: () => void
@@ -92,9 +93,9 @@ type MatchSessionContextValue = {
 
   setEditMode: (mode: EditMode | null) => void
 
-  setActiveOverlay: (overlay: OverlayKind | null) => void
-  toggleSelectedEvent: (event: Event) => void
-  setSelectedEvents: (events: Event[]) => void
+  updateEventMapFilters: (changes: Partial<EventMapFilters>) => void
+  setEventMapExcludedIds: (ids: string[]) => void
+  resetEventMap: () => void
   setAutoDisappearEvents: (autoDisappear: boolean) => void
 
   setActiveOverlaySegment: (kind: OverlaySegmentKind, active: boolean) => void
@@ -136,11 +137,8 @@ export const createInitialMatchSessionState = (matchId: number | null = null): M
     loadedFrameRange: null,
   },
   overlays: {
-    active: null,
-    status: {
-      event_visualisation: 'idle',
-    },
-    selectedEvents: [],
+    eventMapFilters: DEFAULT_EVENT_MAP_FILTERS,
+    eventMapExcludedIds: [],
     autoDisappearEvents: false,
   },
   ui: {
@@ -182,7 +180,7 @@ export function MatchSessionProvider({
             setSession(createInitialMatchSessionState(matchId))
         },
 
-        restoreSession: ({ clip, selectedEvents, autoDisappearEvents }) => {
+        restoreSession: ({ clip, eventMapFilters, eventMapExcludedIds, autoDisappearEvents }) => {
             logger.info('Session restored from saved project', { segments: clip.matchSegments.length })
             setSession((prev) => {
                 const first = clip.matchSegments[0]
@@ -198,9 +196,9 @@ export function MatchSessionProvider({
                     },
                     overlays: {
                         ...prev.overlays,
-                        selectedEvents,
+                        eventMapFilters,
+                        eventMapExcludedIds,
                         autoDisappearEvents,
-                        active: selectedEvents.length > 0 ? 'event_visualisation' : null,
                     },
                 }
             })
@@ -397,49 +395,35 @@ export function MatchSessionProvider({
             }))
         },
 
-        setActiveOverlay: (overlay: OverlayKind | null) => {
-            setSession((prev) => {
-                const active = prev.overlays.active === overlay ? null : overlay
-                logger.info('Clip overlay changed', { active })
-
-                return {
-                    ...prev,
-                    overlays: {
-                        ...prev.overlays,
-                        active,
-                    },
-                }
-            })
-        },
-
-        toggleSelectedEvent: (event: Event) => {
-            setSession((prev) => {
-                const isSelected = prev.overlays.selectedEvents.some((e) => e.event_id === event.event_id)
-                const selectedEvents = isSelected
-                    ? prev.overlays.selectedEvents.filter((e) => e.event_id !== event.event_id)
-                    : [...prev.overlays.selectedEvents, event]
-
-                logger.info('Clip overlay event selection changed', { eventId: event.event_id, selected: !isSelected })
-
-                return {
-                    ...prev,
-                    overlays: {
-                        ...prev.overlays,
-                        selectedEvents,
-                        active: selectedEvents.length > 0 ? 'event_visualisation' : prev.overlays.active,
-                    },
-                }
-            })
-        },
-
-        setSelectedEvents: (events: Event[]) => {
-            logger.info('Clip overlay events replaced', { count: events.length })
+        updateEventMapFilters: (changes: Partial<EventMapFilters>) => {
+            logger.info('Event map filters changed', changes)
             setSession((prev) => ({
                 ...prev,
                 overlays: {
                     ...prev.overlays,
-                    selectedEvents: events,
-                    active: events.length > 0 ? 'event_visualisation' : prev.overlays.active,
+                    eventMapFilters: { ...prev.overlays.eventMapFilters, ...changes },
+                },
+            }))
+        },
+
+        setEventMapExcludedIds: (ids: string[]) => {
+            setSession((prev) => ({
+                ...prev,
+                overlays: {
+                    ...prev.overlays,
+                    eventMapExcludedIds: ids,
+                },
+            }))
+        },
+
+        resetEventMap: () => {
+            logger.info('Event map cleared')
+            setSession((prev) => ({
+                ...prev,
+                overlays: {
+                    ...prev.overlays,
+                    eventMapFilters: DEFAULT_EVENT_MAP_FILTERS,
+                    eventMapExcludedIds: [],
                 },
             }))
         },

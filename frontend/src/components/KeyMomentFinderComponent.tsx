@@ -92,7 +92,7 @@ const buildChain = (moment: KeyMomentItem): ChainStep[] => {
   return [...steps.slice(0, 2), { skipped: players.length - MAX_CHAIN_PLAYERS }, ...steps.slice(-2)]
 }
 
-function FilterRow({ label, children }: { label: string; children: ReactNode }) {
+export function FilterRow({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="key-moment-filter-row">
       <span className="key-moment-filter-row-label">{label}</span>
@@ -101,14 +101,14 @@ function FilterRow({ label, children }: { label: string; children: ReactNode }) 
   )
 }
 
-function SegmentedControl<T extends string | number | null>({
+export function SegmentedControl<T extends string | number | null>({
   ariaLabel,
   options,
   value,
   onChange,
 }: {
   ariaLabel: string
-  options: Array<{ value: T; label: string; title?: string }>
+  options: Array<{ value: T; label: string; title?: string; color?: string }>
   value: T
   onChange: (value: T) => void
 }) {
@@ -123,6 +123,7 @@ function SegmentedControl<T extends string | number | null>({
           title={option.title}
           onClick={() => onChange(option.value)}
         >
+          {option.color ? <span className="key-moment-segment-dot" style={{ background: option.color }} aria-hidden="true" /> : null}
           {option.label}
         </button>
       ))}

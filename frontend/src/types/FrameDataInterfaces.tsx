@@ -34,7 +34,7 @@ interface Event {
     phase_index: number;
     frame_start: number;
     frame_end: number;
-    time_end: number;
+    time_end: string; // Match clock when the event ended, "MM:SS.s"
     team_id: number;
     attacking_side: string;
     team_in_possession_phase_type: string;

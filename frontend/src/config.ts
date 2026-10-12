@@ -40,6 +40,10 @@ export const APP_CONFIG = {
 		sequenceTrailCarryWidth: 2,
 		sequenceTrailCarryHeadSize: 8,
 		sequenceTrailPassWidth: 5,
+		eventMapArrowWidth: 2,
+		eventMapArrowHeadSize: 8,
+		eventMapRunOpacity: 0.55, // Off ball runs are fainter than carries, the only arrows on the ball
+		eventMapPassWidth: 5,
 		highlightRingGap: 5,
 		highlightRingWidth: 1,
 		paperBackgroundColor: '#ffffff',

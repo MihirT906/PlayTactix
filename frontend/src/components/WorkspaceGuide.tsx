@@ -132,7 +132,9 @@ const DOCS: { title: string; body: ReactNode }[] = [
             <strong>Pass Probability</strong>: how likely each passing option is to be completed.
           </li>
           <li>
-            <strong>Events</strong>: filter the match events and tick the ones to show on the pitch. Auto Disappear
+            <strong>Event Map</strong>: choose carries, passes or off ball runs and everything matching the filters is
+            drawn on the pitch, coloured by team. Passes are comets; carries and runs are arrows. It covers the clip
+            unless you switch to the whole match; untick single events under Pick individually. Auto Disappear
             removes each one once it is over.
           </li>
         </ul>

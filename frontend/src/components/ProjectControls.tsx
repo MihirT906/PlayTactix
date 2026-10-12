@@ -49,13 +49,10 @@ export default function ProjectControls({
     session.match.metaStatus === 'ready' && session.match.keyMomentStatus === 'ready' && keyMomentsData !== null
 
   const apply = (project: SavedProject) => {
-    const wanted = new Set(project.selectedEventIds)
-    const selectedEvents = (keyMomentsData?.events ?? []).filter((event) => wanted.has(event.event_id))
-    const dropped = wanted.size - selectedEvents.length
-
     restoreSession({
       clip: project.clip,
-      selectedEvents,
+      eventMapFilters: project.eventMap.filters,
+      eventMapExcludedIds: project.eventMap.excludedIds,
       autoDisappearEvents: project.autoDisappearEvents,
     })
     annotationStore.load(project.annotations, 0)
@@ -63,10 +60,7 @@ export default function ProjectControls({
     style.setAllStyle(project.style)
     onProjectApplied()
 
-    setNotice({
-      kind: 'info',
-      text: dropped > 0 ? `Project loaded. ${dropped} selected event(s) no longer exist and were skipped.` : 'Project loaded.',
-    })
+    setNotice({ kind: 'info', text: 'Project loaded.' })
   }
 
   // Finishes a load once the referenced match's metadata and key moments have arrived.

@@ -543,3 +543,59 @@
     grid-template-columns: 1fr;
   }
 }
+.key-moment-segment-dot {
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  margin-right: 0.35rem;
+  border-radius: 50%;
+}
+
+.key-moment-segment-count {
+  margin-left: 0.35rem;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.event-map-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 8px 0;
+  font-size: 0.82rem;
+  color: var(--color-text-secondary);
+}
+
+.event-map-note {
+  margin: 0;
+  padding-bottom: 8px;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--color-text-muted);
+}
+
+/* One line per event: the player's name gives way before anything else does. */
+.event-map-row {
+  flex-wrap: nowrap;
+  gap: 0.45rem;
+}
+
+.event-map-row .key-moment-segment-dot {
+  flex-shrink: 0;
+  margin-right: 0;
+}
+
+.event-map-row-time,
+.event-map-row-distance {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.event-map-row-who {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

@@ -5,13 +5,14 @@ import { TimelineRow } from './TimelineRow'
 
 const LANE_HEIGHT = 22
 
-// Pitch and pitch control get their own distinct looks; pass probability and sequence trails fall
+// Pitch and pitch control get their own distinct looks; pass probability, sequence trails and voronoi fall
 // back to a minimal, theme-independent style since they have no single team color to draw from.
 const OVERLAY_BAR_CLASS_NAMES: Record<OverlaySegmentKind, string> = {
   pitch: 'annotation-timeline__annotation--overlay',
   pitch_control: 'annotation-timeline__annotation--overlay',
   pass_option_prob: 'annotation-timeline__annotation--minimal',
   sequence_trails: 'annotation-timeline__annotation--minimal',
+  voronoi: 'annotation-timeline__annotation--minimal',
 }
 
 type BackgroundRowProps = {

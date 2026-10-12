@@ -44,6 +44,9 @@ export const APP_CONFIG = {
 		eventMapArrowHeadSize: 8,
 		eventMapRunOpacity: 0.55, // Off ball runs are fainter than carries, the only arrows on the ball
 		eventMapPassWidth: 5,
+		voronoiFillOpacity: 0.3,
+		voronoiStrokeColor: 'rgba(255, 255, 255, 0.7)',
+		voronoiStrokeWidth: 1,
 		highlightRingGap: 5,
 		highlightRingWidth: 1,
 		paperBackgroundColor: '#ffffff',

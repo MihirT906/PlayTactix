@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { GiAbstract006, GiFlagObjective, GiPathDistance, GiSoccerField, GiTargeting } from 'react-icons/gi'
+import { GiAbstract006, GiFlagObjective, GiHoneycomb, GiPathDistance, GiSoccerField, GiTargeting } from 'react-icons/gi'
 import { useMatchSession } from '../context/MatchSessionContext'
 import type { KeyMomentsData } from '../types/KeyMomentsDataInterfaces'
 import type { MatchData } from '../types/MatchDataInterfaces'
@@ -87,6 +87,14 @@ function OverlaysTab({
           >
             <GiPathDistance aria-hidden="true" />
             <span>Sequence Trails</span>
+          </button>
+          <button
+            type="button"
+            className="app-header-action workspace-sidebar-action timeline-add-option"
+            onClick={() => handleOverlaySegmentSelect('voronoi')}
+          >
+            <GiHoneycomb aria-hidden="true" />
+            <span>Voronoi</span>
           </button>
           <button
             type="button"

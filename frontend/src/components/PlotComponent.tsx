@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import Plot from 'react-plotly.js'
-import { Arrows, Comet, Pitch } from '@pitchkit/react'
+import { Arrows, Comet, Pitch, Voronoi } from '@pitchkit/react'
 import AnnotationStore from '../services/AnnotationStore-optimized'
 import type { Event, FrameData } from '../types/FrameDataInterfaces'
 import { APP_CONFIG, SELECTED_POINTS_OPACITY } from '../config'
@@ -13,6 +13,7 @@ import { findOverlayAt } from '../services/clipManager'
 import { buildPassOptionProbOverlay } from '../plot/overlays/passOptionProbOverlay'
 import { buildPitchControlOverlay } from '../plot/overlays/pitchControlOverlay.ts'
 import { buildEventMapItems, resolveEventMap } from '../plot/overlays/eventMapOverlay'
+import { buildVoronoiPoints } from '../plot/overlays/voronoiOverlay'
 import { EMPTY_SEQUENCE_TRAIL, buildTrailLinks, getSequenceTrailAt } from '../plot/overlays/sequenceTrailsOverlay'
 
 import { getLogger } from "../services/logger";
@@ -45,7 +46,7 @@ const PITCHKIT_STYLE = {
 const BACKDROP_STYLE: React.CSSProperties = { position: 'absolute', inset: 0, pointerEvents: 'none', background: PLOT_BACKGROUND }
 const BACKDROP_PLOT_AREA_STYLE: React.CSSProperties = { position: 'absolute', inset: PLOT_MARGIN, background: PLOT_BACKGROUND }
 
-// A see-through PitchKit pitch stacked with the Plotly plot: it only carries PitchKit marks (arrow annotations, sequence trails, the event map).
+// A see-through PitchKit pitch stacked with the Plotly plot: it only carries PitchKit marks (arrow annotations, sequence trails, the event map, voronoi cells).
 const ARROW_LAYER_STYLE = {
   position: 'absolute',
   top: 0,
@@ -124,6 +125,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
   const isPitchControlActive = findOverlayAt(session.playback.clip, 'pitch_control', clipFrame) !== undefined
   const isPassOptionProbActive = findOverlayAt(session.playback.clip, 'pass_option_prob', clipFrame) !== undefined
   const sequenceTrailsOverlay = findOverlayAt(session.playback.clip, 'sequence_trails', clipFrame)
+  const isVoronoiActive = findOverlayAt(session.playback.clip, 'voronoi', clipFrame) !== undefined
   const editMode = session.ui.editMode;
   const usePitchKit = pitchRenderer === 'pitchkit'
 
@@ -485,6 +487,12 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
   }, [trailLinks, sequenceTrailsOverlay, session.playback.clip.matchSegments, currentFrame, clipFrame, frameData, positionOverrides])
   const teamColor = <T extends { teamId: number }>(item: T) => (item.teamId === matchData?.away_team.id ? awayTeamColor : homeTeamColor)
 
+  // One cell per player, following any dragged positions so the cells can be explored while paused.
+  const voronoiPoints = useMemo(
+    () => (isVoronoiActive ? buildVoronoiPoints(frameData, positionOverrides) : []),
+    [isVoronoiActive, frameData, positionOverrides],
+  )
+
   const eventMapItems = useMemo(() => buildEventMapItems(matchEvents), [matchEvents])
   const eventMapDrawn = useMemo(
     () =>
@@ -772,8 +780,8 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
             )}
           </div>
         )}
-        {(sequenceTrail.carries.length > 0 || sequenceTrail.passes.length > 0 || eventMap.passes.length > 0 || eventMap.movements.length > 0) && (
-          // Sequence trails and the event map sit on their own see-through pitch beneath the Plotly plot, so players stay on top.
+        {(voronoiPoints.length > 0 || sequenceTrail.carries.length > 0 || sequenceTrail.passes.length > 0 || eventMap.passes.length > 0 || eventMap.movements.length > 0) && (
+          // Voronoi cells, sequence trails and the event map sit on their own see-through pitch beneath the Plotly plot, so players stay on top.
           <Pitch
             type="skillcorner"
             width={PLOT_WIDTH}
@@ -782,6 +790,15 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
             padding={pitchKitProps.padding}
             style={ARROW_LAYER_STYLE}
           >
+            <Voronoi
+              data={voronoiPoints}
+              x={(d) => d.x}
+              y={(d) => d.y}
+              fill={(d) => (d.team === 'away' ? awayTeamColor : homeTeamColor)}
+              fillOpacity={plotConfig.voronoiFillOpacity}
+              stroke={plotConfig.voronoiStrokeColor}
+              strokeWidth={plotConfig.voronoiStrokeWidth}
+            />
             <Comet
               data={sequenceTrail.passes}
               x={(d) => d.x}

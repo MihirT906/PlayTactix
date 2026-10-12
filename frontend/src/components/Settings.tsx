@@ -88,6 +88,7 @@ const Settings: React.FC<{ matchData: MatchData | null }> = ({ matchData }) => {
     const isPassOptionProbActive = session.playback.clip.overlaySegments.some((overlay) => overlay.type === 'pass_option_prob')
     const isPitchControlActive = session.playback.clip.overlaySegments.some((overlay) => overlay.type === 'pitch_control')
     const isSequenceTrailsActive = session.playback.clip.overlaySegments.some((overlay) => overlay.type === 'sequence_trails')
+    const isVoronoiActive = session.playback.clip.overlaySegments.some((overlay) => overlay.type === 'voronoi')
 
     return (
         <div className="settings-display">
@@ -109,6 +110,7 @@ const Settings: React.FC<{ matchData: MatchData | null }> = ({ matchData }) => {
                 <SettingsRow label={'Pass Option Probability'} color={null} visible={isPassOptionProbActive} onChange={setHomeTeamColor} onToggleVisibility={(visible) => setActiveOverlaySegment('pass_option_prob', visible)} />
                 <SettingsRow label={'Pitch Control'} color={null} visible={isPitchControlActive} onChange={setHomeTeamColor} onToggleVisibility={(visible) => setActiveOverlaySegment('pitch_control', visible)} />
                 <SettingsRow label={'Sequence Trails'} color={null} visible={isSequenceTrailsActive} onChange={setHomeTeamColor} onToggleVisibility={(visible) => setActiveOverlaySegment('sequence_trails', visible)} />
+                <SettingsRow label={'Voronoi'} color={null} visible={isVoronoiActive} onChange={setHomeTeamColor} onToggleVisibility={(visible) => setActiveOverlaySegment('voronoi', visible)} />
 
             </div>
             <div className="settings-box settings-box--flat">

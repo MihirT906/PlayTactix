@@ -31,6 +31,7 @@ interface Players {
 interface Event {
     event_id: string;
     index: number;
+    phase_index: number;
     frame_start: number;
     frame_end: number;
     time_end: number;

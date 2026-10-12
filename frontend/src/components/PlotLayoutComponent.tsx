@@ -25,6 +25,7 @@ type PlotLayoutComponentProps = {
   matchData: MatchData | null
   frameData: FrameData | null
   eventsData: Map<number, Event[]> | null
+  matchEvents: Event[] | null
   annotationStore: AnnotationStore
   timelineStore: TimelineStore
   onAnnotationUpdate: () => void
@@ -47,6 +48,7 @@ function PlotLayoutComponent({
   matchData,
   frameData,
   eventsData,
+  matchEvents,
   annotationStore,
   timelineStore,
   onAnnotationUpdate,
@@ -89,6 +91,7 @@ function PlotLayoutComponent({
             clipFrame={clipFrame}
             matchData={matchData}
             frameData={frameData}
+            matchEvents={matchEvents}
             annotationStore={annotationStore}
             onAnnotationUpdate={onAnnotationUpdate}
             annotationVersion={annotationVersion}

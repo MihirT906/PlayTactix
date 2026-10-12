@@ -319,6 +319,7 @@ function AppContent({
                       matchData={matchMetaData}
                       frameData={currentFrameData}
                       eventsData={eventsData}
+                      matchEvents={keyMomentsData?.events ?? null}
                       annotationStore={annotationStore}
                       timelineStore={timelineStore}
                       onAnnotationUpdate={handleAnnotationUpdate}

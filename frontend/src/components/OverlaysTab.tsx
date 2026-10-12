@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { GiAbstract006, GiFlagObjective, GiSoccerField, GiTargeting } from 'react-icons/gi'
+import { GiAbstract006, GiFlagObjective, GiPathDistance, GiSoccerField, GiTargeting } from 'react-icons/gi'
 import { useMatchSession } from '../context/MatchSessionContext'
 import type { KeyMomentsData } from '../types/KeyMomentsDataInterfaces'
 import type { MatchData } from '../types/MatchDataInterfaces'
@@ -79,6 +79,14 @@ function OverlaysTab({
           >
             <GiTargeting aria-hidden="true" />
             <span>Pass Probability</span>
+          </button>
+          <button
+            type="button"
+            className="app-header-action workspace-sidebar-action timeline-add-option"
+            onClick={() => handleOverlaySegmentSelect('sequence_trails')}
+          >
+            <GiPathDistance aria-hidden="true" />
+            <span>Sequence Trails</span>
           </button>
           <button
             type="button"

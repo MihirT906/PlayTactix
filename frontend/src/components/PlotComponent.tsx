@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import Plot from 'react-plotly.js'
-import { Arrows, Pitch } from '@pitchkit/react'
+import { Arrows, Comet, Pitch } from '@pitchkit/react'
 import AnnotationStore from '../services/AnnotationStore-optimized'
-import type { FrameData } from '../types/FrameDataInterfaces'
+import type { Event, FrameData } from '../types/FrameDataInterfaces'
 import { APP_CONFIG, SELECTED_POINTS_OPACITY } from '../config'
 // Import the background image
 import backgroundImage from '../assets/background_image.png';
@@ -13,6 +13,8 @@ import { findOverlayAt } from '../services/clipManager'
 import { buildPassOptionProbOverlay } from '../plot/overlays/passOptionProbOverlay'
 import { buildPitchControlOverlay } from '../plot/overlays/pitchControlOverlay.ts'
 import { buildEventVisualisationOverlay } from '../plot/overlays/eventVisualisationOverlay'
+import { EMPTY_SEQUENCE_TRAIL, buildTrailLinks, getSequenceTrailAt } from '../plot/overlays/sequenceTrailsOverlay'
+import type { TrailLink } from '../plot/overlays/sequenceTrailsOverlay'
 
 import { getLogger } from "../services/logger";
 
@@ -44,7 +46,7 @@ const PITCHKIT_STYLE = {
 const BACKDROP_STYLE: React.CSSProperties = { position: 'absolute', inset: 0, pointerEvents: 'none', background: PLOT_BACKGROUND }
 const BACKDROP_PLOT_AREA_STYLE: React.CSSProperties = { position: 'absolute', inset: PLOT_MARGIN, background: PLOT_BACKGROUND }
 
-// A second, see-through PitchKit pitch stacked over the Plotly plot: it only carries the arrow annotations.
+// A see-through PitchKit pitch stacked with the Plotly plot: it only carries PitchKit marks (arrow annotations, sequence trails).
 const ARROW_LAYER_STYLE = {
   position: 'absolute',
   top: 0,
@@ -86,12 +88,13 @@ interface PlotComponentProps {
   clipFrame: number
   frameData: FrameData | null
   matchData: MatchData | null
+  matchEvents: Event[] | null // Every event of the match, for overlays that look beyond the current frame
   annotationStore: AnnotationStore
   annotationVersion?: number // Bumped when annotations change elsewhere (e.g. timeline bar drags/deletes)
   onAnnotationUpdate?: () => void // Optional callback to trigger when annotations are updated
 }
 
-const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, matchData, frameData, annotationStore, onAnnotationUpdate, annotationVersion }) => {
+const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, matchData, frameData, matchEvents, annotationStore, onAnnotationUpdate, annotationVersion }) => {
   const plotConfig = APP_CONFIG.plot
   const { homeTeamColor, awayTeamColor, eventStyles, teamVisibility, eventVisibility, pitchRenderer } = useStyleConfig()
   const { session, resources, setEditMode } = useMatchSession()
@@ -122,6 +125,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
   const isPitchBackgroundActive = findOverlayAt(session.playback.clip, 'pitch', clipFrame) !== undefined
   const isPitchControlActive = findOverlayAt(session.playback.clip, 'pitch_control', clipFrame) !== undefined
   const isPassOptionProbActive = findOverlayAt(session.playback.clip, 'pass_option_prob', clipFrame) !== undefined
+  const sequenceTrailsOverlay = findOverlayAt(session.playback.clip, 'sequence_trails', clipFrame)
   const editMode = session.ui.editMode;
   const usePitchKit = pitchRenderer === 'pitchkit'
 
@@ -476,6 +480,27 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [annotationStore, clipFrame, frameData, positionOverrides, annotationTick, annotationVersion])
 
+  const trailLinks = useMemo(() => buildTrailLinks(matchEvents), [matchEvents])
+
+  // A sequence is the range of the overlay's bar on the clip timeline: its trail grows from the bar's
+  // start and every carry and pass stays drawn until the bar ends.
+  const sequenceTrail = useMemo(() => {
+    if (!sequenceTrailsOverlay) return EMPTY_SEQUENCE_TRAIL
+    // The match frame the sequence starts at. A bar reaching back over an earlier match segment starts
+    // with this one, since the footage before it is not continuous with what is on screen.
+    const matchSegment = session.playback.clip.matchSegments.find((s) => clipFrame >= s.clipStart && clipFrame <= s.clipEnd)
+    const sequenceStartClipFrame = Math.max(sequenceTrailsOverlay.clipStart, matchSegment?.clipStart ?? 0)
+    return getSequenceTrailAt(trailLinks, currentFrame, currentFrame - (clipFrame - sequenceStartClipFrame), (link) => {
+      // A carry in progress ends at its carrier and a pass in flight at the ball.
+      const { x, y } = link.kind === 'carry'
+        ? resolvePlayerPos(link.playerId)
+        : { x: frameData?.ball.ball_x, y: frameData?.ball.ball_y }
+      return typeof x === 'number' && typeof y === 'number' ? { x, y } : null
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trailLinks, sequenceTrailsOverlay, session.playback.clip.matchSegments, currentFrame, clipFrame, frameData, positionOverrides])
+  const sequenceTrailColor = (link: TrailLink) => (link.teamId === matchData?.away_team.id ? awayTeamColor : homeTeamColor)
+
   // --- Drag-to-reposition players while paused -----------------------------
   // Plotly can't drag individual scatter points, so we hit-test the player
   // markers ourselves on mousedown and translate pointer motion into data
@@ -739,6 +764,38 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
               />
             )}
           </div>
+        )}
+        {(sequenceTrail.carries.length > 0 || sequenceTrail.passes.length > 0) && (
+          // Sequence trails sit on their own see-through pitch beneath the Plotly plot, so players stay on top.
+          <Pitch
+            type="skillcorner"
+            width={PLOT_WIDTH}
+            height={PLOT_HEIGHT}
+            dimensions={pitchKitProps.dimensions}
+            padding={pitchKitProps.padding}
+            style={ARROW_LAYER_STYLE}
+          >
+            <Comet
+              data={sequenceTrail.passes}
+              x={(d) => d.x}
+              y={(d) => d.y}
+              x2={(d) => d.x2}
+              y2={(d) => d.y2}
+              color={sequenceTrailColor}
+              endWidth={plotConfig.sequenceTrailPassWidth}
+              gradient
+            />
+            <Arrows
+              data={sequenceTrail.carries}
+              x={(d) => d.x}
+              y={(d) => d.y}
+              x2={(d) => d.x2}
+              y2={(d) => d.y2}
+              stroke={sequenceTrailColor}
+              strokeWidth={plotConfig.sequenceTrailCarryWidth}
+              headSize={plotConfig.sequenceTrailCarryHeadSize}
+            />
+          </Pitch>
         )}
         <Plot
           data={[

@@ -17,7 +17,7 @@ import { getLogger } from '../services/logger'
 const logger = getLogger('Clip')
 
 export type LoadStatus = 'idle' | 'loading' | 'ready' | 'error'
-export type EditMode = 'draw_line' | 'draw_rect' | 'draw_arrow' | 'player_focus' | 'draw_line_players'
+export type EditMode = 'draw_line' | 'draw_rect' | 'draw_arrow' | 'player_focus' | 'draw_line_players' | 'team_shape'
 export type { OverlaySegmentKind }
 
 export type MatchSessionState = {

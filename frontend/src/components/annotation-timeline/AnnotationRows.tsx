@@ -9,6 +9,7 @@ const ROW_LABELS: Record<string, string> = {
   playerLine: 'Player Lines',
   draw: 'Draw Shapes',
   arrow: 'Arrows',
+  teamShape: 'Team Shapes',
 }
 
 const getAnnotationLabel = (annotation: { type: string; shape: any }) => {
@@ -18,6 +19,8 @@ const getAnnotationLabel = (annotation: { type: string; shape: any }) => {
   }
 
   if (annotation.type === 'arrow') return 'Arrow'
+
+  if (annotation.type === 'teamShape') return `Shape (${annotation.shape.players?.length ?? 0} players)`
 
   return annotation.shape?.type ? `Draw (${annotation.shape.type})` : 'Draw'
 }

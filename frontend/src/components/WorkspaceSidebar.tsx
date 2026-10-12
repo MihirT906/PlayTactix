@@ -1,4 +1,4 @@
-import { FaCog, FaSearch, FaStream, FaStreetView, FaProjectDiagram, FaVectorSquare, FaSlash, FaLongArrowAltRight, FaEraser } from 'react-icons/fa'
+import { FaCog, FaSearch, FaStream, FaStreetView, FaProjectDiagram, FaDrawPolygon, FaVectorSquare, FaSlash, FaLongArrowAltRight, FaEraser } from 'react-icons/fa'
 import { BiAddToQueue } from "react-icons/bi";
 import './WorkspaceSidebar.css'
 import Settings from './Settings.tsx'
@@ -44,6 +44,7 @@ function WorkspaceSidebar({
   const isSidebarPanelOpen = activePanel !== null
   const isPlayerFocusActive = session.ui.editMode === 'player_focus'
   const isDrawLinePlayersActive = session.ui.editMode === 'draw_line_players'
+  const isTeamShapeActive = session.ui.editMode === 'team_shape'
   const isDrawRectActive = session.ui.editMode === 'draw_rect'
   const isDrawLineActive = session.ui.editMode === 'draw_line'
   const isDrawArrowActive = session.ui.editMode === 'draw_arrow'
@@ -124,6 +125,16 @@ function WorkspaceSidebar({
           >
             <FaProjectDiagram aria-hidden="true" />
             <span>Link Players</span>
+          </button>
+          <button
+            type="button"
+            className={`app-header-action workspace-sidebar-action workspace-sidebar-action--team-shape ${isTeamShapeActive ? 'is-active' : ''}`}
+            onClick={() => setEditMode(isTeamShapeActive ? null : 'team_shape')}
+            aria-pressed={isTeamShapeActive}
+            aria-label={isTeamShapeActive ? 'Disable team shape mode' : 'Enable team shape mode'}
+          >
+            <FaDrawPolygon aria-hidden="true" />
+            <span>Team Shape</span>
           </button>
           <button
             type="button"

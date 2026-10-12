@@ -33,6 +33,14 @@ function newArrowKey(): string {
     return `arrow|${Date.now().toString(36)}-${(arrowCounter++).toString(36)}`;
 }
 
+let teamShapeCounter = 0;
+function newTeamShapeKey(): string {
+    return `teamShape|${Date.now().toString(36)}-${(teamShapeCounter++).toString(36)}`;
+}
+
+// A team shape needs a triangle at least; fewer players enclose no area.
+const MIN_TEAM_SHAPE_PLAYERS = 3;
+
 function samePair(a: number[], b: number[]): boolean {
     const norm = (p: number[]) => [...p].sort((x, y) => x - y).join(',');
     return norm(a) === norm(b);
@@ -148,6 +156,37 @@ export default class AnnotationStore {
             shape: { x0, y0, x1, y1 },
         });
         this.update_active_annotation(currentFrame)
+    }
+
+    setTeamShapePlayers(key: string | null, players: number[], currentFrame: number): string | null {
+        // Creates the team shape `key` or changes the players it is drawn around, and returns its key.
+        // Team shapes are drawn by PitchKit rather than Plotly, so they never pass through handleAnnotationRelayout.
+        // With too few players left to enclose an area the shape is dropped and null returned.
+        const existing = key ? this.annotations.get(key) : undefined;
+        if (players.length < MIN_TEAM_SHAPE_PLAYERS) {
+            if (key) this.removeAnnotation(key);
+            return null;
+        }
+        if (key && existing) {
+            existing.shape = { players: [...players] };
+            return key;
+        }
+        logger.info("Added team shape annotation at frame:", currentFrame);
+        const uniqueKey = newTeamShapeKey();
+        this.annotations.set(uniqueKey, {
+            type: 'teamShape',
+            frameStart: currentFrame,
+            frameEnd: undefined,
+            shape: { players: [...players] },
+        });
+        this.update_active_annotation(currentFrame)
+        return uniqueKey;
+    }
+
+    getTeamShapeAnnotations(_currentFrame: number): Array<{ key: string; players: number[] }> {
+        return Array.from(this.active_annotations.entries())
+            .filter(([, annotation]) => annotation.type === 'teamShape')
+            .map(([key, annotation]) => ({ key, players: annotation.shape.players }));
     }
 
     getArrowAnnotations(_currentFrame: number): Array<{ x0: number; y0: number; x1: number; y1: number }> {

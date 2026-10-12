@@ -155,6 +155,10 @@ const DOCS: { title: string; body: ReactNode }[] = [
             move.
           </li>
           <li>
+            <strong>Team Shape</strong>: click three or more players to draw the shape they form, which follows them
+            as they move. Click a player again to take them out.
+          </li>
+          <li>
             <strong>Draw Rectangle</strong>: drag on the pitch to mark an area.
           </li>
           <li>

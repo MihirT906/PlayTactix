@@ -15,3 +15,11 @@ NoneType: None
 2026-10-11 21:23:11 | INFO     | playtactix.services.key_moments_service | Key moments computed events=4915
 2026-10-11 21:23:12 | INFO     | playtactix.routes.data_routes | Fetching match metadata for match_id=1874553
 2026-10-11 21:23:12 | INFO     | playtactix.services.frame_data_service | Retrieving metadata for match_id=1874553 from stored data
+2026-10-11 21:30:28 | INFO     | playtactix.routes.data_routes | Fetching key moments for match_id=1874553
+2026-10-11 21:30:28 | INFO     | playtactix.services.key_moments_service | Fetching key moments for match_id=1874553
+2026-10-11 21:30:28 | INFO     | playtactix.services.key_moments_service | Key moments computed goals=7
+2026-10-11 21:30:28 | INFO     | playtactix.services.key_moments_service | Key moments computed shots=29
+2026-10-11 21:30:28 | INFO     | playtactix.services.key_moments_service | Key moments computed pops=360
+2026-10-11 21:30:28 | INFO     | playtactix.services.key_moments_service | Key moments computed events=4915
+2026-10-11 21:30:29 | INFO     | playtactix.routes.data_routes | Fetching match metadata for match_id=1874553
+2026-10-11 21:30:29 | INFO     | playtactix.services.frame_data_service | Retrieving metadata for match_id=1874553 from stored data

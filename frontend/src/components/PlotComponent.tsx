@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import Plot from 'react-plotly.js'
-import { Arrows, Comet, Pitch, Voronoi } from '@pitchkit/react'
+import { Arrows, Comet, ConvexHull, Pitch, Voronoi } from '@pitchkit/react'
 import AnnotationStore from '../services/AnnotationStore-optimized'
 import type { Event, FrameData } from '../types/FrameDataInterfaces'
 import { APP_CONFIG, SELECTED_POINTS_OPACITY } from '../config'
@@ -46,7 +46,7 @@ const PITCHKIT_STYLE = {
 const BACKDROP_STYLE: React.CSSProperties = { position: 'absolute', inset: 0, pointerEvents: 'none', background: PLOT_BACKGROUND }
 const BACKDROP_PLOT_AREA_STYLE: React.CSSProperties = { position: 'absolute', inset: PLOT_MARGIN, background: PLOT_BACKGROUND }
 
-// A see-through PitchKit pitch stacked with the Plotly plot: it only carries PitchKit marks (arrow annotations, sequence trails, the event map, voronoi cells).
+// A see-through PitchKit pitch stacked with the Plotly plot: it only carries PitchKit marks (arrow annotations, team shapes, sequence trails, the event map, voronoi cells).
 const ARROW_LAYER_STYLE = {
   position: 'absolute',
   top: 0,
@@ -101,6 +101,9 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
   const overlayManager = resources.overlayManager
   const [focusPoints, setFocusPoints] = useState<number[]>([]) // Points that are highlighted on click
   const [firstPoint, setFirstPoint] = useState<number | null>(null) // First point selected when drawing a line between two players
+  // The team shape being built in 'Team Shape' mode: the players clicked so far and, once there are enough to draw, its key in the store
+  const [shapePlayers, setShapePlayers] = useState<number[]>([])
+  const shapeKeyRef = useRef<string | null>(null)
   // const [focusEnabled, setFocusEnabled] = useState(false) // 'Player Focus' mode toggled to draw lines
   // Bumped whenever the annotation store is edited from this component, so the derived lines/shapes below recompute
   const [annotationTick, setAnnotationTick] = useState(0)
@@ -317,7 +320,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
       }
 
       // Draws a halo ring (with a gap from the marker) around focused players
-      const highlightedIndices = focusPoints
+      const highlightedIndices = [...new Set([...focusPoints, ...shapePlayers])]
         .map((playerId) => visiblePlayerIds.indexOf(playerId))
         .filter((index) => index !== -1)
 
@@ -349,7 +352,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
       ...build(applyVisibilityMask(playerMasks?.passing_options || EMPTY_MASK.map(() => false)), eventStyles.passingOption.color, eventStyles.passingOption.width),
       ...build(applyVisibilityMask(playerMasks?.on_ball_engagement || EMPTY_MASK.map(() => false)), eventStyles.onBallEngagement.color, eventStyles.onBallEngagement.width),
     ];
-  }, [awayTeamColor, eventStyles.onBallEngagement.color, eventStyles.onBallEngagement.width, eventStyles.passingOption.color, eventStyles.passingOption.width, eventStyles.playerPossession.color, eventStyles.playerPossession.width, eventVisibility.onBallEngagement, eventVisibility.passingOption, eventVisibility.playerPossession, frameData, homeTeamColor, matchData, playerMasks, teamVisibility.away, teamVisibility.home, focusPoints, positionOverrides])
+  }, [awayTeamColor, eventStyles.onBallEngagement.color, eventStyles.onBallEngagement.width, eventStyles.passingOption.color, eventStyles.passingOption.width, eventStyles.playerPossession.color, eventStyles.playerPossession.width, eventVisibility.onBallEngagement, eventVisibility.passingOption, eventVisibility.playerPossession, frameData, homeTeamColor, matchData, playerMasks, teamVisibility.away, teamVisibility.home, focusPoints, shapePlayers, positionOverrides])
 
   useEffect(() => {
     let cancelled = false;
@@ -409,6 +412,11 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     else {
       setDragMode('select')
     }
+    // Leaving 'Team Shape' finishes the shape being built; the next one starts from no players.
+    if (editMode !== 'team_shape') {
+      shapeKeyRef.current = null
+      setShapePlayers((prev) => (prev.length > 0 ? [] : prev))
+    }
   }, [editMode])
 
   // Resolve a player's position, preferring a temporary drag override if present
@@ -427,7 +435,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
   // Annotation shapes for the current frame, derived (never stored) so they cannot go stale: the
   // store's active set is rebuilt for this clip frame, and player lines are placed from this frame's
   // positions. Lines whose players aren't in the frame (e.g. missing data) are skipped.
-  const { lines, shapes, arrows } = useMemo(() => {
+  const { lines, shapes, arrows, teamShapes } = useMemo(() => {
     annotationStore.reconstruct_active_annotations(clipFrame)
     const lines: any[] = []
     for (const [firstPoint, secondPoint] of annotationStore.getPlayerLineAnnotations(clipFrame) as [number, number][]) {
@@ -458,13 +466,27 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
         name: `Player1:${firstPoint},Player2:${secondPoint}`, // Using this name to identify the players connected by the line
       })
     }
+    // A team shape is the hull around its players' positions in this frame, in the colour of their
+    // team (or a neutral one when it spans both). It needs three of them in the frame to enclose an area.
+    const teamShapes = annotationStore.getTeamShapeAnnotations(clipFrame).flatMap(({ key, players }) => {
+      const points = players.flatMap((playerId) => {
+        const { x, y } = resolvePlayerPos(playerId)
+        if (x === undefined || y === undefined) return []
+        return [{ x, y, team: frameData?.players.team[frameData.players.player_id.indexOf(playerId)] }]
+      })
+      if (points.length < 3) return []
+      const team = points.every((point) => point.team === points[0].team) ? points[0].team : undefined
+      const color = team === 'home' ? homeTeamColor : team === 'away' ? awayTeamColor : plotConfig.teamShapeColor
+      return [{ key, points, color }]
+    })
     return {
       lines,
       shapes: Array.from(annotationStore.getDrawAnnotations(clipFrame)) as any[],
       arrows: annotationStore.getArrowAnnotations(clipFrame),
+      teamShapes,
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [annotationStore, clipFrame, frameData, positionOverrides, annotationTick, annotationVersion])
+  }, [annotationStore, clipFrame, frameData, positionOverrides, annotationTick, annotationVersion, homeTeamColor, awayTeamColor])
 
   const trailLinks = useMemo(() => buildTrailLinks(matchEvents), [matchEvents])
 
@@ -720,6 +742,20 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
         setFirstPoint(null) // Reset first point for the next line
       }
     }
+
+    else if (editMode == 'team_shape') {
+      if (!event?.points?.length) return
+      const clickedPlayerId = event.points[0].customdata?.[0]
+      if (clickedPlayerId === undefined) return
+      // Clicking a player adds them to the shape being built, clicking them again takes them out.
+      const players = shapePlayers.includes(clickedPlayerId)
+        ? shapePlayers.filter((p) => p !== clickedPlayerId)
+        : [...shapePlayers, clickedPlayerId]
+      setShapePlayers(players)
+      shapeKeyRef.current = annotationStore.setTeamShapePlayers(shapeKeyRef.current, players, clipFrame)
+      setAnnotationTick((tick) => tick + 1)
+      onAnnotationUpdate?.()
+    }
     // if (editMode !== 'player_focus') return
     // if (!event?.points?.length) return
     // const pointIndex = event.points[0].pointIndex
@@ -780,8 +816,8 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
             )}
           </div>
         )}
-        {(voronoiPoints.length > 0 || sequenceTrail.carries.length > 0 || sequenceTrail.passes.length > 0 || eventMap.passes.length > 0 || eventMap.movements.length > 0) && (
-          // Voronoi cells, sequence trails and the event map sit on their own see-through pitch beneath the Plotly plot, so players stay on top.
+        {(voronoiPoints.length > 0 || teamShapes.length > 0 || sequenceTrail.carries.length > 0 || sequenceTrail.passes.length > 0 || eventMap.passes.length > 0 || eventMap.movements.length > 0) && (
+          // Voronoi cells, team shapes, sequence trails and the event map sit on their own see-through pitch beneath the Plotly plot, so players stay on top.
           <Pitch
             type="skillcorner"
             width={PLOT_WIDTH}
@@ -799,6 +835,18 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
               stroke={plotConfig.voronoiStrokeColor}
               strokeWidth={plotConfig.voronoiStrokeWidth}
             />
+            {teamShapes.map((shape) => (
+              <ConvexHull
+                key={shape.key}
+                data={shape.points}
+                x={(d) => d.x}
+                y={(d) => d.y}
+                fill={shape.color}
+                fillOpacity={plotConfig.teamShapeFillOpacity}
+                stroke={shape.color}
+                strokeWidth={plotConfig.teamShapeStrokeWidth}
+              />
+            ))}
             <Comet
               data={sequenceTrail.passes}
               x={(d) => d.x}

@@ -18,3 +18,11 @@ export function advanceAnimations<T extends { startedAt: StartedAt }>(animations
 // How far through an animation started at `startedAt` the frame at `now` is, from 0 to 1.
 export const animationProgress = (startedAt: StartedAt, now: number, duration: number) =>
   startedAt === null ? 0 : Math.min(1, (now - startedAt) / duration)
+
+// The spring a new team shape or player line enters with: it grows from its centre, overshoots its
+// full size and settles back to it. Its scale `age` ms after appearing, from 0 to 1 at rest.
+export const ENTRANCE_DURATION = 550 // ms
+const ENTRANCE_DECAY = 80 // ms
+const ENTRANCE_PERIOD = 360 // ms
+export const entranceScale = (age: number) =>
+  age < ENTRANCE_DURATION ? 1 - Math.exp(-age / ENTRANCE_DECAY) * Math.cos((2 * Math.PI * age) / ENTRANCE_PERIOD) : 1

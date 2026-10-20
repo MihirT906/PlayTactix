@@ -1,4 +1,5 @@
 import { getLogger } from "../services/logger";
+import type { DrawShape, Segment } from "../plot/annotationGeometry";
 
 const logger = getLogger("AnnotationStore");
 
@@ -9,17 +10,9 @@ interface Annotation {
     shape: any;
 }
 
-function createShapeKey(shape: any, _frameStart?: number): string {
-    const type = shape.type;
-    const x0 = shape.x0;
-    const y0 = shape.y0;
-    const x1 = shape.x1;
-    const y1 = shape.y1;
-    const round = (v: any) =>
-        typeof v === 'number' ? Number(v.toFixed(3)) : v; // Round numbers to 3 decimal places for consistency
-
-    const parts = [type, round(x0), round(y0), round(x1), round(y1)];
-    return parts.join('|');
+let drawCounter = 0;
+function newDrawKey(type: string): string {
+    return `${type}|${Date.now().toString(36)}-${(drawCounter++).toString(36)}`;
 }
 
 let playerLineCounter = 0;
@@ -98,56 +91,27 @@ export default class AnnotationStore {
         this.update_active_annotation(currentFrame)
     }
 
-    deletePlayerLineAnnotations(playerLineShapes: any, currentFrame: number){
-        // Delete player line annotations that do not exist anymore
-        for (const [key, annotation] of this.active_annotations.entries()) {
-            if (annotation.type !== 'playerLine') continue;
-            const isPresent = playerLineShapes.some((shape: any) => shape.name === `Player1:${annotation.shape.players[0]},Player2:${annotation.shape.players[1]}`);
-            if (!isPresent) {
-                logger.info("Removed player line annotation for players:", annotation.shape.players, "at frame:", currentFrame);
-                if (annotation.frameStart === currentFrame) {
-                    this.discardAnnotation(key);
-                    continue;
-                }
-                annotation.frameEnd = currentFrame;
-            }
-        }
+    addDrawAnnotation(shape: DrawShape, currentFrame: number) {
+        // A rectangle or line drawn on the pitch. Shapes saved before they were drawn by PitchKit are Plotly
+        // shape objects, which carry the same type and corners, so both load alike.
+        logger.info("Added draw annotation at frame:", currentFrame);
+        this.annotations.set(newDrawKey(shape.type), {
+            type: 'draw',
+            frameStart: currentFrame,
+            frameEnd: undefined,
+            shape: { ...shape },
+        });
         this.update_active_annotation(currentFrame)
     }
 
-    addOrDeleteDrawShapes(drawShapes: any, currentFrame: number){
-        // Delete draw shapes that do not exist anymore
-        for (const [key, annotation] of this.active_annotations.entries()) {
-            if (annotation.type !== 'draw') continue;
-            const isPresent = drawShapes.some((shape: any) => createShapeKey(shape, currentFrame) === key);
-            if (!isPresent) {
-                logger.info("Removed draw annotation at frame:", currentFrame);
-                if (annotation.frameStart === currentFrame) {
-                    this.discardAnnotation(key);
-                    continue;
-                }
-                annotation.frameEnd = currentFrame;
-            }
-        }
-
-        // Add new draw shapes that have been captured
-        for (const shape of drawShapes) {
-            const uniqueKey = createShapeKey(shape, currentFrame);
-            if (this.active_annotations.has(uniqueKey)) continue;
-            logger.info("Added draw annotation at frame:", currentFrame);
-            const annotation: Annotation = {
-                type: 'draw',
-                frameStart: currentFrame,
-                shape: shape
-            };
-            this.annotations.set(uniqueKey, annotation);
-        }
-        this.update_active_annotation(currentFrame)
-
+    updateAnnotationGeometry(key: string, geometry: Segment) {
+        // Moves or reshapes a drawn shape or an arrow over its whole range, keeping anything else it carries.
+        const annotation = this.annotations.get(key);
+        if (!annotation || (annotation.type !== 'draw' && annotation.type !== 'arrow')) return;
+        annotation.shape = { ...annotation.shape, ...geometry };
     }
 
     addArrowAnnotation(x0: number, y0: number, x1: number, y1: number, currentFrame: number) {
-        // Arrows are drawn by PitchKit rather than Plotly, so they never pass through handleAnnotationRelayout
         logger.info("Added arrow annotation at frame:", currentFrame);
         this.annotations.set(newArrowKey(), {
             type: 'arrow',
@@ -160,7 +124,6 @@ export default class AnnotationStore {
 
     setTeamShapePlayers(key: string | null, players: number[], currentFrame: number): string | null {
         // Creates the team shape `key` or changes the players it is drawn around, and returns its key.
-        // Team shapes are drawn by PitchKit rather than Plotly, so they never pass through handleAnnotationRelayout.
         // With too few players left to enclose an area the shape is dropped and null returned.
         const existing = key ? this.annotations.get(key) : undefined;
         if (players.length < MIN_TEAM_SHAPE_PLAYERS) {
@@ -189,8 +152,10 @@ export default class AnnotationStore {
             .map(([key, annotation]) => ({ key, players: annotation.shape.players }));
     }
 
-    getArrowAnnotations(_currentFrame: number): Array<{ x0: number; y0: number; x1: number; y1: number }> {
-        return Array.from(this.active_annotations.values()).filter(annotation => annotation.type === 'arrow').map(annotation => annotation.shape);
+    getArrowAnnotations(_currentFrame: number): Array<Segment & { key: string }> {
+        return Array.from(this.active_annotations.entries())
+            .filter(([, annotation]) => annotation.type === 'arrow')
+            .map(([key, annotation]) => ({ key, x0: annotation.shape.x0, y0: annotation.shape.y0, x1: annotation.shape.x1, y1: annotation.shape.y1 }));
     }
 
     getPlayerLineAnnotations(_currentFrame: number): Array<{ key: string; players: [number, number] }> {
@@ -199,8 +164,10 @@ export default class AnnotationStore {
             .map(([key, annotation]) => ({ key, players: annotation.shape.players }));
     }
 
-    getDrawAnnotations(_currentFrame: number) {
-        return Array.from(this.active_annotations.values()).filter(annotation => annotation.type === 'draw').map(annotation => annotation.shape);
+    getDrawAnnotations(_currentFrame: number): Array<{ key: string; shape: DrawShape }> {
+        return Array.from(this.active_annotations.entries())
+            .filter(([, annotation]) => annotation.type === 'draw' && (annotation.shape.type === 'rect' || annotation.shape.type === 'line'))
+            .map(([key, { shape }]) => ({ key, shape: { type: shape.type, x0: shape.x0, y0: shape.y0, x1: shape.x1, y1: shape.y1 } }));
     }
 
     getAllAnnotations(): Array<{ key: string; type: string; frameStart: number; frameEnd: number | null; shape: any }> {
@@ -228,8 +195,8 @@ export default class AnnotationStore {
     }
 
     endAnnotation(key: string, currentFrame: number) {
-        // Erases an annotation from this frame on (used for annotations drawn outside Plotly, such as team
-        // shapes), the way erasing a Plotly shape does: one made on this very frame is never stored.
+        // Erases an annotation from this frame on, so it still shows before it; one made on this very frame
+        // is never stored.
         const annotation = this.annotations.get(key);
         if (!annotation) return;
         logger.info("Ended annotation", key, "at frame:", currentFrame);
@@ -274,17 +241,6 @@ export default class AnnotationStore {
     describeAnnotationStore(){
         console.log('Active Annotations:', this.active_annotations)
         console.log('All Annotations:', this.annotations)
-    }
-
-    handleAnnotationRelayout(eventData: any, currentFrame: number) {
-        const shapes = eventData["shapes"] || [];
-        // Player lines are generated by PlotComponent and always named 'Player1:...'. Hand-drawn shapes
-        // are unnamed. (Don't test shape.label: Plotly may populate it with defaults on drawn shapes.)
-        const isPlayerLine = (shape: any) => typeof shape.name === 'string' && shape.name.startsWith('Player1:');
-        const playerLineShapes = shapes.filter(isPlayerLine);
-        const drawShapes = shapes.filter((shape: any) => !isPlayerLine(shape));
-        this.deletePlayerLineAnnotations(playerLineShapes, currentFrame);
-        this.addOrDeleteDrawShapes(drawShapes, currentFrame);
     }
 
 }

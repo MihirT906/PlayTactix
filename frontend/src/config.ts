@@ -54,12 +54,6 @@ export const APP_CONFIG = {
 		highlightRingWidth: 1,
 		paperBackgroundColor: '#ffffff',
 		plotBackgroundColor: '#ffffff',
-		modeBarButtonsToAdd: ['eraseshape'] as const,
-		modeBarButtonsToRemove: [
-			'zoom2d', 'pan2d', 'select2d', 'lasso2d', 'zoomIn2d', 'zoomOut2d',
-			'autoScale2d', 'resetScale2d', 'hoverClosestCartesian', 'hoverCompareCartesian',
-			'toggleSpikelines', 'toImage',
-		] as const,
 		ballMarkerSize: 7,
 		ballMarkerColor: '#FFFFFF',
 	},

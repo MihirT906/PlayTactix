@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { usePitch } from '@pitchkit/react'
 import { PitchPill, SnappingEdge, type Point } from './pitchFx'
-import { advanceAnimations, animationProgress, prefersReducedMotion, type StartedAt } from '../plot/fxAnimation'
+import { ENTRANCE_DURATION, advanceAnimations, animationProgress, entranceScale, prefersReducedMotion, type StartedAt } from '../plot/fxAnimation'
 
 // A line between two players, in pitch metres.
 export type PlayerLink = { key: string; a: Point; b: Point }
@@ -10,13 +10,9 @@ export type PlayerLink = { key: string; a: Point; b: Point }
 // to, or to the cursor.
 export type LinkDraft = { from: Point; to: Point }
 
-const TAUT_DURATION = 450 // ms for a new line to pull straight
 const SNAP_DURATION = 250 // ms for a removed line's halves to recoil
-const SLACK = 0.18 // How far a new line sags at first, as a share of its length
-const SLACK_MAX = 40 // pixels
-const SPRING_DECAY = 110 // ms
-const SPRING_PERIOD = 300 // ms
-const PILL_DELAY = '250ms' // The pill pops in as the line finishes pulling taut
+const FADE_IN = 150 // ms for a new line to fade in as it grows
+const PILL_DELAY = '450ms' // The pill pops in as the line settles
 
 // Tension: a line is thickest between players close together and thins as they move apart.
 const CLOSE_DISTANCE = 5 // metres
@@ -34,10 +30,10 @@ const distanceText = (a: Point, b: Point) => `${Math.hypot(b.x - a.x, b.y - a.y)
 
 type Leaving = PlayerLink & { startedAt: StartedAt }
 
-// Player links drawn on a PitchKit layer, so they can animate. A new line appears slack and springs
-// taut; a removed one breaks in the middle and its halves recoil into their players. Its thickness
-// follows the gap between the players, with the distance in a pill at the middle. Plotly keeps an
-// invisible copy of each line on top for selecting and erasing it. Must be rendered inside a <Pitch>.
+// Player links drawn on a PitchKit layer, so they can animate. A new line grows from its middle out past
+// its players and springs back to them, the way a new team shape inflates; a removed one breaks in the
+// middle and its halves recoil into their players. Its thickness follows the gap between the players,
+// with the distance in a pill at the middle. Must be rendered inside a <Pitch>.
 const PlayerLinks: React.FC<{
   links: PlayerLink[]
   selectedKey: string | null
@@ -46,7 +42,7 @@ const PlayerLinks: React.FC<{
 }> = ({ links, selectedKey, draft, color }) => {
   const { transform } = usePitch()
   const [previousLinks, setPreviousLinks] = useState(links)
-  const [tightening, setTightening] = useState<Map<string, { startedAt: StartedAt }>>(new Map())
+  const [growing, setGrowing] = useState<Map<string, { startedAt: StartedAt }>>(new Map())
   const [leaving, setLeaving] = useState<Map<string, Leaving>>(new Map())
   const [now, setNow] = useState(0)
 
@@ -61,7 +57,7 @@ const PlayerLinks: React.FC<{
       const added = links.filter((link) => !previousKeys.has(link.key))
       const removed = previousLinks.filter((link) => !keys.has(link.key))
       if (added.length > 0) {
-        setTightening((prev) => new Map([...prev, ...added.map((link) => [link.key, { startedAt: null }] as const)]))
+        setGrowing((prev) => new Map([...prev, ...added.map((link) => [link.key, { startedAt: null }] as const)]))
       }
       if (removed.length > 0 || [...leaving.keys()].some((key) => keys.has(key))) {
         setLeaving((prev) => new Map([
@@ -73,12 +69,12 @@ const PlayerLinks: React.FC<{
   }
 
   // Re-renders every animation frame while anything animates, dropping each animation once it is over.
-  const animating = tightening.size > 0 || leaving.size > 0
+  const animating = growing.size > 0 || leaving.size > 0
   useEffect(() => {
     if (!animating) return
     let id = requestAnimationFrame(function tick(time) {
       setNow(time)
-      setTightening((prev) => advanceAnimations(prev, time, TAUT_DURATION))
+      setGrowing((prev) => advanceAnimations(prev, time, ENTRANCE_DURATION))
       setLeaving((prev) => advanceAnimations(prev, time, SNAP_DURATION))
       id = requestAnimationFrame(tick)
     })
@@ -96,24 +92,21 @@ const PlayerLinks: React.FC<{
     const width = lineWidthAt(Math.hypot(link.b.x - link.a.x, link.b.y - link.a.y))
     const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }
 
-    // Slack: the middle of the line is pulled sideways and springs back through straight to rest.
-    const startedAt = tightening.get(link.key)?.startedAt
+    // Growing: both ends spring out from the middle, past the players, and back to them.
+    const startedAt = growing.get(link.key)?.startedAt
     const age = startedAt === undefined ? Infinity : startedAt === null ? 0 : now - startedAt
-    const length = Math.hypot(b.x - a.x, b.y - a.y)
-    const sag = age < TAUT_DURATION
-      ? Math.min(SLACK * length, SLACK_MAX) * Math.exp(-age / SPRING_DECAY) * Math.cos((2 * Math.PI * age) / SPRING_PERIOD)
-      : 0
-    const normal = length > 0 ? { x: -(b.y - a.y) / length, y: (b.x - a.x) / length } : { x: 0, y: 0 }
-    // A quadratic curve passes through half its control point's offset, so double it for the sag.
-    const control = { x: mid.x + normal.x * sag * 2, y: mid.y + normal.y * sag * 2 }
-    const path = `M ${a.x} ${a.y} Q ${control.x} ${control.y} ${b.x} ${b.y}`
+    const scale = entranceScale(age)
+    const endOf = (end: Point) => ({ x: mid.x + (end.x - mid.x) * scale, y: mid.y + (end.y - mid.y) * scale })
+    const start = endOf(a)
+    const end = endOf(b)
+    const path = `M ${start.x} ${start.y} L ${end.x} ${end.y}`
 
     return (
       <g key={link.key} style={{ '--pill-delay': PILL_DELAY } as React.CSSProperties}>
         {link.key === selectedKey && (
           <path d={path} fill="none" stroke="#ffffff" strokeOpacity={0.45} strokeWidth={width + SELECTED_HALO_WIDTH * 2} strokeLinecap="round" />
         )}
-        <path d={path} fill="none" stroke={color} strokeWidth={width} strokeLinecap="round" opacity={Math.min(1, age / 80)} />
+        <path d={path} fill="none" stroke={color} strokeWidth={width} strokeLinecap="round" opacity={Math.min(1, age / FADE_IN)} />
         <PitchPill x={mid.x} y={mid.y} text={distanceText(link.a, link.b)} color={color} className="pitch-fx-pill-in" />
       </g>
     )

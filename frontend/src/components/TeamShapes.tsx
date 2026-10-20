@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { usePitch } from '@pitchkit/react'
 import { PitchPill, SnappingEdge, type Point } from './pitchFx'
-import { advanceAnimations, animationProgress, prefersReducedMotion, type StartedAt } from '../plot/fxAnimation'
+import { ENTRANCE_DURATION, advanceAnimations, animationProgress, entranceScale, prefersReducedMotion, type StartedAt } from '../plot/fxAnimation'
 import { alignPolygon, blockSize, convexHull, polygonArea, polygonCentroid, resamplePolygon } from '../plot/overlays/teamShapeOverlay'
 
 // A team shape: the hull around its players' positions, in pitch metres.
@@ -11,9 +11,6 @@ export type TeamShapeMark = { key: string; players: number[]; points: Point[]; c
 // line while there are only two players.
 export type TeamShapeGhost = { key: string; points: Point[]; color: string }
 
-const INFLATE_DURATION = 550 // ms for a new shape's fill to swell past its outline and settle
-const INFLATE_DECAY = 80 // ms
-const INFLATE_PERIOD = 360 // ms
 const OUTLINE_FADE_IN = 150 // ms
 const MORPH_DURATION = 350 // ms for a shape to reshape after a player is added or let go
 const MORPH_SAMPLES = 64 // Points round the outline while morphing, so hulls of any corner count blend
@@ -108,7 +105,7 @@ const TeamShapes: React.FC<{
     if (!animating) return
     let id = requestAnimationFrame(function tick(time) {
       setNow(time)
-      setInflating((prev) => advanceAnimations(prev, time, INFLATE_DURATION))
+      setInflating((prev) => advanceAnimations(prev, time, ENTRANCE_DURATION))
       setMorphs((prev) => advanceAnimations(prev, time, MORPH_DURATION))
       setLeaving((prev) => advanceAnimations(prev, time, SNAP_DURATION))
       id = requestAnimationFrame(tick)
@@ -129,9 +126,7 @@ const TeamShapes: React.FC<{
     // Inflating: the fill swells from the centre past the outline, then springs back to it.
     const startedAt = inflating.get(shape.key)?.startedAt
     const age = startedAt === undefined ? Infinity : startedAt === null ? 0 : now - startedAt
-    const scale = age < INFLATE_DURATION
-      ? 1 - Math.exp(-age / INFLATE_DECAY) * Math.cos((2 * Math.PI * age) / INFLATE_PERIOD)
-      : 1
+    const scale = entranceScale(age)
     const fill = outline.map((point) => ({ x: centre.x + (point.x - centre.x) * scale, y: centre.y + (point.y - centre.y) * scale }))
 
     const { width, depth } = blockSize(shape.points)

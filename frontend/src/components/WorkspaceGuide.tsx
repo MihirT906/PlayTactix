@@ -175,7 +175,9 @@ const DOCS: { title: string; body: ReactNode }[] = [
             <strong>Draw Line</strong>: drag on the pitch to draw a line.
           </li>
           <li>
-            <strong>Erase</strong>: click a shape you drew to select it, then press Erase.
+            <strong>Select and erase</strong>: with no tool on, click a rectangle, line, arrow, player link or team
+            shape to select it, then press Erase. A selected rectangle, line or arrow can be moved by dragging it, or
+            reshaped by dragging its handles.
           </li>
         </ul>
         <p>

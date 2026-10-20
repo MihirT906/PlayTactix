@@ -20,7 +20,20 @@ import FocusSpotlight from './FocusSpotlight'
 import PlayerLinks, { type PlayerLink } from './PlayerLinks'
 import TeamShapes, { type TeamShapeGhost, type TeamShapeMark } from './TeamShapes'
 import { SnapRing, type SnapTarget } from './pitchFx'
-import { convexHull, polygonArea, polygonContains } from '../plot/overlays/teamShapeOverlay'
+import { DrawnShapes, EditHandles, SelectionHalo } from './DrawnMarks'
+import { convexHull } from '../plot/overlays/teamShapeOverlay'
+import {
+  applyMarkEdit,
+  hitTest,
+  markHandles,
+  rectCorners,
+  type DrawShape,
+  type EditableMark,
+  type HitTarget,
+  type MarkEdit,
+  type Point,
+  type Segment,
+} from '../plot/annotationGeometry'
 
 import { getLogger } from "../services/logger";
 
@@ -52,7 +65,7 @@ const PITCHKIT_STYLE = {
 const BACKDROP_STYLE: React.CSSProperties = { position: 'absolute', inset: 0, pointerEvents: 'none', background: PLOT_BACKGROUND }
 const BACKDROP_PLOT_AREA_STYLE: React.CSSProperties = { position: 'absolute', inset: PLOT_MARGIN, background: PLOT_BACKGROUND }
 
-// A see-through PitchKit pitch stacked with the Plotly plot: it only carries PitchKit marks (arrow annotations, team shapes, sequence trails, the event map, voronoi cells, the focus spotlight).
+// A see-through PitchKit pitch stacked with the Plotly plot: it only carries PitchKit marks (annotations, sequence trails, the event map, voronoi cells, the focus spotlight).
 const ARROW_LAYER_STYLE = {
   position: 'absolute',
   top: 0,
@@ -62,18 +75,22 @@ const ARROW_LAYER_STYLE = {
   '--pitch-stripe': 'transparent',
   '--pitch-lines': 'transparent',
 } as React.CSSProperties
-// Catches the drag that draws an arrow, so Plotly doesn't start a selection underneath.
-const ARROW_CAPTURE_STYLE: React.CSSProperties = { position: 'absolute', inset: 0, cursor: 'crosshair' }
-const MIN_ARROW_LENGTH = 1 // metres; anything shorter is treated as a stray click
+// The drawing tools: each draws its mark by dragging on the pitch, press for the start and release for the end.
+const DRAW_TOOLS: Partial<Record<string, 'arrow' | 'rect' | 'line'>> = { draw_arrow: 'arrow', draw_rect: 'rect', draw_line: 'line' }
+// Catches the drag that draws a mark, so Plotly doesn't start a selection underneath.
+const DRAW_CAPTURE_STYLE: React.CSSProperties = { position: 'absolute', inset: 0, cursor: 'crosshair' }
+const MIN_DRAW_SIZE = 1 // metres; a shorter drag is treated as a stray click
 // Catches the pointer for the tools that pick players (Link Players, Team Shape), which snap to the
 // nearest player rather than needing a click right on one.
 const PICK_TOOLS = ['draw_line_players', 'team_shape']
 const PICK_CAPTURE_STYLE: React.CSSProperties = { position: 'absolute', inset: 0 }
 const PICK_SNAP_RADIUS = 3 // metres
-// Link lines are drawn by PitchKit; Plotly keeps an invisible copy of each, this wide, to click to select and erase.
-const LINK_HIT_WIDTH = 10
+// With no tool on, a click selects the annotation under it, to erase or (for a rectangle, line or arrow)
+// to move by dragging it and reshape by dragging its handles.
+const SELECT_TOLERANCE_PX = 6 // How near a line or arrow a click must be to select it
+const HANDLE_HIT_RADIUS_PX = 8
 
-type ArrowShape = { x0: number; y0: number; x1: number; y1: number }
+type Draft = Segment & { tool: 'arrow' | 'rect' | 'line' } // A mark being dragged out, not yet in the store
 
 // Plot-relative pixels -> pitch metres, the inverse of the Plotly axis mapping set up in the layout below.
 const pixelToPitch = (px: number, py: number) => {
@@ -85,19 +102,28 @@ const pixelToPitch = (px: number, py: number) => {
   }
 }
 
+// Pitch metres -> plot-relative pixels, the inverse of pixelToPitch (without its clamping).
+const pitchToPixel = ({ x, y }: Point): Point => ({
+  x: PLOT_MARGIN + ((x + X_HALF_RANGE) / (2 * X_HALF_RANGE)) * (PLOT_WIDTH - 2 * PLOT_MARGIN),
+  y: PLOT_MARGIN + ((Y_HALF_RANGE - y) / (2 * Y_HALF_RANGE)) * (PLOT_HEIGHT - 2 * PLOT_MARGIN),
+})
+
+// Where a pointer event is, in pixels relative to the plot element.
+const pixelIn = (element: Element, e: { clientX: number; clientY: number }): Point => {
+  const rect = element.getBoundingClientRect()
+  return { x: e.clientX - rect.left, y: e.clientY - rect.top }
+}
+
 const CLICK_SLOP_PX = 4 // A press that moves further than this is a drag, not a click
 
-// The index in the frame of the player whose marker is at (mx, my), pixels within the graph div, or -1.
-const playerIndexAtPixel = (gd: any, fd: FrameData, overrides: Map<number, { x: number; y: number }>, mx: number, my: number, radius: number) => {
-  const xa = gd._fullLayout.xaxis
-  const ya = gd._fullLayout.yaxis
+// The index in the frame of the player whose marker is at `point` (plot-relative pixels), or -1.
+const playerIndexAtPixel = (fd: FrameData, overrides: Map<number, { x: number; y: number }>, point: Point, radius: number) => {
   let hitIndex = -1
   let bestDist = radius
   fd.players.player_id.forEach((playerId, i) => {
     const override = overrides.get(playerId)
-    const px = xa.c2p(override?.x ?? fd.players.x[i]) + xa._offset
-    const py = ya.c2p(override?.y ?? fd.players.y[i]) + ya._offset
-    const dist = Math.hypot(px - mx, py - my)
+    const marker = pitchToPixel({ x: override?.x ?? fd.players.x[i], y: override?.y ?? fd.players.y[i] })
+    const dist = Math.hypot(marker.x - point.x, marker.y - point.y)
     if (dist <= bestDist) {
       bestDist = dist
       hitIndex = i
@@ -106,34 +132,13 @@ const playerIndexAtPixel = (gd: any, fd: FrameData, overrides: Map<number, { x: 
   return hitIndex
 }
 
-// The key of the team shape at (mx, my), pixels within the graph div; of overlapping ones, the smallest.
-const teamShapeAtPixel = (gd: any, shapes: TeamShapeMark[], mx: number, my: number) => {
-  const xa = gd._fullLayout.xaxis
-  const ya = gd._fullLayout.yaxis
-  const point = { x: xa.p2c(mx - xa._offset), y: ya.p2c(my - ya._offset) }
-  let hitKey: string | null = null
-  let smallestArea = Infinity
-  for (const shape of shapes) {
-    const hull = convexHull(shape.points)
-    const area = polygonArea(hull)
-    if (area < smallestArea && polygonContains(hull, point)) {
-      smallestArea = area
-      hitKey = shape.key
-    }
-  }
-  return hitKey
-}
+// Which of the selected mark's handles is at `point` (plot-relative pixels), or -1.
+const handleIndexAtPixel = (mark: EditableMark, point: Point) =>
+  markHandles(mark).map(pitchToPixel).findIndex((handle) => Math.hypot(handle.x - point.x, handle.y - point.y) <= HANDLE_HIT_RADIUS_PX)
 
-// Plotly bug workaround: every frame change hands Plotly new data arrays, so it does a full redraw, and a
-// full redraw (shapes.draw) clears the 'above' and 'below' shape layers but never the 'between' layer that
-// player lines are drawn in. Any 'between' shape whose index no longer exists in layout.shapes (a line
-// scrubbed back past its start, or the clip looping) is therefore left on the canvas frozen, on every frame.
-// Sweep those orphans after each update; indices that still exist are redrawn by Plotly itself.
-const removeOrphanedBetweenShapes = (gd: HTMLElement, shapeCount: number) => {
-  gd.querySelectorAll('.layer-between .shapelayer [data-index]').forEach((node) => {
-    if (Number(node.getAttribute('data-index')) >= shapeCount) node.remove()
-  })
-}
+// Whether `point` is on the mark itself, by the same test a click selects it with.
+const isOnMark = (mark: EditableMark, targets: HitTarget[], point: Point) =>
+  hitTest(targets.filter((target) => target.key === mark.key), point, SELECT_TOLERANCE_PX) === mark.key
 
 interface PlotComponentProps {
   currentFrame: number
@@ -159,15 +164,13 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
   // const [focusEnabled, setFocusEnabled] = useState(false) // 'Player Focus' mode toggled to draw lines
   // Bumped whenever the annotation store is edited from this component, so the derived lines/shapes below recompute
   const [annotationTick, setAnnotationTick] = useState(0)
-  const [dragMode, setDragMode] = useState<string>('select')
-  const [draftArrow, setDraftArrow] = useState<ArrowShape | null>(null) // Arrow being dragged out, not yet in the store
+  const [draft, setDraft] = useState<Draft | null>(null)
   const [pickCursor, setPickCursor] = useState<{ x: number; y: number } | null>(null) // Pointer in pitch metres, while a pick tool is on
-  const [activeShapeIndex, setActiveShapeIndex] = useState<number | null>(null) // The shape Plotly has selected, for erasing
-  // The team shape selected for erasing. Team shapes are drawn by PitchKit, so they are selected here
-  // rather than by Plotly; at most one of the two selections is ever set.
-  const [selectedTeamShapeKey, setSelectedTeamShapeKey] = useState<string | null>(null)
-  const pointerDownRef = useRef<{ clientX: number; clientY: number; onPlotlyShape: boolean } | null>(null)
-  const teamShapesRef = useRef<TeamShapeMark[]>([])
+  const [selectedKey, setSelectedKey] = useState<string | null>(null) // The annotation selected to erase or edit
+  // The press on the plot being followed to tell a click (which selects) from a drag; `editing` once it
+  // moves or reshapes the selected mark.
+  const pointerDownRef = useRef<{ clientX: number; clientY: number; editing: boolean } | null>(null)
+  const editDragRef = useRef<{ mark: EditableMark; edit: MarkEdit } | null>(null)
   const [overlayTraces, setOverlayTraces] = useState<any[]>([]);
   // Temporary, visualisation-only position edits keyed by player id. These are
   // layered on top of frameData while playback is paused and are wiped whenever
@@ -179,8 +182,10 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
   const dragStateRef = useRef<{ playerId: number } | null>(null)
   // Latest values the imperative pointer handlers need, kept in a ref so the
   // handlers can stay referentially stable (bound once to the graph div).
-  const dragDepsRef = useRef({ frameData, isPlaying, positionOverrides, editMode: session.ui.editMode })
-  dragDepsRef.current = { frameData, isPlaying, positionOverrides, editMode: session.ui.editMode }
+  const dragDepsRef = useRef({ frameData, isPlaying, positionOverrides, editMode: session.ui.editMode, annotationStore, onAnnotationUpdate })
+  dragDepsRef.current = { frameData, isPlaying, positionOverrides, editMode: session.ui.editMode, annotationStore, onAnnotationUpdate }
+  // What a click on the plot can select, and the mark selected to edit, for the same handlers.
+  const selectionRef = useRef<{ targets: HitTarget[]; selectedMark: EditableMark | null }>({ targets: [], selectedMark: null })
   const image_src = backgroundImage; // Set the background image source
   // A type can have several segments on the clip; it shows when any of them covers this frame.
   const isPitchBackgroundActive = findOverlayAt(session.playback.clip, 'pitch', clipFrame) !== undefined
@@ -457,25 +462,9 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     setPositionOverrides((prev) => (prev.size > 0 ? new Map() : prev))
   }, [frameData, clipFrame])
 
-  // Syncs Plotly's dragmode with the sidebar's 'Draw Rectangle' toggle
-  useEffect(() => {
-    if (editMode === 'draw_rect') {
-      setDragMode('drawrect')
-    } 
-    else if (editMode === 'draw_line'){
-      setDragMode('drawline')
-    }
-    // else if (dragMode === 'drawrect') {
-    //   setDragMode('select')
-    // }
-    else {
-      setDragMode('select')
-    }
-  }, [editMode])
-
   // Switching tools (not just pausing one for playback) ends what the previous tool was building.
   useEffect(() => {
-    setSelectedTeamShapeKey(null)
+    setSelectedKey(null)
     // Leaving 'Team Shape' finishes the shape being built; the next one starts from no players.
     if (selectedTool !== 'team_shape') {
       shapeKeyRef.current = null
@@ -517,14 +506,11 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     return team === 'home' ? homeTeamColor : team === 'away' ? awayTeamColor : plotConfig.teamShapeColor
   }
 
-  // Annotation shapes for the current frame, derived (never stored) so they cannot go stale: the
-  // store's active set is rebuilt for this clip frame, and player lines are placed from this frame's
-  // positions. Lines whose players aren't in the frame (e.g. missing data) are skipped.
-  const { lines, links, shapes, arrows, teamShapes } = useMemo(() => {
+  // Annotations for the current frame, derived (never stored) so they cannot go stale: the store's
+  // active set is rebuilt for this clip frame, and player lines are placed from this frame's positions.
+  // Lines whose players aren't in the frame (e.g. missing data) are skipped.
+  const { links, shapes, arrows, teamShapes } = useMemo(() => {
     annotationStore.reconstruct_active_annotations(clipFrame)
-    // Each player line twice: PitchKit draws it (links) and Plotly holds an invisible copy (lines) to select
-    // and erase it by. The two stay index-aligned.
-    const lines: any[] = []
     const links: PlayerLink[] = []
     for (const { key, players: [firstPoint, secondPoint] } of annotationStore.getPlayerLineAnnotations(clipFrame)) {
       if (firstPoint === undefined || secondPoint === undefined) continue
@@ -533,20 +519,6 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
       if (x0 === undefined || y0 === undefined || x1 === undefined || y1 === undefined) continue
 
       links.push({ key, a: { x: x0, y: y0 }, b: { x: x1, y: y1 } })
-      lines.push({
-        type: 'line',
-        layer: 'between',
-        x0,
-        y0,
-        x1,
-        y1,
-        line: {
-          color: 'rgba(0, 0, 0, 0)',
-          width: LINK_HIT_WIDTH,
-        },
-        editable: true,
-        name: `Player1:${firstPoint},Player2:${secondPoint}`, // Using this name to identify the players connected by the line
-      })
     }
     // A team shape is the hull around its players' positions in this frame. It needs three of them in
     // the frame to enclose an area.
@@ -555,20 +527,34 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
       return points.length < 3 ? [] : [{ key, players, points, color: teamShapeColor(players) }]
     })
     return {
-      lines,
       links,
-      shapes: Array.from(annotationStore.getDrawAnnotations(clipFrame)) as any[],
+      shapes: annotationStore.getDrawAnnotations(clipFrame),
       arrows: annotationStore.getArrowAnnotations(clipFrame),
       teamShapes,
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [annotationStore, clipFrame, frameData, positionOverrides, annotationTick, annotationVersion, homeTeamColor, awayTeamColor])
 
-  // Plotly's selected shape, when it is one of the player lines (they come first in layout.shapes).
-  const selectedLinkKey = activeShapeIndex !== null && activeShapeIndex < links.length ? links[activeShapeIndex].key : null
-  // A selected team shape that has since gone (its bar ended, or it was deleted) is no longer selected.
-  const selectedShapeKey = teamShapes.some((shape) => shape.key === selectedTeamShapeKey) ? selectedTeamShapeKey : null
-  teamShapesRef.current = teamShapes
+  // The rectangles, lines and arrows, which can be moved and reshaped once selected.
+  const editableMarks = useMemo((): EditableMark[] => [
+    ...shapes.map(({ key, shape }) => ({ key, kind: shape.type, geometry: shape })),
+    ...arrows.map(({ key, ...geometry }) => ({ key, kind: 'arrow' as const, geometry })),
+  ], [shapes, arrows])
+
+  // Everything a click can select, in pixels: marks and player lines by their lines, rectangles and
+  // team shapes by their areas.
+  const hitTargets = useMemo((): HitTarget[] => [
+    ...editableMarks.map(({ key, kind, geometry }): HitTarget => (kind === 'rect'
+      ? { key, polygon: rectCorners(geometry).map(pitchToPixel) }
+      : { key, segment: [pitchToPixel({ x: geometry.x0, y: geometry.y0 }), pitchToPixel({ x: geometry.x1, y: geometry.y1 })] })),
+    ...links.map((link): HitTarget => ({ key: link.key, segment: [pitchToPixel(link.a), pitchToPixel(link.b)] })),
+    ...teamShapes.map((shape): HitTarget => ({ key: shape.key, polygon: convexHull(shape.points).map(pitchToPixel) })),
+  ], [editableMarks, links, teamShapes])
+
+  // A selected annotation that has since gone (its bar ended, or it was deleted) is no longer selected.
+  const activeSelectedKey = hitTargets.some((target) => target.key === selectedKey) ? selectedKey : null
+  const selectedMark = editableMarks.find((mark) => mark.key === activeSelectedKey) ?? null
+  selectionRef.current = { targets: hitTargets, selectedMark }
 
   // While a pick tool is on, the visible player nearest the pointer, if close enough to pick. Link
   // Players leaves out the first player already picked.
@@ -686,15 +672,9 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
   const onDragMove = useCallback((e: MouseEvent) => {
     const drag = dragStateRef.current
     const gd = graphDivRef.current
-    if (!drag || !gd?._fullLayout) return
-    const xa = gd._fullLayout.xaxis
-    const ya = gd._fullLayout.yaxis
-    const rect = gd.getBoundingClientRect()
-    let x = xa.p2c(e.clientX - rect.left - xa._offset)
-    let y = ya.p2c(e.clientY - rect.top - ya._offset)
-    // Keep the player within the pitch bounds used by the layout axes
-    x = Math.max(-X_HALF_RANGE, Math.min(X_HALF_RANGE, x))
-    y = Math.max(-Y_HALF_RANGE, Math.min(Y_HALF_RANGE, y))
+    if (!drag || !gd) return
+    const point = pixelIn(gd, e)
+    const { x, y } = pixelToPitch(point.x, point.y) // Kept within the pitch bounds of the layout axes
     setPositionOverrides((prev) => {
       const next = new Map(prev)
       next.set(drag.playerId, { x, y })
@@ -702,158 +682,165 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     })
   }, [])
 
-  const onDragStart = useCallback((e: MouseEvent) => {
-    const { frameData: fd, isPlaying: playing, positionOverrides: overrides, editMode: mode } = dragDepsRef.current
-    // Only drag while paused and not in a click-driven edit mode (focus / lines)
-    if (playing || !fd || mode !== null) return
-    const gd = graphDivRef.current
-    if (!gd?._fullLayout) return
-    const rect = gd.getBoundingClientRect()
-    const hitIndex = playerIndexAtPixel(gd, fd, overrides, e.clientX - rect.left, e.clientY - rect.top, DRAG_HIT_RADIUS_PX)
-    if (hitIndex === -1) return // not on a player - let Plotly handle the event
-
-    e.stopPropagation()
-    e.preventDefault()
-    dragStateRef.current = { playerId: fd.players.player_id[hitIndex] }
-    gd.style.cursor = 'grabbing'
-    window.addEventListener('mousemove', onDragMove, true)
-    window.addEventListener('mouseup', endDrag, true)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [DRAG_HIT_RADIUS_PX, onDragMove, endDrag])
-
-  // Show a grab cursor when hovering a player while paused, and a pointer over a team shape to select
+  // While paused with no tool on, the cursor shows what a press would do: reshape the selected mark from
+  // a handle, drag a player, move the selected mark, or select an annotation.
   const onHoverCursor = useCallback((e: MouseEvent) => {
     const { frameData: fd, isPlaying: playing, positionOverrides: overrides, editMode: mode } = dragDepsRef.current
     const gd = graphDivRef.current
-    if (!gd?._fullLayout || dragStateRef.current) return
+    if (!gd || dragStateRef.current || editDragRef.current) return
     if (playing || !fd || mode !== null) {
       gd.style.cursor = ''
       return
     }
-    const rect = gd.getBoundingClientRect()
-    const mx = e.clientX - rect.left
-    const my = e.clientY - rect.top
-    if (playerIndexAtPixel(gd, fd, overrides, mx, my, DRAG_HIT_RADIUS_PX) !== -1) gd.style.cursor = 'grab'
-    else gd.style.cursor = teamShapeAtPixel(gd, teamShapesRef.current, mx, my) ? 'pointer' : ''
+    const point = pixelIn(gd, e)
+    const { targets, selectedMark: mark } = selectionRef.current
+    if (mark && handleIndexAtPixel(mark, point) !== -1) gd.style.cursor = 'crosshair'
+    else if (playerIndexAtPixel(fd, overrides, point, DRAG_HIT_RADIUS_PX) !== -1) gd.style.cursor = 'grab'
+    else if (mark && isOnMark(mark, targets, point)) gd.style.cursor = 'move'
+    else gd.style.cursor = hitTest(targets, point, SELECT_TOLERANCE_PX) ? 'pointer' : ''
   }, [DRAG_HIT_RADIUS_PX])
 
-  // Plotly selects a shape on click without any event, so its selection is read back after every
-  // redraw and click, for the PitchKit-drawn player lines to show it. A Plotly selection clears a team shape's.
-  const syncActiveShape = useCallback(() => {
-    const index = graphDivRef.current?._fullLayout?._activeShapeIndex
-    const active = typeof index === 'number' && index >= 0
-    setActiveShapeIndex(active ? index : null)
-    if (active) setSelectedTeamShapeKey(null)
+  // Moving or reshaping the selected mark: the store is updated as the pointer moves, over the mark's
+  // whole range, and the change reported once it is let go.
+  const endEdit = useCallback(() => {
+    editDragRef.current = null
+    window.removeEventListener('mousemove', onEditMove, true)
+    window.removeEventListener('mouseup', endEdit, true)
+    const gd = graphDivRef.current
+    if (gd) gd.style.cursor = ''
+    dragDepsRef.current.onAnnotationUpdate?.()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const onPointerDown = useCallback((e: MouseEvent) => {
-    const onPlotlyShape = e.target instanceof Element && e.target.closest('.shapelayer') !== null
-    pointerDownRef.current = { clientX: e.clientX, clientY: e.clientY, onPlotlyShape }
+  const onEditMove = useCallback((e: MouseEvent) => {
+    const drag = editDragRef.current
+    const gd = graphDivRef.current
+    if (!drag || !gd) return
+    const point = pixelIn(gd, e)
+    dragDepsRef.current.annotationStore.updateAnnotationGeometry(drag.mark.key, applyMarkEdit(drag.mark.kind, drag.edit, pixelToPitch(point.x, point.y)))
+    setAnnotationTick((tick) => tick + 1)
   }, [])
 
-  // A click with no tool on selects the team shape under it, or clears the selection on empty pitch.
-  // A click on a Plotly shape is Plotly's to select, and on a player leaves the selection alone. Runs a
-  // frame later, once Plotly has handled the click. Listened for on the window: Plotly covers the page
-  // with its own element while the button is down, so the release never reaches the graph div.
+  // With no tool on and playback paused, a press on the selected mark's handle reshapes it, on a player
+  // drags the player, and on the selected mark itself moves it. Anything else is left to Plotly. Every
+  // press is noted, so its release can tell whether it was a click.
+  const onPlotMouseDown = useCallback((e: MouseEvent) => {
+    const down = { clientX: e.clientX, clientY: e.clientY, editing: false }
+    pointerDownRef.current = down
+    const { frameData: fd, isPlaying: playing, positionOverrides: overrides, editMode: mode } = dragDepsRef.current
+    const gd = graphDivRef.current
+    if (playing || mode !== null || !gd) return
+    const point = pixelIn(gd, e)
+    const { targets, selectedMark: mark } = selectionRef.current
+
+    const startEdit = (editedMark: EditableMark, edit: MarkEdit, cursor: string) => {
+      e.stopPropagation()
+      e.preventDefault()
+      down.editing = true
+      editDragRef.current = { mark: editedMark, edit }
+      gd.style.cursor = cursor
+      window.addEventListener('mousemove', onEditMove, true)
+      window.addEventListener('mouseup', endEdit, true)
+    }
+
+    const handleIndex = mark ? handleIndexAtPixel(mark, point) : -1
+    if (mark && handleIndex !== -1) {
+      startEdit(mark, { kind: 'handle', index: handleIndex, original: mark.geometry }, 'crosshair')
+      return
+    }
+
+    const hitIndex = fd ? playerIndexAtPixel(fd, overrides, point, DRAG_HIT_RADIUS_PX) : -1
+    if (fd && hitIndex !== -1) {
+      e.stopPropagation()
+      e.preventDefault()
+      dragStateRef.current = { playerId: fd.players.player_id[hitIndex] }
+      gd.style.cursor = 'grabbing'
+      window.addEventListener('mousemove', onDragMove, true)
+      window.addEventListener('mouseup', endDrag, true)
+      return
+    }
+
+    if (mark && isOnMark(mark, targets, point)) {
+      startEdit(mark, { kind: 'move', from: pixelToPitch(point.x, point.y), original: mark.geometry }, 'move')
+    }
+  }, [DRAG_HIT_RADIUS_PX, onDragMove, endDrag, onEditMove, endEdit])
+
+  // A click with no tool on selects the annotation under it, or clears the selection on empty pitch; a
+  // click on a player leaves it alone. Listened for on the window: Plotly covers the page with its own
+  // element while the button is down, so the release never reaches the graph div.
   const onPlotMouseUp = useCallback((e: MouseEvent) => {
     const down = pointerDownRef.current
     if (down === null) return // The press began outside the plot
     pointerDownRef.current = null
-    requestAnimationFrame(() => {
-      const gd = graphDivRef.current
-      const { frameData: fd, positionOverrides: overrides, editMode: mode } = dragDepsRef.current
-      const isClick = Math.hypot(e.clientX - down.clientX, e.clientY - down.clientY) <= CLICK_SLOP_PX
-      if (isClick && down.onPlotlyShape) {
-        setSelectedTeamShapeKey(null)
-      } else if (isClick && mode === null && fd && gd?._fullLayout) {
-        const rect = gd.getBoundingClientRect()
-        const mx = down.clientX - rect.left
-        const my = down.clientY - rect.top
-        if (playerIndexAtPixel(gd, fd, overrides, mx, my, DRAG_HIT_RADIUS_PX) === -1) {
-          const key = teamShapeAtPixel(gd, teamShapesRef.current, mx, my)
-          if (key) gd._fullLayout._deactivateShape?.(gd)
-          setSelectedTeamShapeKey(key)
-        }
-      }
-      syncActiveShape()
-    })
-  }, [DRAG_HIT_RADIUS_PX, syncActiveShape])
+    const gd = graphDivRef.current
+    const { frameData: fd, positionOverrides: overrides, editMode: mode } = dragDepsRef.current
+    if (!gd || mode !== null || down.editing) return
+    if (Math.hypot(e.clientX - down.clientX, e.clientY - down.clientY) > CLICK_SLOP_PX) return
+    const point = pixelIn(gd, down)
+    if (fd && playerIndexAtPixel(fd, overrides, point, DRAG_HIT_RADIUS_PX) !== -1) return
+    setSelectedKey(hitTest(selectionRef.current.targets, point, SELECT_TOLERANCE_PX))
+  }, [DRAG_HIT_RADIUS_PX])
 
   // Bind the imperative pointer handlers once we have the Plotly graph div
-  const handleGraphDiv = useCallback((figure: any, gd: any) => {
-    if (!gd) return
-    removeOrphanedBetweenShapes(gd, figure?.layout?.shapes?.length ?? 0)
-    if (graphDivRef.current !== gd) {
-      graphDivRef.current = gd
-      gd.addEventListener('mousedown', onPointerDown, true)
-      gd.addEventListener('mousedown', onDragStart, true)
-      gd.addEventListener('mousemove', onHoverCursor)
-      window.addEventListener('mouseup', onPlotMouseUp, true)
-    }
-    syncActiveShape()
-  }, [onPointerDown, onDragStart, onHoverCursor, onPlotMouseUp, syncActiveShape])
+  const handleGraphDiv = useCallback((_figure: unknown, gd: any) => {
+    if (!gd || graphDivRef.current === gd) return
+    graphDivRef.current = gd
+    gd.addEventListener('mousedown', onPlotMouseDown, true)
+    gd.addEventListener('mousemove', onHoverCursor)
+    window.addEventListener('mouseup', onPlotMouseUp, true)
+  }, [onPlotMouseDown, onHoverCursor, onPlotMouseUp])
 
   useEffect(() => {
     return () => {
       const gd = graphDivRef.current
       if (!gd) return
-      gd.removeEventListener('mousedown', onPointerDown, true)
-      gd.removeEventListener('mousedown', onDragStart, true)
+      gd.removeEventListener('mousedown', onPlotMouseDown, true)
       gd.removeEventListener('mousemove', onHoverCursor)
       window.removeEventListener('mouseup', onPlotMouseUp, true)
       window.removeEventListener('mousemove', onDragMove, true)
       window.removeEventListener('mouseup', endDrag, true)
+      window.removeEventListener('mousemove', onEditMove, true)
+      window.removeEventListener('mouseup', endEdit, true)
     }
-  }, [onPointerDown, onDragStart, onHoverCursor, onDragMove, endDrag, onPlotMouseUp])
+  }, [onPlotMouseDown, onHoverCursor, onDragMove, endDrag, onPlotMouseUp, onEditMove, endEdit])
 
-  // Erasing the shape a user has clicked/selected on the plot (Plotly's own
-  // "active shape" concept) has no public JS API - the only place that logic
-  // lives is inside the click handler of Plotly's own 'eraseshape' modebar
-  // button (kept registered - see modeBarButtonsToAdd below - but hidden from
-  // view via CSS). So an external "Erase Active Shape" button elsewhere in the
-  // UI (see WorkspaceSidebar) can't call into Plotly directly; instead it
-  // reaches this component through resources.plotActions and we just click
-  // Plotly's own hidden button on its behalf, letting Plotly do the erase and
-  // emit the plotly_relayout that handleRelayout already knows how to handle.
-  // A selected team shape is erased here instead, from this frame on, as Plotly erases its own shapes.
+  // The sidebar's Erase erases the selected annotation from this frame on, so it still shows before it.
   useEffect(() => {
     resources.plotActions.eraseActiveShape = () => {
-      if (selectedShapeKey) {
-        annotationStore.endAnnotation(selectedShapeKey, clipFrame)
-        setSelectedTeamShapeKey(null)
-        setAnnotationTick((tick) => tick + 1)
-        onAnnotationUpdate?.()
-        return
-      }
-      const gd = graphDivRef.current
-      if (!gd) return
-      const eraseButton = gd.querySelector('.modebar-btn[data-title="Erase active shape"]') as HTMLElement | null
-      eraseButton?.click()
+      if (!activeSelectedKey) return
+      annotationStore.endAnnotation(activeSelectedKey, clipFrame)
+      setSelectedKey(null)
+      setAnnotationTick((tick) => tick + 1)
+      onAnnotationUpdate?.()
     }
     return () => {
       if (resources.plotActions.eraseActiveShape) resources.plotActions.eraseActiveShape = null
     }
-  }, [resources, selectedShapeKey, annotationStore, clipFrame, onAnnotationUpdate])
+  }, [resources, activeSelectedKey, annotationStore, clipFrame, onAnnotationUpdate])
 
-  // Draws an arrow by dragging on the pitch: press for the tail, release for the head
-  const handleArrowMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+  // Draws an arrow, rectangle or line by dragging on the pitch: press for its start (an arrow's tail, a
+  // rectangle's first corner), release for its end
+  const handleDrawMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    const tool = DRAW_TOOLS[editMode ?? '']
+    if (!tool) return
     e.preventDefault()
     const rect = e.currentTarget.getBoundingClientRect()
     const toPitch = (ev: { clientX: number; clientY: number }) => pixelToPitch(ev.clientX - rect.left, ev.clientY - rect.top)
     const start = toPitch(e)
     let end = start
-    setDraftArrow({ x0: start.x, y0: start.y, x1: end.x, y1: end.y })
+    setDraft({ tool, x0: start.x, y0: start.y, x1: end.x, y1: end.y })
 
     const onMove = (ev: MouseEvent) => {
       end = toPitch(ev)
-      setDraftArrow({ x0: start.x, y0: start.y, x1: end.x, y1: end.y })
+      setDraft({ tool, x0: start.x, y0: start.y, x1: end.x, y1: end.y })
     }
     const onUp = () => {
       window.removeEventListener('mousemove', onMove, true)
       window.removeEventListener('mouseup', onUp, true)
-      setDraftArrow(null)
-      if (Math.hypot(end.x - start.x, end.y - start.y) < MIN_ARROW_LENGTH) return
-      annotationStore.addArrowAnnotation(start.x, start.y, end.x, end.y, clipFrame)
+      setDraft(null)
+      if (Math.hypot(end.x - start.x, end.y - start.y) < MIN_DRAW_SIZE) return
+      if (tool === 'arrow') annotationStore.addArrowAnnotation(start.x, start.y, end.x, end.y, clipFrame)
+      else annotationStore.addDrawAnnotation({ type: tool, x0: start.x, y0: start.y, x1: end.x, y1: end.y }, clipFrame)
       setAnnotationTick((tick) => tick + 1)
       onAnnotationUpdate?.()
     }
@@ -954,23 +941,6 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     // return []
   }
 
-  // Handles deletion of lines
-  const handleRelayout = (eventData: any) => {
-    console.log('Relayout event data:', eventData)
-    // if ('dragmode' in eventData) {
-    //   setDragMode(eventData['dragmode'])
-    //   if (editMode === 'draw_rect' && eventData['dragmode'] !== 'drawrect') {
-    //     setEditMode(null)
-    //   }
-    // }
-    if ('shapes' in eventData) {
-      annotationStore.handleAnnotationRelayout(eventData, clipFrame)
-      setAnnotationTick((tick) => tick + 1)
-      onAnnotationUpdate?.() 
-    }
-    //annotationStore.describeAnnotationStore() // For debugging - logs the current state of the annotation store after every relayout event
-  }
-
   return (
     <div className="plot-container">
       <div style={{ position: 'relative', display: 'flex' }}>
@@ -1062,9 +1032,9 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
           padding={pitchKitProps.padding}
           style={ARROW_LAYER_STYLE}
         >
-          <TeamShapes shapes={teamShapes} selectedKey={selectedShapeKey} ghost={teamShapeGhost} strokeWidth={plotConfig.teamShapeStrokeWidth} />
+          <TeamShapes shapes={teamShapes} selectedKey={activeSelectedKey} ghost={teamShapeGhost} strokeWidth={plotConfig.teamShapeStrokeWidth} />
           <FocusSpotlight spots={focusSpots} />
-          <PlayerLinks links={links} selectedKey={selectedLinkKey} draft={linkDraft} color={plotConfig.focusLineColor} />
+          <PlayerLinks links={links} selectedKey={activeSelectedKey} draft={linkDraft} color={plotConfig.focusLineColor} />
           {pickSnapTarget && (
             <SnapRing
               key={pickSnapTarget.playerId}
@@ -1106,15 +1076,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
             showlegend: false,
             hovermode: 'closest',
             hoverdistance: 1,
-            dragmode: dragMode as any,
-            newshape: {
-              line: {
-                color: plotConfig.rectLineColor,
-                width: plotConfig.rectLineWidth,
-              },
-              fillcolor: plotConfig.rectFillColor,
-            } as any,
-            shapes: [...lines, ...shapes], // Contains player focus lines
+            dragmode: 'select',
             images: isPitchBackgroundActive && !usePitchKit
               ? [
                   {
@@ -1135,37 +1097,43 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
 
           config={{
             editable: false,
-            displayModeBar: true,
-            modeBarButtonsToAdd: [...plotConfig.modeBarButtonsToAdd as any],
-            modeBarButtonsToRemove: [...plotConfig.modeBarButtonsToRemove as any],
+            displayModeBar: false,
           }}
           onClick={handleClick}
-          onRelayout={handleRelayout}
           onInitialized={handleGraphDiv}
           onUpdate={handleGraphDiv}
         />
-        {(arrows.length > 0 || draftArrow) && (
-          <Pitch
-            type="skillcorner"
-            width={PLOT_WIDTH}
-            height={PLOT_HEIGHT}
-            dimensions={pitchKitProps.dimensions}
-            padding={pitchKitProps.padding}
-            style={ARROW_LAYER_STYLE}
-          >
-            <Arrows
-              data={draftArrow ? [...arrows, draftArrow] : arrows}
-              x={(d) => d.x0}
-              y={(d) => d.y0}
-              x2={(d) => d.x1}
-              y2={(d) => d.y1}
-              stroke={plotConfig.arrowColor}
-              strokeWidth={plotConfig.arrowWidth}
-              headSize={plotConfig.arrowHeadSize}
-            />
-          </Pitch>
-        )}
-        {editMode === 'draw_arrow' && <div style={ARROW_CAPTURE_STYLE} onMouseDown={handleArrowMouseDown} />}
+        {/* Drawn marks sit above the players, with the selected one's halo beneath it and its handles on top. */}
+        <Pitch
+          type="skillcorner"
+          width={PLOT_WIDTH}
+          height={PLOT_HEIGHT}
+          dimensions={pitchKitProps.dimensions}
+          padding={pitchKitProps.padding}
+          style={ARROW_LAYER_STYLE}
+        >
+          {selectedMark && (
+            <SelectionHalo mark={selectedMark} width={selectedMark.kind === 'arrow' ? plotConfig.arrowWidth : plotConfig.rectLineWidth} />
+          )}
+          <DrawnShapes
+            shapes={draft && draft.tool !== 'arrow' ? [...shapes, { key: 'draft', shape: { ...draft, type: draft.tool } as DrawShape }] : shapes}
+            style={{ lineColor: plotConfig.rectLineColor, lineWidth: plotConfig.rectLineWidth, fillColor: plotConfig.rectFillColor }}
+          />
+          <Arrows
+            data={draft?.tool === 'arrow' ? [...arrows, draft] : arrows}
+            x={(d) => d.x0}
+            y={(d) => d.y0}
+            x2={(d) => d.x1}
+            y2={(d) => d.y1}
+            stroke={plotConfig.arrowColor}
+            strokeWidth={plotConfig.arrowWidth}
+            headSize={plotConfig.arrowHeadSize}
+          />
+          {selectedMark && !isPlaying && (
+            <EditHandles mark={selectedMark} color={selectedMark.kind === 'arrow' ? plotConfig.arrowColor : plotConfig.rectLineColor} />
+          )}
+        </Pitch>
+        {DRAW_TOOLS[editMode ?? ''] && <div style={DRAW_CAPTURE_STYLE} onMouseDown={handleDrawMouseDown} />}
         {PICK_TOOLS.includes(editMode ?? '') && (
           <div
             style={{ ...PICK_CAPTURE_STYLE, cursor: pickSnapTarget ? 'pointer' : 'crosshair' }}

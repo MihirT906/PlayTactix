@@ -160,6 +160,11 @@ export default class DataManager {
     };
   }
 
+  // A frame only if it is already loaded, never fetching it; for overlays that look back over recent frames.
+  getBufferedFrame(frame: number): FrameData | undefined {
+    return this.buffer.get(frame)
+  }
+
   // Merges known-missing frame numbers within [start, end] into contiguous ranges,
   // for rendering gaps on the timeline. Only reflects frames that have already
   // been fetched — frames not yet requested are simply absent from the result.

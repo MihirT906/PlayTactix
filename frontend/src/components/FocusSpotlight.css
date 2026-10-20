@@ -1,0 +1,54 @@
+/* The pool rests at 0.7 so the switch-on can flare past it to full brightness before settling. */
+.focus-spot__pool {
+  opacity: 0.7;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: focus-pool-on 300ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+/* The trail unspools from the player backwards: each older segment fades in a little later. */
+.focus-spot__trail-segment {
+  animation: focus-trail-in 120ms ease-out both;
+  animation-delay: calc(var(--i) * 9ms);
+}
+
+/* Switching off collapses the pool into the player while the trail retracts, oldest segment first.
+   Both finish within the pool's 200ms, whose end removes the spot. */
+.focus-spot--leaving .focus-spot__pool {
+  animation: focus-pool-off 200ms ease-in forwards;
+}
+
+.focus-spot--leaving .focus-spot__trail-segment {
+  animation: focus-trail-out 100ms ease-in forwards;
+  animation-delay: calc((var(--segments) - 1 - var(--i)) * 5ms);
+}
+
+@keyframes focus-pool-on {
+  0% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.06); opacity: 1; }
+  100% { transform: scale(1); opacity: 0.7; }
+}
+
+@keyframes focus-pool-off {
+  from { transform: scale(1); opacity: 0.7; }
+  to { transform: scale(0); opacity: 0; }
+}
+
+@keyframes focus-trail-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes focus-trail-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Near-instant rather than none, so the exit's animationend still fires and removes the spot. */
+@media (prefers-reduced-motion: reduce) {
+  .focus-spot__pool,
+  .focus-spot__trail-segment {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+  }
+}

@@ -15,6 +15,8 @@ import { buildPitchControlOverlay } from '../plot/overlays/pitchControlOverlay.t
 import { buildEventMapItems, resolveEventMap } from '../plot/overlays/eventMapOverlay'
 import { buildVoronoiPoints } from '../plot/overlays/voronoiOverlay'
 import { EMPTY_SEQUENCE_TRAIL, buildTrailLinks, getSequenceTrailAt } from '../plot/overlays/sequenceTrailsOverlay'
+import { buildFocusSpots } from '../plot/overlays/focusSpotlightOverlay'
+import FocusSpotlight from './FocusSpotlight'
 
 import { getLogger } from "../services/logger";
 
@@ -46,7 +48,7 @@ const PITCHKIT_STYLE = {
 const BACKDROP_STYLE: React.CSSProperties = { position: 'absolute', inset: 0, pointerEvents: 'none', background: PLOT_BACKGROUND }
 const BACKDROP_PLOT_AREA_STYLE: React.CSSProperties = { position: 'absolute', inset: PLOT_MARGIN, background: PLOT_BACKGROUND }
 
-// A see-through PitchKit pitch stacked with the Plotly plot: it only carries PitchKit marks (arrow annotations, team shapes, sequence trails, the event map, voronoi cells).
+// A see-through PitchKit pitch stacked with the Plotly plot: it only carries PitchKit marks (arrow annotations, team shapes, sequence trails, the event map, voronoi cells, the focus spotlight).
 const ARROW_LAYER_STYLE = {
   position: 'absolute',
   top: 0,
@@ -321,9 +323,9 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
         },
       }
 
-      // Draws a halo ring (with a gap from the marker) around focused players, the players of the team
-      // shape being built and the first player picked for a link
-      const highlightedIndices = [...new Set([...focusPoints, ...shapePlayers, ...(firstPoint !== null ? [firstPoint] : [])])]
+      // Draws a halo ring (with a gap from the marker) around the players of the team shape being built
+      // and the first player picked for a link. Focused players get the spotlight instead.
+      const highlightedIndices = [...new Set([...shapePlayers, ...(firstPoint !== null ? [firstPoint] : [])])]
         .map((playerId) => visiblePlayerIds.indexOf(playerId))
         .filter((index) => index !== -1)
 
@@ -355,7 +357,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
       ...build(applyVisibilityMask(playerMasks?.passing_options || EMPTY_MASK.map(() => false)), eventStyles.passingOption.color, eventStyles.passingOption.width),
       ...build(applyVisibilityMask(playerMasks?.on_ball_engagement || EMPTY_MASK.map(() => false)), eventStyles.onBallEngagement.color, eventStyles.onBallEngagement.width),
     ];
-  }, [awayTeamColor, eventStyles.onBallEngagement.color, eventStyles.onBallEngagement.width, eventStyles.passingOption.color, eventStyles.passingOption.width, eventStyles.playerPossession.color, eventStyles.playerPossession.width, eventVisibility.onBallEngagement, eventVisibility.passingOption, eventVisibility.playerPossession, frameData, homeTeamColor, matchData, playerMasks, teamVisibility.away, teamVisibility.home, focusPoints, shapePlayers, firstPoint, positionOverrides])
+  }, [awayTeamColor, eventStyles.onBallEngagement.color, eventStyles.onBallEngagement.width, eventStyles.passingOption.color, eventStyles.passingOption.width, eventStyles.playerPossession.color, eventStyles.playerPossession.width, eventVisibility.onBallEngagement, eventVisibility.passingOption, eventVisibility.playerPossession, frameData, homeTeamColor, matchData, playerMasks, teamVisibility.away, teamVisibility.home, shapePlayers, firstPoint, positionOverrides])
 
   useEffect(() => {
     let cancelled = false;
@@ -515,6 +517,14 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trailLinks, sequenceTrailsOverlay, session.playback.clip.matchSegments, currentFrame, clipFrame, frameData, positionOverrides])
+  // Focused players, each trailed back to the start of the match segment on screen at most, so a
+  // trail never crosses a cut in the clip.
+  const focusSpots = useMemo(() => {
+    const matchSegment = session.playback.clip.matchSegments.find((s) => clipFrame >= s.clipStart && clipFrame <= s.clipEnd)
+    const segmentStartFrame = matchSegment ? currentFrame - (clipFrame - matchSegment.clipStart) : currentFrame
+    return buildFocusSpots(focusPoints, currentFrame, segmentStartFrame, (frame) => resources.dataManager.getBufferedFrame(frame), resolvePlayerPos)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusPoints, session.playback.clip.matchSegments, currentFrame, clipFrame, frameData, positionOverrides, resources.dataManager])
   const teamColor = <T extends { teamId: number }>(item: T) => (item.teamId === matchData?.away_team.id ? awayTeamColor : homeTeamColor)
 
   // One cell per player, following any dragged positions so the cells can be explored while paused.
@@ -898,6 +908,17 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
             />
           </Pitch>
         )}
+        {/* Always mounted, so a pool can play its switch-off after the last player is unfocused. */}
+        <Pitch
+          type="skillcorner"
+          width={PLOT_WIDTH}
+          height={PLOT_HEIGHT}
+          dimensions={pitchKitProps.dimensions}
+          padding={pitchKitProps.padding}
+          style={ARROW_LAYER_STYLE}
+        >
+          <FocusSpotlight spots={focusSpots} />
+        </Pitch>
         <Plot
           data={[
             ...overlayTraces,

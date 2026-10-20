@@ -1,0 +1,41 @@
+/* A pill pops in once the line or shape it measures has settled. */
+.pitch-fx-pill-in {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pitch-fx-pill-in 200ms cubic-bezier(0.3, 1.6, 0.5, 1) var(--pill-delay, 0ms) both;
+}
+
+/* The player a pick tool has snapped to grows a ring as the cursor arrives. */
+.pitch-fx-snap-ring {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pitch-fx-snap-ring-in 120ms ease-out both;
+}
+
+/* A preview (e.g. the shape a pick would make) fades in rather than appearing at once. */
+.pitch-fx-fade-in {
+  animation: pitch-fx-fade-in 150ms ease-out both;
+}
+
+@keyframes pitch-fx-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes pitch-fx-pill-in {
+  from { transform: scale(0); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes pitch-fx-snap-ring-in {
+  from { transform: scale(0.6); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pitch-fx-pill-in,
+  .pitch-fx-snap-ring,
+  .pitch-fx-fade-in {
+    animation: none;
+  }
+}

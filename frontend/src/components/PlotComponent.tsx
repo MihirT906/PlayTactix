@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import Plot from 'react-plotly.js'
-import { Arrows, Comet, ConvexHull, Pitch, Voronoi } from '@pitchkit/react'
+import { Arrows, Comet, Pitch, Voronoi } from '@pitchkit/react'
 import AnnotationStore from '../services/AnnotationStore-optimized'
 import type { Event, FrameData } from '../types/FrameDataInterfaces'
 import { APP_CONFIG, SELECTED_POINTS_OPACITY } from '../config'
@@ -17,7 +17,9 @@ import { buildVoronoiPoints } from '../plot/overlays/voronoiOverlay'
 import { EMPTY_SEQUENCE_TRAIL, buildTrailLinks, getSequenceTrailAt } from '../plot/overlays/sequenceTrailsOverlay'
 import { buildFocusSpots } from '../plot/overlays/focusSpotlightOverlay'
 import FocusSpotlight from './FocusSpotlight'
-import PlayerLinks, { type LinkSnapTarget, type PlayerLink } from './PlayerLinks'
+import PlayerLinks, { type PlayerLink } from './PlayerLinks'
+import TeamShapes, { type TeamShapeGhost, type TeamShapeMark } from './TeamShapes'
+import { SnapRing, type SnapTarget } from './pitchFx'
 
 import { getLogger } from "../services/logger";
 
@@ -62,9 +64,11 @@ const ARROW_LAYER_STYLE = {
 // Catches the drag that draws an arrow, so Plotly doesn't start a selection underneath.
 const ARROW_CAPTURE_STYLE: React.CSSProperties = { position: 'absolute', inset: 0, cursor: 'crosshair' }
 const MIN_ARROW_LENGTH = 1 // metres; anything shorter is treated as a stray click
-// Catches the pointer in Link Players mode, which snaps to the nearest player rather than needing a click right on one.
-const LINK_CAPTURE_STYLE: React.CSSProperties = { position: 'absolute', inset: 0 }
-const LINK_SNAP_RADIUS = 3 // metres
+// Catches the pointer for the tools that pick players (Link Players, Team Shape), which snap to the
+// nearest player rather than needing a click right on one.
+const PICK_TOOLS = ['draw_line_players', 'team_shape']
+const PICK_CAPTURE_STYLE: React.CSSProperties = { position: 'absolute', inset: 0 }
+const PICK_SNAP_RADIUS = 3 // metres
 // Link lines are drawn by PitchKit; Plotly keeps an invisible copy of each, this wide, to click to select and erase.
 const LINK_HIT_WIDTH = 10
 
@@ -117,7 +121,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
   const [annotationTick, setAnnotationTick] = useState(0)
   const [dragMode, setDragMode] = useState<string>('select')
   const [draftArrow, setDraftArrow] = useState<ArrowShape | null>(null) // Arrow being dragged out, not yet in the store
-  const [linkCursor, setLinkCursor] = useState<{ x: number; y: number } | null>(null) // Pointer in pitch metres, in Link Players mode
+  const [pickCursor, setPickCursor] = useState<{ x: number; y: number } | null>(null) // Pointer in pitch metres, while a pick tool is on
   const [activeShapeIndex, setActiveShapeIndex] = useState<number | null>(null) // The shape Plotly has selected, for erasing
   const [overlayTraces, setOverlayTraces] = useState<any[]>([]);
   // Temporary, visualisation-only position edits keyed by player id. These are
@@ -434,7 +438,9 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     // Likewise leaving 'Link Players' drops a first player still waiting for a second.
     if (selectedTool !== 'draw_line_players') {
       setFirstPoint(null)
-      setLinkCursor(null)
+    }
+    if (!PICK_TOOLS.includes(selectedTool ?? '')) {
+      setPickCursor(null)
     }
   }, [selectedTool])
 
@@ -449,6 +455,20 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
       x: override?.x ?? frameData?.players.x[idx],
       y: override?.y ?? frameData?.players.y[idx],
     }
+  }
+
+  // The positions in this frame of a team shape's players that are in it.
+  const teamShapePoints = (players: number[]) =>
+    players.flatMap((playerId) => {
+      const { x, y } = resolvePlayerPos(playerId)
+      return x === undefined || y === undefined ? [] : [{ x, y }]
+    })
+
+  // A team shape is in the colour of its players' team, or a neutral one when it spans both.
+  const teamShapeColor = (players: number[]) => {
+    const teams = new Set(players.map((playerId) => frameData?.players.team[frameData.players.player_id.indexOf(playerId)]))
+    const team = teams.size === 1 ? [...teams][0] : undefined
+    return team === 'home' ? homeTeamColor : team === 'away' ? awayTeamColor : plotConfig.teamShapeColor
   }
 
   // Annotation shapes for the current frame, derived (never stored) so they cannot go stale: the
@@ -482,18 +502,11 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
         name: `Player1:${firstPoint},Player2:${secondPoint}`, // Using this name to identify the players connected by the line
       })
     }
-    // A team shape is the hull around its players' positions in this frame, in the colour of their
-    // team (or a neutral one when it spans both). It needs three of them in the frame to enclose an area.
-    const teamShapes = annotationStore.getTeamShapeAnnotations(clipFrame).flatMap(({ key, players }) => {
-      const points = players.flatMap((playerId) => {
-        const { x, y } = resolvePlayerPos(playerId)
-        if (x === undefined || y === undefined) return []
-        return [{ x, y, team: frameData?.players.team[frameData.players.player_id.indexOf(playerId)] }]
-      })
-      if (points.length < 3) return []
-      const team = points.every((point) => point.team === points[0].team) ? points[0].team : undefined
-      const color = team === 'home' ? homeTeamColor : team === 'away' ? awayTeamColor : plotConfig.teamShapeColor
-      return [{ key, points, color }]
+    // A team shape is the hull around its players' positions in this frame. It needs three of them in
+    // the frame to enclose an area.
+    const teamShapes = annotationStore.getTeamShapeAnnotations(clipFrame).flatMap(({ key, players }): TeamShapeMark[] => {
+      const points = teamShapePoints(players)
+      return points.length < 3 ? [] : [{ key, players, points, color: teamShapeColor(players) }]
     })
     return {
       lines,
@@ -508,18 +521,18 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
   // Plotly's selected shape, when it is one of the player lines (they come first in layout.shapes).
   const selectedLinkKey = activeShapeIndex !== null && activeShapeIndex < links.length ? links[activeShapeIndex].key : null
 
-  // In Link Players mode, the visible player nearest the pointer, if close enough to pick, other than
-  // the first player already picked.
-  const linkSnapTarget = useMemo((): LinkSnapTarget | null => {
-    if (editMode !== 'draw_line_players' || !linkCursor || !frameData) return null
+  // While a pick tool is on, the visible player nearest the pointer, if close enough to pick. Link
+  // Players leaves out the first player already picked.
+  const pickSnapTarget = useMemo((): SnapTarget | null => {
+    if (!PICK_TOOLS.includes(editMode ?? '') || !pickCursor || !frameData) return null
     const visible = getVisibleTeamMask(frameData.players.team)
-    let nearest: LinkSnapTarget | null = null
-    let nearestDistance = LINK_SNAP_RADIUS
+    let nearest: SnapTarget | null = null
+    let nearestDistance = PICK_SNAP_RADIUS
     frameData.players.player_id.forEach((playerId, index) => {
-      if (!visible[index] || playerId === firstPoint) return
+      if (!visible[index] || (editMode === 'draw_line_players' && playerId === firstPoint)) return
       const { x, y } = resolvePlayerPos(playerId)
       if (x === undefined || y === undefined) return
-      const distance = Math.hypot(x - linkCursor.x, y - linkCursor.y)
+      const distance = Math.hypot(x - pickCursor.x, y - pickCursor.y)
       if (distance <= nearestDistance) {
         nearestDistance = distance
         nearest = { playerId, x, y }
@@ -527,17 +540,26 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     })
     return nearest
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editMode, linkCursor, frameData, firstPoint, positionOverrides, teamVisibility])
+  }, [editMode, pickCursor, frameData, firstPoint, positionOverrides, teamVisibility])
 
   // The line stretched from the first player picked to the snapped player, or else the pointer.
   const linkDraft = useMemo(() => {
     if (editMode !== 'draw_line_players' || firstPoint === null) return null
     const { x, y } = resolvePlayerPos(firstPoint)
-    const to = linkSnapTarget ?? linkCursor
+    const to = pickSnapTarget ?? pickCursor
     if (x === undefined || y === undefined || !to) return null
     return { from: { x, y }, to }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editMode, firstPoint, linkSnapTarget, linkCursor, frameData, positionOverrides])
+  }, [editMode, firstPoint, pickSnapTarget, pickCursor, frameData, positionOverrides])
+
+  // The shape being built as it would be if the snapped player were picked, or let go if already in it.
+  const teamShapeGhost = useMemo((): TeamShapeGhost | null => {
+    if (editMode !== 'team_shape' || !pickSnapTarget) return null
+    const players = toggledShapePlayers(pickSnapTarget.playerId)
+    const points = teamShapePoints(players)
+    return points.length < 2 ? null : { key: String(pickSnapTarget.playerId), points, color: teamShapeColor(players) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editMode, pickSnapTarget, shapePlayers, frameData, positionOverrides, homeTeamColor, awayTeamColor])
 
   const trailLinks = useMemo(() => buildTrailLinks(matchEvents), [matchEvents])
 
@@ -796,25 +818,42 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     setFirstPoint(null)
   }
 
-  const handleLinkMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect()
-    setLinkCursor(pixelToPitch(e.clientX - rect.left, e.clientY - rect.top))
+  // Team Shape: picking a player adds them to the shape being built, picking them again takes them out.
+  function toggledShapePlayers(playerId: number) {
+    return shapePlayers.includes(playerId) ? shapePlayers.filter((p) => p !== playerId) : [...shapePlayers, playerId]
   }
 
-  // The first player picked is snapped out of linkSnapTarget, so it is found again here to let it go.
-  const handleLinkClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (linkSnapTarget) {
-      pickLinkPlayer(linkSnapTarget.playerId)
+  const pickShapePlayer = (playerId: number) => {
+    const players = toggledShapePlayers(playerId)
+    setShapePlayers(players)
+    shapeKeyRef.current = annotationStore.setTeamShapePlayers(shapeKeyRef.current, players, clipFrame)
+    setAnnotationTick((tick) => tick + 1)
+    onAnnotationUpdate?.()
+  }
+
+  const handlePickMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    setPickCursor(pixelToPitch(e.clientX - rect.left, e.clientY - rect.top))
+  }
+
+  const handlePickClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (editMode === 'team_shape') {
+      if (pickSnapTarget) pickShapePlayer(pickSnapTarget.playerId)
       return
     }
+    if (pickSnapTarget) {
+      pickLinkPlayer(pickSnapTarget.playerId)
+      return
+    }
+    // The first player picked for a link is left out of pickSnapTarget, so it is found again here to let it go.
     if (firstPoint === null) return
     const rect = e.currentTarget.getBoundingClientRect()
     const cursor = pixelToPitch(e.clientX - rect.left, e.clientY - rect.top)
     const { x, y } = resolvePlayerPos(firstPoint)
-    if (x !== undefined && y !== undefined && Math.hypot(x - cursor.x, y - cursor.y) <= LINK_SNAP_RADIUS) pickLinkPlayer(firstPoint)
+    if (x !== undefined && y !== undefined && Math.hypot(x - cursor.x, y - cursor.y) <= PICK_SNAP_RADIUS) pickLinkPlayer(firstPoint)
   }
 
-  // Allows the user to 'Focus' on a player (Link Players clicks go through handleLinkClick instead)
+  // Allows the user to 'Focus' on a player (Link Players and Team Shape clicks go through handlePickClick instead)
   const handleClick = (event: any) => {
     if (editMode == 'player_focus') {
       if (!event?.points?.length) return
@@ -829,20 +868,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
       logger.info("Player focused:", clickedPlayerId)
 
     }
-  
-    else if (editMode == 'team_shape') {
-      if (!event?.points?.length) return
-      const clickedPlayerId = event.points[0].customdata?.[0]
-      if (clickedPlayerId === undefined) return
-      // Clicking a player adds them to the shape being built, clicking them again takes them out.
-      const players = shapePlayers.includes(clickedPlayerId)
-        ? shapePlayers.filter((p) => p !== clickedPlayerId)
-        : [...shapePlayers, clickedPlayerId]
-      setShapePlayers(players)
-      shapeKeyRef.current = annotationStore.setTeamShapePlayers(shapeKeyRef.current, players, clipFrame)
-      setAnnotationTick((tick) => tick + 1)
-      onAnnotationUpdate?.()
-    }
+
     // if (editMode !== 'player_focus') return
     // if (!event?.points?.length) return
     // const pointIndex = event.points[0].pointIndex
@@ -903,8 +929,8 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
             )}
           </div>
         )}
-        {(voronoiPoints.length > 0 || teamShapes.length > 0 || sequenceTrail.carries.length > 0 || sequenceTrail.passes.length > 0 || eventMap.passes.length > 0 || eventMap.movements.length > 0) && (
-          // Voronoi cells, team shapes, sequence trails and the event map sit on their own see-through pitch beneath the Plotly plot, so players stay on top.
+        {(voronoiPoints.length > 0 || sequenceTrail.carries.length > 0 || sequenceTrail.passes.length > 0 || eventMap.passes.length > 0 || eventMap.movements.length > 0) && (
+          // Voronoi cells, sequence trails and the event map sit on their own see-through pitch beneath the Plotly plot, so players stay on top.
           <Pitch
             type="skillcorner"
             width={PLOT_WIDTH}
@@ -922,18 +948,6 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
               stroke={plotConfig.voronoiStrokeColor}
               strokeWidth={plotConfig.voronoiStrokeWidth}
             />
-            {teamShapes.map((shape) => (
-              <ConvexHull
-                key={shape.key}
-                data={shape.points}
-                x={(d) => d.x}
-                y={(d) => d.y}
-                fill={shape.color}
-                fillOpacity={plotConfig.teamShapeFillOpacity}
-                stroke={shape.color}
-                strokeWidth={plotConfig.teamShapeStrokeWidth}
-              />
-            ))}
             <Comet
               data={sequenceTrail.passes}
               x={(d) => d.x}
@@ -986,14 +1000,16 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
           padding={pitchKitProps.padding}
           style={ARROW_LAYER_STYLE}
         >
+          <TeamShapes shapes={teamShapes} ghost={teamShapeGhost} strokeWidth={plotConfig.teamShapeStrokeWidth} />
           <FocusSpotlight spots={focusSpots} />
-          <PlayerLinks
-            links={links}
-            selectedKey={selectedLinkKey}
-            draft={linkDraft}
-            snapTarget={linkSnapTarget}
-            color={plotConfig.focusLineColor}
-          />
+          <PlayerLinks links={links} selectedKey={selectedLinkKey} draft={linkDraft} color={plotConfig.focusLineColor} />
+          {pickSnapTarget && (
+            <SnapRing
+              key={pickSnapTarget.playerId}
+              target={pickSnapTarget}
+              color={editMode === 'team_shape' ? teamShapeGhost?.color ?? plotConfig.teamShapeColor : plotConfig.focusLineColor}
+            />
+          )}
         </Pitch>
         <Plot
           data={[
@@ -1088,12 +1104,12 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
           </Pitch>
         )}
         {editMode === 'draw_arrow' && <div style={ARROW_CAPTURE_STYLE} onMouseDown={handleArrowMouseDown} />}
-        {editMode === 'draw_line_players' && (
+        {PICK_TOOLS.includes(editMode ?? '') && (
           <div
-            style={{ ...LINK_CAPTURE_STYLE, cursor: linkSnapTarget ? 'pointer' : 'crosshair' }}
-            onMouseMove={handleLinkMouseMove}
-            onMouseLeave={() => setLinkCursor(null)}
-            onClick={handleLinkClick}
+            style={{ ...PICK_CAPTURE_STYLE, cursor: pickSnapTarget ? 'pointer' : 'crosshair' }}
+            onMouseMove={handlePickMouseMove}
+            onMouseLeave={() => setPickCursor(null)}
+            onClick={handlePickClick}
           />
         )}
       </div>

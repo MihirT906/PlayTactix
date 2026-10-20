@@ -20,14 +20,14 @@ import FocusSpotlight from './FocusSpotlight'
 import PlayerLinks, { type PlayerLink } from './PlayerLinks'
 import TeamShapes, { type TeamShapeGhost, type TeamShapeMark } from './TeamShapes'
 import { SnapRing, type SnapTarget } from './pitchFx'
-import { DrawnShapes, EditHandles, SelectionHalo } from './DrawnMarks'
+import Rectangles from './Rectangles'
+import Strokes from './Strokes'
 import { convexHull } from '../plot/overlays/teamShapeOverlay'
 import {
   applyMarkEdit,
   hitTest,
   markHandles,
   rectCorners,
-  type DrawShape,
   type EditableMark,
   type HitTarget,
   type MarkEdit,
@@ -499,10 +499,12 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
       return x === undefined || y === undefined ? [] : [{ x, y }]
     })
 
-  // A team shape is in the colour of its players' team, or a neutral one when it spans both.
+  // A team shape is in the team colour of its first player picked. A player missing from this frame's
+  // data is passed over for the next, and the neutral colour is left for when none has a team.
   const teamShapeColor = (players: number[]) => {
-    const teams = new Set(players.map((playerId) => frameData?.players.team[frameData.players.player_id.indexOf(playerId)]))
-    const team = teams.size === 1 ? [...teams][0] : undefined
+    const team = players
+      .map((playerId) => frameData?.players.team[frameData.players.player_id.indexOf(playerId)])
+      .find((playerTeam) => playerTeam === 'home' || playerTeam === 'away')
     return team === 'home' ? homeTeamColor : team === 'away' ? awayTeamColor : plotConfig.teamShapeColor
   }
 
@@ -550,6 +552,10 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     ...links.map((link): HitTarget => ({ key: link.key, segment: [pitchToPixel(link.a), pitchToPixel(link.b)] })),
     ...teamShapes.map((shape): HitTarget => ({ key: shape.key, polygon: convexHull(shape.points).map(pitchToPixel) })),
   ], [editableMarks, links, teamShapes])
+
+  const rects = useMemo(() => editableMarks.filter((mark) => mark.kind === 'rect'), [editableMarks])
+  const drawnLines = useMemo(() => editableMarks.filter((mark) => mark.kind === 'line'), [editableMarks])
+  const arrowMarks = useMemo(() => editableMarks.filter((mark) => mark.kind === 'arrow'), [editableMarks])
 
   // A selected annotation that has since gone (its bar ended, or it was deleted) is no longer selected.
   const activeSelectedKey = hitTargets.some((target) => target.key === selectedKey) ? selectedKey : null
@@ -1103,7 +1109,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
           onInitialized={handleGraphDiv}
           onUpdate={handleGraphDiv}
         />
-        {/* Drawn marks sit above the players, with the selected one's halo beneath it and its handles on top. */}
+        {/* Drawn marks sit above the players. Each kind draws its own selection halo and handles, since they animate. */}
         <Pitch
           type="skillcorner"
           width={PLOT_WIDTH}
@@ -1112,26 +1118,30 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
           padding={pitchKitProps.padding}
           style={ARROW_LAYER_STYLE}
         >
-          {selectedMark && (
-            <SelectionHalo mark={selectedMark} width={selectedMark.kind === 'arrow' ? plotConfig.arrowWidth : plotConfig.rectLineWidth} />
-          )}
-          <DrawnShapes
-            shapes={draft && draft.tool !== 'arrow' ? [...shapes, { key: 'draft', shape: { ...draft, type: draft.tool } as DrawShape }] : shapes}
+          <Rectangles
+            rects={rects}
+            draft={draft?.tool === 'rect' ? draft : null}
+            selectedKey={activeSelectedKey}
+            showHandles={!isPlaying}
             style={{ lineColor: plotConfig.rectLineColor, lineWidth: plotConfig.rectLineWidth, fillColor: plotConfig.rectFillColor }}
           />
-          <Arrows
-            data={draft?.tool === 'arrow' ? [...arrows, draft] : arrows}
-            x={(d) => d.x0}
-            y={(d) => d.y0}
-            x2={(d) => d.x1}
-            y2={(d) => d.y1}
-            stroke={plotConfig.arrowColor}
-            strokeWidth={plotConfig.arrowWidth}
+          <Strokes
+            strokes={drawnLines}
+            draft={draft?.tool === 'line' ? draft : null}
+            selectedKey={activeSelectedKey}
+            showHandles={!isPlaying}
+            color={plotConfig.rectLineColor}
+            width={plotConfig.rectLineWidth}
+          />
+          <Strokes
+            strokes={arrowMarks}
+            draft={draft?.tool === 'arrow' ? draft : null}
+            selectedKey={activeSelectedKey}
+            showHandles={!isPlaying}
+            color={plotConfig.arrowColor}
+            width={plotConfig.arrowWidth}
             headSize={plotConfig.arrowHeadSize}
           />
-          {selectedMark && !isPlaying && (
-            <EditHandles mark={selectedMark} color={selectedMark.kind === 'arrow' ? plotConfig.arrowColor : plotConfig.rectLineColor} />
-          )}
         </Pitch>
         {DRAW_TOOLS[editMode ?? ''] && <div style={DRAW_CAPTURE_STYLE} onMouseDown={handleDrawMouseDown} />}
         {PICK_TOOLS.includes(editMode ?? '') && (

@@ -26,3 +26,9 @@ const ENTRANCE_DECAY = 80 // ms
 const ENTRANCE_PERIOD = 360 // ms
 export const entranceScale = (age: number) =>
   age < ENTRANCE_DURATION ? 1 - Math.exp(-age / ENTRANCE_DECAY) * Math.cos((2 * Math.PI * age) / ENTRANCE_PERIOD) : 1
+
+// How a rectangle, line or arrow being moved or reshaped trails the pointer: each change starts it easing
+// from where it is drawn to where it now is. The share of the way it has come `age` ms after a change.
+const SETTLE_LAG = 60 // ms
+export const SETTLE_DURATION = 400 // ms for it to catch up once the pointer stops
+export const settledShare = (age: number) => 1 - Math.exp(-age / SETTLE_LAG)

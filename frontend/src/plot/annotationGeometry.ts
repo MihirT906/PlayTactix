@@ -81,3 +81,13 @@ export function applyMarkEdit(kind: EditableMark['kind'], edit: MarkEdit, to: Po
   }
   return edit.index === 0 ? { ...original, x0: to.x, y0: to.y } : { ...original, x1: to.x, y1: to.y }
 }
+
+export const sameSegment = (a: Segment, b: Segment) => a.x0 === b.x0 && a.y0 === b.y0 && a.x1 === b.x1 && a.y1 === b.y1
+
+// The segment `t` of the way from a to b.
+export const blendSegments = (a: Segment, b: Segment, t: number): Segment => ({
+  x0: a.x0 + (b.x0 - a.x0) * t,
+  y0: a.y0 + (b.y0 - a.y0) * t,
+  x1: a.x1 + (b.x1 - a.x1) * t,
+  y1: a.y1 + (b.y1 - a.y1) * t,
+})

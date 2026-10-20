@@ -44,7 +44,7 @@ export const APP_CONFIG = {
 		eventMapArrowHeadSize: 8,
 		eventMapRunOpacity: 0.55, // Off ball runs are fainter than carries, the only arrows on the ball
 		eventMapPassWidth: 5,
-		teamShapeColor: '#4DD0E1', // A shape around players of both teams; one team's shape takes its colour
+		teamShapeColor: '#4DD0E1', // A team shape takes its first player's team colour; this is for when none of its players has a team
 		teamShapeFillOpacity: 0.25,
 		teamShapeStrokeWidth: 2,
 		voronoiFillOpacity: 0.3,

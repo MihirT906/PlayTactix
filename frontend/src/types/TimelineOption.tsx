@@ -23,4 +23,21 @@ export interface MetricTimelineOption {
   hidden?: boolean
 }
 
-export type TimelineOption = FilterTimelineOption | MetricTimelineOption
+// The clip's phases of play, as blocks coloured by the team in possession.
+export interface PhasesTimelineOption {
+  id: string
+  label: string
+  kind: 'phases'
+  hidden?: boolean
+}
+
+export type TimelineOption = FilterTimelineOption | MetricTimelineOption | PhasesTimelineOption
+
+// Narrows the event tracks to one team and, optionally, some of its players. Metric and phase
+// tracks are left whole.
+export interface InsightFilter {
+  // Null means both teams.
+  teamId: number | null
+  // Empty means every player.
+  playerIds: number[]
+}

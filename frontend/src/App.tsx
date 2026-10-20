@@ -8,7 +8,7 @@ import FirstClipSteps from './components/FirstClipSteps'
 import WorkspaceGuide from './components/WorkspaceGuide'
 import { APP_CONFIG, SLEEP_INTERVAL, THEME_CSS_VARIABLES } from './config'
 import type { MatchData } from './types/MatchDataInterfaces';
-import type { FrameData, Event } from './types/FrameDataInterfaces'
+import type { FrameData } from './types/FrameDataInterfaces'
 import type { KeyMomentsData } from './types/KeyMomentsDataInterfaces'
 import MatchDetailsDisplay from './components/MatchDetailsDisplay'
 import { StyleConfigProvider } from './context/StyleConfigContext'
@@ -90,7 +90,6 @@ function AppContent({
 
     const [matchMetaData, setMatchMetaData] = useState<MatchData | null>(null)
     const [keyMomentsData, setKeyMomentsData] = useState<KeyMomentsData | null>(null)
-    const [eventsData, setEventsData] = useState<Map<number, Event[]>>(new Map()) // State to hold events data
     const [currentFrameData, setCurrentFrameData] = useState<FrameData | null>(null)
     const [missingFrameRanges, setMissingFrameRanges] = useState<{ start: number; end: number }[]>([])
     const [annotationVersion, setAnnotationVersion] = useState(0)
@@ -130,10 +129,9 @@ function AppContent({
     const resetMatchData = () => {
       setMatchMetaData(null)
       setKeyMomentsData(null)
-      setEventsData(new Map())
       setCurrentFrameData(null)
       annotationStore.clear()
-      timelineStore.clear()
+      timelineStore.reset()
       handleAnnotationUpdate()
       markWorkSaved()
     }
@@ -166,10 +164,9 @@ function AppContent({
           setCurrentFrameData(null)
         }
 
-        // If a new chunk was loaded, update the chunk range and fetch events for the new range
+        // If a new chunk was loaded, update the chunk range
         if (result.didLoadChunk && result.newChunkRange) {
           setLoadedFrameRange(result.newChunkRange)
-          setEventsData(dataManager.getEventData(result.newChunkRange?.start || 0, result.newChunkRange?.end || 0))
         }
 
         // Finally, set the frameLoading flag back to false
@@ -351,8 +348,6 @@ function AppContent({
                   }
                   matchData={matchMetaData}
                   timelineStore={timelineStore}
-                  eventsData={eventsData}
-                  clipRange={clipRange}
                   segmentRange={segmentRange}
                   onAddSegment={handleAddSegment}
                   keyMomentsData={keyMomentsData}
@@ -374,8 +369,8 @@ function AppContent({
                       missingFrameRanges={missingFrameRanges}
                       matchData={matchMetaData}
                       frameData={currentFrameData}
-                      eventsData={eventsData}
                       matchEvents={keyMomentsData?.events ?? null}
+                      phases={keyMomentsData?.pops ?? null}
                       annotationStore={annotationStore}
                       timelineStore={timelineStore}
                       onAnnotationUpdate={handleAnnotationUpdate}

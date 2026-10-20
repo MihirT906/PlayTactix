@@ -23,3 +23,13 @@ NoneType: None
 2026-10-19 17:18:11 | INFO     | playtactix.services.key_moments_service | Key moments computed shots=29
 2026-10-19 17:18:11 | INFO     | playtactix.services.key_moments_service | Key moments computed pops=360
 2026-10-19 17:18:11 | INFO     | playtactix.services.key_moments_service | Key moments computed events=4915
+2026-10-20 08:23:49 | INFO     | playtactix.routes.data_routes | Fetching frames match_id=1874553 start=320 end=620
+2026-10-20 08:23:49 | INFO     | playtactix.services.frame_data_service | Reading data files for match_id=1874553
+2026-10-20 08:23:50 | INFO     | playtactix.services.frame_data_service | Filtering frames for match_id=1874553 to range 320-620
+2026-10-20 08:23:56 | INFO     | playtactix.services.frame_data_service | Returning frames for match_id=1874553
+NoneType: None
+2026-10-20 08:23:59 | INFO     | playtactix.routes.data_routes | Fetching frames match_id=1874553 start=503 end=803
+2026-10-20 08:23:59 | INFO     | playtactix.services.frame_data_service | Reading data files for match_id=1874553
+2026-10-20 08:23:59 | INFO     | playtactix.services.frame_data_service | Filtering frames for match_id=1874553 to range 503-803
+2026-10-20 08:24:04 | INFO     | playtactix.services.frame_data_service | Returning frames for match_id=1874553
+NoneType: None

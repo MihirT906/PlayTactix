@@ -19,7 +19,7 @@ import { buildFocusSpots } from '../plot/overlays/focusSpotlightOverlay'
 import FocusSpotlight from './FocusSpotlight'
 import PlayerLinks, { type PlayerLink } from './PlayerLinks'
 import TeamShapes, { type TeamShapeGhost, type TeamShapeMark } from './TeamShapes'
-import { SnapRing, type SnapTarget } from './pitchFx'
+import { EventHighlight, SnapRing, type SnapTarget } from './pitchFx'
 import Rectangles from './Rectangles'
 import Strokes from './Strokes'
 import { convexHull } from '../plot/overlays/teamShapeOverlay'
@@ -149,9 +149,10 @@ interface PlotComponentProps {
   annotationStore: AnnotationStore
   annotationVersion?: number // Bumped when annotations change elsewhere (e.g. timeline bar drags/deletes)
   onAnnotationUpdate?: () => void // Optional callback to trigger when annotations are updated
+  highlightedEvent?: Event | null // An insight event hovered on the timeline, whose players are picked out
 }
 
-const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, matchData, frameData, matchEvents, annotationStore, onAnnotationUpdate, annotationVersion }) => {
+const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, matchData, frameData, matchEvents, annotationStore, onAnnotationUpdate, annotationVersion, highlightedEvent }) => {
   const plotConfig = APP_CONFIG.plot
   const { homeTeamColor, awayTeamColor, eventStyles, teamVisibility, eventVisibility, pitchRenderer } = useStyleConfig()
   const { session, resources } = useMatchSession()
@@ -629,6 +630,21 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     return buildFocusSpots(focusPoints, currentFrame, segmentStartFrame, (frame) => resources.dataManager.getBufferedFrame(frame), resolvePlayerPos)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusPoints, session.playback.clip.matchSegments, currentFrame, clipFrame, frameData, positionOverrides, resources.dataManager])
+  // The players of the hovered insight event, where they are in this frame. The event may be from
+  // another moment of the clip, so either can be missing.
+  const eventHighlight = useMemo(() => {
+    if (!highlightedEvent) return null
+    const positionOf = (playerId: number) => {
+      const { x, y } = resolvePlayerPos(playerId)
+      return x === undefined || y === undefined ? null : { x, y }
+    }
+    const player = positionOf(highlightedEvent.player_id)
+    if (!player) return null
+    const carrierId = highlightedEvent.player_in_possession_id
+    const carrier = carrierId !== highlightedEvent.player_id ? positionOf(carrierId) : null
+    return { key: highlightedEvent.event_id, player, carrier }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [highlightedEvent, frameData, positionOverrides])
   const teamColor = <T extends { teamId: number }>(item: T) => (item.teamId === matchData?.away_team.id ? awayTeamColor : homeTeamColor)
 
   // One cell per player, following any dragged positions so the cells can be explored while paused.
@@ -1040,6 +1056,14 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
         >
           <TeamShapes shapes={teamShapes} selectedKey={activeSelectedKey} ghost={teamShapeGhost} strokeWidth={plotConfig.teamShapeStrokeWidth} />
           <FocusSpotlight spots={focusSpots} />
+          {eventHighlight && (
+            <EventHighlight
+              key={eventHighlight.key}
+              player={eventHighlight.player}
+              carrier={eventHighlight.carrier}
+              color={plotConfig.focusLineColor}
+            />
+          )}
           <PlayerLinks links={links} selectedKey={activeSelectedKey} draft={linkDraft} color={plotConfig.focusLineColor} />
           {pickSnapTarget && (
             <SnapRing

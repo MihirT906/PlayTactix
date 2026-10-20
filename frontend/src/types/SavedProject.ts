@@ -111,7 +111,9 @@ function isTimeline(value: unknown): value is TimelineOption {
         Array.isArray(value.subtypes) &&
         value.subtypes.every((subtype: unknown) => typeof subtype === 'string') &&
         typeof value.splitBySubtype === 'boolean'
-      : value.kind === 'metric' && typeof value.column === 'string')
+      : value.kind === 'metric'
+        ? typeof value.column === 'string'
+        : value.kind === 'phases')
   )
 }
 

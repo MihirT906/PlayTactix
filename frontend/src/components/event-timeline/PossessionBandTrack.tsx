@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { formatMetricValue } from '../../services/timelineEvents'
 import { TIMELINE_CHART_HEIGHT, TIMELINE_CHART_PADDING, type PossessionBand, type PossessionBandRow } from './rows'
 
 const POSSESSION_BAND_MIN_WIDTH = 6
@@ -83,8 +84,8 @@ const PossessionBandTrack: React.FC<PossessionBandTrackProps> = ({
       onMouseMove={handleMouseMove}
       onMouseLeave={() => setHover(null)}
     >
-      <text x={4} y={10} className="event-display__metric-scale">{max.toFixed(3)}</text>
-      <text x={4} y={TIMELINE_CHART_HEIGHT - 3} className="event-display__metric-scale">{min.toFixed(3)}</text>
+      <text x={4} y={10} className="event-display__metric-scale">{formatMetricValue(row.column, max)}</text>
+      <text x={4} y={TIMELINE_CHART_HEIGHT - 3} className="event-display__metric-scale">{formatMetricValue(row.column, min)}</text>
       {segments.map((segment, index) => (
         <line
           key={index}
@@ -114,13 +115,13 @@ const PossessionBandTrack: React.FC<PossessionBandTrackProps> = ({
             rx={4} className="event-display__metric-tooltip-bg"
           />
           <text x={tooltipX + TOOLTIP_W / 2} y={TIMELINE_CHART_PADDING + 13} textAnchor="middle" className="event-display__metric-tooltip">
-            start {hover.band.start.toFixed(2)}
+            start {formatMetricValue(row.column, hover.band.start)}
           </text>
           <text x={tooltipX + TOOLTIP_W / 2} y={TIMELINE_CHART_PADDING + 26} textAnchor="middle" className="event-display__metric-tooltip">
-            end {hover.band.end.toFixed(2)}
+            end {formatMetricValue(row.column, hover.band.end)}
           </text>
           <text x={tooltipX + TOOLTIP_W / 2} y={TIMELINE_CHART_PADDING + 39} textAnchor="middle" className="event-display__metric-tooltip">
-            max {hover.band.max.toFixed(2)}
+            peak {formatMetricValue(row.column, hover.band.max)}
           </text>
         </>
       )}

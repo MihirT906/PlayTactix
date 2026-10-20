@@ -12,6 +12,20 @@
   gap: 2px;
 }
 
+.context-menu__section {
+  padding: 8px 10px 4px;
+  color: rgba(248, 250, 252, 0.55);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.context-menu__section:not(:first-child) {
+  margin-top: 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 .context-menu__item {
   appearance: none;
   width: 100%;
@@ -30,6 +44,11 @@
 .context-menu__item:focus-visible {
   background: rgba(139, 92, 246, 0.28);
   outline: none;
+}
+
+/* A picked option, in a menu that stays open while options are picked. */
+.context-menu__item[aria-pressed='true'] {
+  background: rgba(139, 92, 246, 0.2);
 }
 
 .context-menu__item:disabled {

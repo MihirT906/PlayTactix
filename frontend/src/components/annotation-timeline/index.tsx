@@ -1,11 +1,17 @@
 import { useCallback, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
 import type AnnotationStore from '../../services/AnnotationStore-optimized'
+import type TimelineStore from '../../services/TimelineStore'
 import { useMatchSession } from '../../context/MatchSessionContext'
 import { useStyleConfig } from '../../context/StyleConfigContext'
 import type { OverlaySegment } from '../../types/ClipInterfaces'
+import type { Event } from '../../types/FrameDataInterfaces'
+import type { PhasesOfPlay } from '../../types/KeyMomentsDataInterfaces'
+import type { MatchData } from '../../types/MatchDataInterfaces'
 import { SegmentRow } from './SegmentRow'
 import { BackgroundRow } from './BackgroundRow'
 import { AnnotationRows } from './AnnotationRows'
+import { InsightGroup } from './InsightGroup'
+import { TimelineGroup } from './TimelineGroup'
 import './AnnotationTimeline.css'
 
 const TIMELINE_LABEL_WIDTH = 220
@@ -23,31 +29,23 @@ type AnnotationTimelineProps = {
   sourceBounds: { min: number; max: number } | null
   annotationVersion: number
   onAnnotationUpdate: () => void
-}
-
-type TimelineGroupProps = {
-  title: string
-  children: React.ReactNode
-}
-
-/** One titled group of rows (Match Segments, Overlays, Annotations) inside the shared scroll area. */
-function TimelineGroup({ title, children }: TimelineGroupProps) {
-  return (
-    <div className="annotation-timeline__group">
-      <h3 className="annotation-timeline__group-title">{title}</h3>
-      {children}
-    </div>
-  )
+  timelineStore: TimelineStore
+  /** Every event and phase of play of the match, for the Insights tracks. */
+  matchEvents: Event[] | null
+  phases: PhasesOfPlay[] | null
+  matchData: MatchData | null
+  onInsightEventHover: (event: Event | null) => void
 }
 
 /**
- * Renders three groups over the same frame scale: Match Segments (the
- * source clip range), Overlays (one row per active overlay segment - pitch,
- * pitch control, pass probability), and Annotations (lane-packed rows of
- * player lines, drawn shapes). They share one horizontal scroll so their
- * playheads always line up. All bars are draggable to move/resize; each
+ * Renders four groups over the same frame scale: Match Segments (the
+ * source clip range), Insights (event and metric tracks across the clip),
+ * Overlays (one row per active overlay segment - pitch, pitch control, pass
+ * probability), and Annotations (lane-packed rows of player lines, drawn
+ * shapes). They share one horizontal scroll so their playheads always line
+ * up. Segment, overlay and annotation bars are draggable to move/resize; each
  * bar owns its own drag state - see useRangeDrag. Pressing an empty stretch
- * of any track seeks there.
+ * of any track seeks there, and pressing an insight event seeks to its start.
  */
 const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
   annotationStore,
@@ -56,6 +54,11 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
   sourceBounds,
   annotationVersion,
   onAnnotationUpdate,
+  timelineStore,
+  matchEvents,
+  phases,
+  matchData,
+  onInsightEventHover,
 }) => {
   const {
     session,
@@ -171,6 +174,21 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
               />
             )}
           </TimelineGroup>
+
+          <InsightGroup
+            timelineStore={timelineStore}
+            matchEvents={matchEvents}
+            phases={phases}
+            matchData={matchData}
+            clipFrame={clipFrame}
+            clipRange={clipRange}
+            scaleStart={scaleStart}
+            scaleEnd={scaleEnd}
+            labelWidth={TIMELINE_LABEL_WIDTH}
+            trackWidth={trackWidth}
+            currentFrameOffsetPercent={currentFrameOffsetPercent}
+            onEventHover={onInsightEventHover}
+          />
 
           <TimelineGroup title="Overlays">
             {overlaySegments.length === 0 ? (

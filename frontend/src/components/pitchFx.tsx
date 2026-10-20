@@ -35,6 +35,27 @@ export const SnapRing: React.FC<{ target: SnapTarget; color: string }> = ({ targ
   return <circle className="pitch-fx-snap-ring" cx={x} cy={y} r={SNAP_RING_RADIUS} fill={color} fillOpacity={0.2} stroke={color} strokeWidth={2} />
 }
 
+// The players of an insight event hovered on the timeline, in pitch metres: a ring on the player the
+// event is about and, when someone else has the ball (the passer of a passing option, the carrier being
+// pressed), a thinner ring on them and a dashed line across to the player. Keyed by event where it is
+// used, so it pops again for each event.
+export const EventHighlight: React.FC<{ player: Point; carrier: Point | null; color: string }> = ({ player, carrier, color }) => {
+  const { transform } = usePitch()
+  const [x, y] = transform.toPixel([player.x, player.y])
+  const carrierPixel = carrier ? transform.toPixel([carrier.x, carrier.y]) : null
+  return (
+    <g className="pitch-fx-fade-in">
+      {carrierPixel && (
+        <>
+          <line x1={carrierPixel[0]} y1={carrierPixel[1]} x2={x} y2={y} stroke={color} strokeWidth={1.5} strokeDasharray="4 3" opacity={0.85} />
+          <circle cx={carrierPixel[0]} cy={carrierPixel[1]} r={SNAP_RING_RADIUS} fill="none" stroke={color} strokeWidth={1.5} opacity={0.85} />
+        </>
+      )}
+      <circle className="pitch-fx-snap-ring" cx={x} cy={y} r={SNAP_RING_RADIUS + 2} fill={color} fillOpacity={0.25} stroke={color} strokeWidth={2.5} />
+    </g>
+  )
+}
+
 // A line from a to b (pixels) breaking: each half shrinks from the break back into its own end, fading
 // as it goes, while a spark at the break flashes out. `progress` runs from 0 to 1.
 export const SnappingEdge: React.FC<{ a: Point; b: Point; progress: number; width: number; color: string }> = ({ a, b, progress, width, color }) => {

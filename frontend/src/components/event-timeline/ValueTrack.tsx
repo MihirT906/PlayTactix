@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { formatMetricValue } from '../../services/timelineEvents'
+import type { Event } from '../../types/FrameDataInterfaces'
 import { EVENT_FILL_OPACITY, TIMELINE_CHART_HEIGHT, TIMELINE_CHART_PADDING, getEventLabel, type ValueRow } from './rows'
 
 // Events with no value still get a sliver, so they stay visible and hoverable.
@@ -7,12 +9,27 @@ const TOOLTIP_CHAR_WIDTH = 6.7
 
 type ValueTrackProps = {
   row: ValueRow
+  clipFrame: number
   timelineTrackWidth: number
   getEventColor: (teamId: number) => string
+  onEventSeek: (event: Event) => void
+  onEventHover: (event: Event | null) => void
 }
 
-const ValueTrack: React.FC<ValueTrackProps> = ({ row, timelineTrackWidth, getEventColor }) => {
+const ValueTrack: React.FC<ValueTrackProps> = ({
+  row,
+  clipFrame,
+  timelineTrackWidth,
+  getEventColor,
+  onEventSeek,
+  onEventHover,
+}) => {
   const [hoveredId, setHoveredId] = useState<string | null>(null)
+
+  const hover = (event: Event | null) => {
+    setHoveredId(event?.event_id ?? null)
+    onEventHover(event)
+  }
 
   const innerHeight = TIMELINE_CHART_HEIGHT - TIMELINE_CHART_PADDING * 2
   const baseline = TIMELINE_CHART_HEIGHT - TIMELINE_CHART_PADDING
@@ -35,7 +52,10 @@ const ValueTrack: React.FC<ValueTrackProps> = ({ row, timelineTrackWidth, getEve
     .sort((left, right) => right.height - left.height)
 
   const hovered = bars.find((bar) => bar.event.event_id === hoveredId)
-  const hoveredLabel = hovered ? getEventLabel(hovered.event, row.showSubtype, hovered.event.value) : ''
+  const hoveredValue = hovered?.event.value
+  const hoveredLabel = hovered
+    ? getEventLabel(hovered.event, row.showSubtype, hoveredValue != null ? formatMetricValue(row.column, hoveredValue) : null)
+    : ''
   const tooltipWidth = hoveredLabel.length * TOOLTIP_CHAR_WIDTH + 12
   const tooltipX = hovered ? Math.max(Math.min(hovered.x, timelineTrackWidth - tooltipWidth - 2), 2) : 0
 
@@ -44,9 +64,9 @@ const ValueTrack: React.FC<ValueTrackProps> = ({ row, timelineTrackWidth, getEve
       width={timelineTrackWidth}
       height={TIMELINE_CHART_HEIGHT}
       className="event-display__metric-svg"
-      onMouseLeave={() => setHoveredId(null)}
+      onMouseLeave={() => hover(null)}
     >
-      <text x={4} y={10} className="event-display__metric-scale">{row.max.toFixed(3)}</text>
+      <text x={4} y={10} className="event-display__metric-scale">{formatMetricValue(row.column, row.max)}</text>
       <line x1={0} y1={baseline} x2={timelineTrackWidth} y2={baseline} className="event-display__value-baseline" />
       {bars.map((bar) => (
         <rect
@@ -54,11 +74,21 @@ const ValueTrack: React.FC<ValueTrackProps> = ({ row, timelineTrackWidth, getEve
           x={bar.x} y={bar.y}
           width={bar.width} height={bar.height}
           fill={bar.color}
-          fillOpacity={bar.event.event_id === hoveredId ? 0.8 : EVENT_FILL_OPACITY}
+          fillOpacity={
+            bar.event.event_id === hoveredId || (bar.event.frame_start <= clipFrame && clipFrame <= bar.event.frame_end)
+              ? 0.8
+              : EVENT_FILL_OPACITY
+          }
           stroke={bar.color}
           className="event-display__value-bar"
-          onMouseEnter={() => setHoveredId(bar.event.event_id)}
-          onMouseLeave={() => setHoveredId(null)}
+          // Pressing a bar jumps to the start of its event.
+          onPointerDown={(pointerEvent) => {
+            if (pointerEvent.button !== 0) return
+            pointerEvent.stopPropagation()
+            onEventSeek(bar.event)
+          }}
+          onMouseEnter={() => hover(bar.event)}
+          onMouseLeave={() => hover(null)}
         />
       ))}
       {hovered ? (

@@ -1,4 +1,10 @@
-import type { AggregationMethod, FilterTimelineOption, MetricTimelineOption, TimelineOption } from '../types/TimelineOption'
+import type {
+    AggregationMethod,
+    FilterTimelineOption,
+    InsightFilter,
+    MetricTimelineOption,
+    TimelineOption,
+} from '../types/TimelineOption'
 import { getFilterTimelineLabel } from './timelineEvents'
 
 type CreateFilterTimelineInput = {
@@ -13,19 +19,54 @@ type CreateMetricTimelineInput = {
     aggregation: AggregationMethod
 }
 
-type CreateTimelineInput = CreateFilterTimelineInput | CreateMetricTimelineInput
+type CreatePhasesTimelineInput = {
+    kind: 'phases'
+}
+
+type CreateTimelineInput = CreateFilterTimelineInput | CreateMetricTimelineInput | CreatePhasesTimelineInput
 
 type TimelineStoreListener = (timelines: TimelineOption[]) => void
+type InsightFilterListener = (filter: InsightFilter) => void
+
+const PHASES_LABEL = 'Phases of play'
+const NO_FILTER: InsightFilter = { teamId: null, playerIds: [] }
 
 export default class TimelineStore {
-    private timelines: TimelineOption[] = []
+    // Declared first, as the initial phases track below takes an id from it.
+    private createdCount = 0
+    // A match opens with the phases track, so every other track has the phases to be read against.
+    private timelines: TimelineOption[] = [this.createTimeline({ kind: 'phases' })]
     private listeners: Set<TimelineStoreListener> = new Set()
+    // The filter is how the tracks are being looked at, not part of the work, so projects don't save it.
+    private filter: InsightFilter = NO_FILTER
+    private filterListeners: Set<InsightFilterListener> = new Set()
 
     add(input: CreateTimelineInput): TimelineOption {
         const timeline = this.createTimeline(input)
         this.timelines.push(timeline)
         this.notifyListeners()
         return timeline
+    }
+
+    // Removes the phases track if there is one, otherwise adds it as the first track.
+    togglePhases(): void {
+        if (this.timelines.some((timeline) => timeline.kind === 'phases')) {
+            this.timelines = this.timelines.filter((timeline) => timeline.kind !== 'phases')
+        } else {
+            this.timelines = [this.createTimeline({ kind: 'phases' }), ...this.timelines]
+        }
+        this.notifyListeners()
+    }
+
+    // Removes the metric's tracks if there are any, otherwise adds one. Returns the track added, if any.
+    toggleMetric(input: Omit<CreateMetricTimelineInput, 'kind'>): TimelineOption | null {
+        if (this.timelines.some((timeline) => timeline.kind === 'metric' && timeline.column === input.column)) {
+            this.timelines = this.timelines.filter((timeline) => timeline.kind !== 'metric' || timeline.column !== input.column)
+            this.notifyListeners()
+            return null
+        }
+
+        return this.add({ kind: 'metric', ...input })
     }
 
     load(timelines: TimelineOption[]): void {
@@ -71,9 +112,31 @@ export default class TimelineStore {
         return this.timelines.find((timeline) => timeline.id === id)
     }
 
-    clear(): void {
-        this.timelines = []
+    // Back to how a newly opened match starts: just the phases track, and no filter.
+    reset(): void {
+        this.timelines = [this.createTimeline({ kind: 'phases' })]
         this.notifyListeners()
+        this.setFilter(NO_FILTER)
+    }
+
+    getFilter(): InsightFilter {
+        return this.filter
+    }
+
+    setFilter(filter: InsightFilter): void {
+        this.filter = filter
+        for (const listener of this.filterListeners) {
+            listener(filter)
+        }
+    }
+
+    subscribeFilter(listener: InsightFilterListener): () => void {
+        this.filterListeners.add(listener)
+        listener(this.filter)
+
+        return () => {
+            this.filterListeners.delete(listener)
+        }
     }
 
     subscribe(listener: TimelineStoreListener): () => void {
@@ -87,6 +150,10 @@ export default class TimelineStore {
 
     private createTimeline(input: CreateTimelineInput): TimelineOption {
         const id = this.createTimelineId()
+
+        if (input.kind === 'phases') {
+            return { id, label: PHASES_LABEL, kind: 'phases' }
+        }
 
         if (input.kind === 'filter') {
             return {
@@ -109,7 +176,8 @@ export default class TimelineStore {
     }
 
     private createTimelineId(): string {
-        return `timeline-${Date.now()}-${this.timelines.length + 1}`
+        this.createdCount += 1
+        return `timeline-${Date.now()}-${this.createdCount}`
     }
 
     private notifyListeners(): void {

@@ -18,9 +18,9 @@ const RECIPE: { title: string; body: ReactNode }[] = [
     title: 'Discover the clip',
     body: (
       <>
-        Open <strong>Insights</strong> in the sidebar and add event and metric tracks, then press{' '}
-        <strong>Insights</strong> at the bottom of the pitch. The tracks show what is behind the clip: which players
-        were involved, what they did and how metrics such as xthreat moved.
+        Press <strong>Add track</strong> in <strong>Insights</strong> under the pitch to add event and metric tracks.
+        The tracks show what is behind the clip: which players were involved, what they did and how metrics such as
+        xthreat moved.
       </>
     ),
   },
@@ -192,12 +192,18 @@ const DOCS: { title: string; body: ReactNode }[] = [
     body: (
       <>
         <p>
-          Press <strong>Insights</strong> at the bottom of the pitch to see what was happening across the clip.
+          The <strong>Insights</strong> rows under the pitch show what was happening across the clip. Press{' '}
+          <strong>Add track</strong> to add one. An event track shows when a type of event happened, such as pressing
+          or an overlap, and who was involved. A metric track charts a value such as xthreat.
         </p>
         <p>
-          Add tracks from <strong>Insights</strong> in the sidebar. An event track shows when a type of event
-          happened, such as pressing or an overlap, and who was involved. A metric track charts a value such as
-          xthreat.
+          The first row shows the phases of play, coloured by the team with the ball. Hover one for how it started and
+          ended.
+        </p>
+        <p>
+          Hover an event to see its players on the pitch, and click an event or phase to jump to its start. Use the
+          team and <strong>Players</strong> filters to narrow the event tracks. Track settings, such as which subtypes
+          to show, are in <strong>Insights</strong> in the sidebar.
         </p>
       </>
     ),

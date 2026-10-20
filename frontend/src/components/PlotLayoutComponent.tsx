@@ -4,9 +4,9 @@ import Controls from './Controls'
 import PlotComponent from './PlotComponent'
 import type { MatchData } from '../types/MatchDataInterfaces'
 import type { FrameData, Event } from '../types/FrameDataInterfaces'
+import type { PhasesOfPlay } from '../types/KeyMomentsDataInterfaces'
 import type AnnotationStore from '../services/AnnotationStore-optimized'
 import type TimelineStore from '../services/TimelineStore'
-import EventDisplayComponent from './EventDisplayComponent'
 import AnnotationTimeline from './annotation-timeline'
 
 type PlotLayoutComponentProps = {
@@ -24,8 +24,8 @@ type PlotLayoutComponentProps = {
   missingFrameRanges: { start: number; end: number }[]
   matchData: MatchData | null
   frameData: FrameData | null
-  eventsData: Map<number, Event[]> | null
   matchEvents: Event[] | null
+  phases: PhasesOfPlay[] | null
   annotationStore: AnnotationStore
   timelineStore: TimelineStore
   onAnnotationUpdate: () => void
@@ -47,14 +47,15 @@ function PlotLayoutComponent({
   missingFrameRanges,
   matchData,
   frameData,
-  eventsData,
   matchEvents,
+  phases,
   annotationStore,
   timelineStore,
   onAnnotationUpdate,
   annotationVersion,
 }: PlotLayoutComponentProps) {
-  const [timelinesOpen, setTimelinesOpen] = useState(false)
+  // The insight event under the pointer on the timeline, whose players the pitch picks out.
+  const [hoveredInsightEvent, setHoveredInsightEvent] = useState<Event | null>(null)
 
   // The playable source-frame range of the loaded match - the ceiling a segment
   // edge can be dragged/extended to on the clip timeline.
@@ -95,31 +96,8 @@ function PlotLayoutComponent({
             annotationStore={annotationStore}
             onAnnotationUpdate={onAnnotationUpdate}
             annotationVersion={annotationVersion}
+            highlightedEvent={hoveredInsightEvent}
           />
-
-          <div className="plot-layout__timeline-dock">
-            <button
-              type="button"
-              className={`plot-layout__timeline-toggle${timelinesOpen ? ' is-open' : ''}`}
-              onClick={() => setTimelinesOpen((open) => !open)}
-              aria-expanded={timelinesOpen}
-              aria-label={timelinesOpen ? 'Hide insights' : 'Show insights'}
-            >
-              <span className="plot-layout__timeline-chevron" aria-hidden="true">▲</span>
-              <span className="plot-layout__timeline-toggle-text">Insights</span>
-            </button>
-
-            <div className={`plot-layout__timeline-panel${timelinesOpen ? ' is-open' : ''}`}>
-              <EventDisplayComponent
-                eventsData={eventsData}
-                clipRange={clipRange}
-                segmentStart={segmentRange.start}
-                clipFrame={clipFrame}
-                matchData={matchData}
-                timelineStore={timelineStore}
-              />
-            </div>
-          </div>
         </div>
       </div>
 
@@ -130,6 +108,11 @@ function PlotLayoutComponent({
         sourceBounds={sourceBounds}
         annotationVersion={annotationVersion}
         onAnnotationUpdate={onAnnotationUpdate}
+        timelineStore={timelineStore}
+        matchEvents={matchEvents}
+        phases={phases}
+        matchData={matchData}
+        onInsightEventHover={setHoveredInsightEvent}
       />
     </div>
   )

@@ -7,7 +7,6 @@ import OverlaysTab from './OverlaysTab.tsx'
 import type { MatchData } from '../types/MatchDataInterfaces'
 import type { KeyMomentsData } from '../types/KeyMomentsDataInterfaces'
 import TimelineStore from '../services/TimelineStore'
-import type { Event } from '../types/FrameDataInterfaces'
 import KeyMomentFinderComponent from './KeyMomentFinderComponent'
 import { useMatchSession } from '../context/MatchSessionContext'
 
@@ -18,8 +17,6 @@ type WorkspaceSidebarProps = {
   onActivePanelChange: (panel: SidebarPanel) => void
   matchData: MatchData | null
   timelineStore: TimelineStore
-  eventsData: Map<number, Event[]> | null
-  clipRange: { start: number; end: number }
   segmentRange: { start: number; end: number }
   onAddSegment: (start: number, end: number) => void
   keyMomentsData: KeyMomentsData | null
@@ -30,8 +27,6 @@ function WorkspaceSidebar({
   onActivePanelChange,
   matchData,
   timelineStore,
-  eventsData,
-  clipRange,
   segmentRange,
   onAddSegment,
   keyMomentsData,
@@ -202,9 +197,7 @@ function WorkspaceSidebar({
         <div id="timeline-sidebar-panel" className="settings-sidebar-panel timeline-sidebar-panel">
           <TimelineTab
             timelineStore={timelineStore}
-            eventsData={eventsData}
-            clipRange={clipRange}
-            segmentStart={segmentRange.start}
+            matchEvents={keyMomentsData?.events ?? null}
           />
         </div>
       ) : isSearchPanelOpen ? (

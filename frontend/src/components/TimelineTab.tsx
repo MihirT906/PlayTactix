@@ -1,24 +1,30 @@
 import { useEffect, useMemo, useState } from 'react'
 import { FaChartLine, FaChevronDown, FaEye, FaEyeSlash, FaTimes } from 'react-icons/fa'
 import TimelineStore from '../services/TimelineStore'
-import { HEIGHT_COLUMNS, getClipEvents, getEventMetricValue, matchesFilterTimeline } from '../services/timelineEvents'
+import { useMatchSession } from '../context/MatchSessionContext'
+import {
+  HEIGHT_COLUMNS,
+  METRICS,
+  getClipEvents,
+  getEventMetricValue,
+  getMetricDescription,
+  getMetricLabel,
+  getTrackLabel,
+  matchesFilterTimeline,
+  matchesInsightFilter,
+  type MetricDefinition,
+} from '../services/timelineEvents'
 import { EVENT_TYPES, formatEventValue } from '../constants/eventData'
 import type { Event } from '../types/FrameDataInterfaces'
-import type { AggregationMethod, FilterTimelineOption, MetricTimelineOption, TimelineOption } from '../types/TimelineOption'
+import type {
+  AggregationMethod,
+  FilterTimelineOption,
+  InsightFilter,
+  MetricTimelineOption,
+  PhasesTimelineOption,
+  TimelineOption,
+} from '../types/TimelineOption'
 import './TimelineTab.css'
-
-type MetricDefinition = {
-  column: string
-  label: string
-  aggregation: AggregationMethod
-}
-
-const METRICS: MetricDefinition[] = [
-  { column: 'xpass_completion', label: 'xpass_completion', aggregation: 'average' },
-  { column: 'xthreat', label: 'xthreat', aggregation: 'max' },
-  { column: 'xloss_player_possession', label: 'xloss_player_possession', aggregation: 'band' },
-  { column: 'xshot_player_possession', label: 'xshot_player_possession', aggregation: 'band' },
-]
 
 // Band metrics are drawn per possession, so only line metrics offer a choice.
 const LINE_AGGREGATIONS: { value: AggregationMethod; label: string; description: string }[] = [
@@ -31,47 +37,49 @@ const BAND_DESCRIPTION = 'Start, end and peak value for each possession.'
 
 type TimelineTabProps = {
   timelineStore: TimelineStore
-  eventsData: Map<number, Event[]> | null
-  clipRange: { start: number; end: number }
-  segmentStart: number
+  /** Every event of the match; the ones in the clip are found through its match segments. */
+  matchEvents: Event[] | null
 }
 
-function TimelineTab({ timelineStore, eventsData, clipRange, segmentStart }: TimelineTabProps) {
+function TimelineTab({ timelineStore, matchEvents }: TimelineTabProps) {
+  const { session } = useMatchSession()
   const [expandedTimelineId, setExpandedTimelineId] = useState<string | null>(null)
   const [timelines, setTimelines] = useState<TimelineOption[]>(timelineStore.getAll())
+  const [filter, setFilter] = useState<InsightFilter>(timelineStore.getFilter())
+  const matchSegments = session.playback.clip.matchSegments
 
   useEffect(() => timelineStore.subscribe(setTimelines), [timelineStore])
+  useEffect(() => timelineStore.subscribeFilter(setFilter), [timelineStore])
 
-  // Subtypes, and the columns that can set bar height, are read from the loaded events rather than
+  // Subtypes, and the columns that can set bar height, are read from the match's events rather than
   // hardcoded per event type.
   const { subtypesByEventType, heightColumnsByEventType } = useMemo(() => {
     const subtypes = new Map<string, Set<string>>()
     const heightColumns = new Map<string, Set<string>>()
 
-    for (const frameEvents of eventsData?.values() ?? []) {
-      for (const event of frameEvents) {
-        for (const column of HEIGHT_COLUMNS) {
-          if (getEventMetricValue(event, column) == null) continue
-          if (!heightColumns.has(event.event_type)) heightColumns.set(event.event_type, new Set())
-          heightColumns.get(event.event_type)!.add(column)
-        }
-
-        if (!event.event_subtype) continue
-        if (!subtypes.has(event.event_type)) subtypes.set(event.event_type, new Set())
-        subtypes.get(event.event_type)!.add(event.event_subtype)
+    for (const event of matchEvents ?? []) {
+      for (const column of HEIGHT_COLUMNS) {
+        if (getEventMetricValue(event, column) == null) continue
+        if (!heightColumns.has(event.event_type)) heightColumns.set(event.event_type, new Set())
+        heightColumns.get(event.event_type)!.add(column)
       }
+
+      if (!event.event_subtype) continue
+      if (!subtypes.has(event.event_type)) subtypes.set(event.event_type, new Set())
+      subtypes.get(event.event_type)!.add(event.event_subtype)
     }
 
     return { subtypesByEventType: subtypes, heightColumnsByEventType: heightColumns }
-  }, [eventsData])
+  }, [matchEvents])
 
-  const clipEvents = useMemo(
-    () => getClipEvents(eventsData, { start: clipRange.start, end: clipRange.end }, segmentStart),
-    [eventsData, clipRange.start, clipRange.end, segmentStart],
+  // Counted as the event tracks show them, through the team and player filter.
+  const filteredClipEvents = useMemo(
+    () => getClipEvents(matchEvents, matchSegments).filter((event) => matchesInsightFilter(filter, event)),
+    [matchEvents, matchSegments, filter],
   )
 
   const countClipEvents = (eventType: string, subtypes: string[]) =>
-    clipEvents.filter((event) => matchesFilterTimeline({ eventType, subtypes }, event)).length
+    filteredClipEvents.filter((event) => matchesFilterTimeline({ eventType, subtypes }, event)).length
 
   const handleAddFilterTimeline = (eventType: string) => {
     const timeline = timelineStore.add({ kind: 'filter', eventType })
@@ -87,20 +95,8 @@ function TimelineTab({ timelineStore, eventsData, clipRange, segmentStart }: Tim
   }
 
   const handleToggleMetric = (metric: MetricDefinition) => {
-    const existing = timelines.filter((timeline) => timeline.kind === 'metric' && timeline.column === metric.column)
-
-    if (existing.length > 0) {
-      existing.forEach((timeline) => timelineStore.remove(timeline.id))
-      return
-    }
-
-    const timeline = timelineStore.add({
-      kind: 'metric',
-      label: metric.label,
-      column: metric.column,
-      aggregation: metric.aggregation,
-    })
-    setExpandedTimelineId(timeline.id)
+    const timeline = timelineStore.toggleMetric(metric)
+    if (timeline) setExpandedTimelineId(timeline.id)
   }
 
   const renderTrackActions = (timeline: TimelineOption) => (
@@ -109,7 +105,7 @@ function TimelineTab({ timelineStore, eventsData, clipRange, segmentStart }: Tim
         type="button"
         className="timeline-track-icon-button"
         onClick={() => timelineStore.setHidden(timeline.id, !timeline.hidden)}
-        aria-label={timeline.hidden ? `Show ${timeline.label}` : `Hide ${timeline.label}`}
+        aria-label={`${timeline.hidden ? 'Show' : 'Hide'} ${getTrackLabel(timeline)}`}
         aria-pressed={Boolean(timeline.hidden)}
       >
         {timeline.hidden ? <FaEyeSlash aria-hidden="true" /> : <FaEye aria-hidden="true" />}
@@ -118,7 +114,7 @@ function TimelineTab({ timelineStore, eventsData, clipRange, segmentStart }: Tim
         type="button"
         className="timeline-track-icon-button"
         onClick={() => timelineStore.remove(timeline.id)}
-        aria-label={`Remove ${timeline.label}`}
+        aria-label={`Remove ${getTrackLabel(timeline)}`}
       >
         <FaTimes aria-hidden="true" />
       </button>
@@ -207,8 +203,9 @@ function TimelineTab({ timelineStore, eventsData, clipRange, segmentStart }: Tim
                       className="timeline-chip"
                       aria-pressed={timeline.heightBy === column}
                       onClick={() => timelineStore.updateFilter(timeline.id, { heightBy: column })}
+                      title={getMetricDescription(column)}
                     >
-                      {column}
+                      {getMetricLabel(column)}
                     </button>
                   ))}
                 </div>
@@ -220,12 +217,24 @@ function TimelineTab({ timelineStore, eventsData, clipRange, segmentStart }: Tim
     )
   }
 
+  const renderPhasesTrack = (timeline: PhasesTimelineOption) => (
+    <li key={timeline.id} className={`timeline-track${timeline.hidden ? ' is-hidden' : ''}`}>
+      <div className="timeline-track-header">
+        <span className="timeline-track-toggle">
+          <span className="timeline-track-label">{timeline.label}</span>
+        </span>
+        {renderTrackActions(timeline)}
+      </div>
+    </li>
+  )
+
   const renderMetricTrack = (timeline: MetricTimelineOption) => {
     const isExpanded = expandedTimelineId === timeline.id
     const isBand = timeline.aggregation === 'band'
     const description = isBand
       ? BAND_DESCRIPTION
       : LINE_AGGREGATIONS.find((option) => option.value === timeline.aggregation)?.description
+    const label = getTrackLabel(timeline)
 
     return (
       <li key={timeline.id} className={`timeline-track${timeline.hidden ? ' is-hidden' : ''}`}>
@@ -237,7 +246,9 @@ function TimelineTab({ timelineStore, eventsData, clipRange, segmentStart }: Tim
             aria-expanded={isExpanded}
           >
             <FaChevronDown className={`timeline-track-chevron${isExpanded ? ' is-open' : ''}`} aria-hidden="true" />
-            <span className="timeline-track-label">{timeline.label}</span>
+            <span className="timeline-track-label" title={getMetricDescription(timeline.column)}>
+              {label}
+            </span>
             <FaChartLine aria-hidden="true" />
           </button>
           {renderTrackActions(timeline)}
@@ -245,7 +256,7 @@ function TimelineTab({ timelineStore, eventsData, clipRange, segmentStart }: Tim
         {isExpanded ? (
           <div className="timeline-track-body">
             {isBand ? null : (
-              <div className="timeline-chip-group" role="group" aria-label={`${timeline.label} aggregation`}>
+              <div className="timeline-chip-group" role="group" aria-label={`${label} aggregation`}>
                 {LINE_AGGREGATIONS.map((option) => (
                   <button
                     key={option.value}
@@ -259,6 +270,7 @@ function TimelineTab({ timelineStore, eventsData, clipRange, segmentStart }: Tim
                 ))}
               </div>
             )}
+            <p className="timeline-track-note">{getMetricDescription(timeline.column)}</p>
             <p className="timeline-track-note">{description}</p>
           </div>
         ) : null}
@@ -276,12 +288,31 @@ function TimelineTab({ timelineStore, eventsData, clipRange, segmentStart }: Tim
         {timelines.length > 0 ? (
           <ul className="timeline-track-list">
             {timelines.map((timeline) =>
-              timeline.kind === 'filter' ? renderFilterTrack(timeline) : renderMetricTrack(timeline),
+              timeline.kind === 'filter'
+                ? renderFilterTrack(timeline)
+                : timeline.kind === 'metric'
+                  ? renderMetricTrack(timeline)
+                  : renderPhasesTrack(timeline),
             )}
           </ul>
         ) : (
           <p className="timeline-track-note">No tracks yet. Add events or a metric below.</p>
         )}
+      </section>
+      <section className="timeline-section" aria-labelledby="timeline-add-context-heading">
+        <h3 id="timeline-add-context-heading" className="timeline-section-label">
+          Add context
+        </h3>
+        <div className="timeline-chip-group">
+          <button
+            type="button"
+            className="timeline-chip"
+            aria-pressed={timelines.some((timeline) => timeline.kind === 'phases')}
+            onClick={() => timelineStore.togglePhases()}
+          >
+            Phases of play
+          </button>
+        </div>
       </section>
       <section className="timeline-section" aria-labelledby="timeline-add-events-heading">
         <h3 id="timeline-add-events-heading" className="timeline-section-label">
@@ -313,6 +344,7 @@ function TimelineTab({ timelineStore, eventsData, clipRange, segmentStart }: Tim
               className="timeline-chip"
               aria-pressed={timelines.some((timeline) => timeline.kind === 'metric' && timeline.column === metric.column)}
               onClick={() => handleToggleMetric(metric)}
+              title={getMetricDescription(metric.column)}
             >
               {metric.label}
             </button>

@@ -42,4 +42,4 @@ interface Shot {
     time_end: string
 }
 
-export type { KeyMomentsData }
+export type { KeyMomentsData, PhasesOfPlay }

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { formatMetricValue } from '../../services/timelineEvents'
 import { TIMELINE_CHART_HEIGHT, TIMELINE_CHART_PADDING, type MetricRow } from './rows'
 
 type MetricTrackProps = {
@@ -79,8 +80,8 @@ const MetricTrack: React.FC<MetricTrackProps> = ({ row, scaleStart, visibleFrame
       onMouseMove={handleMouseMove}
       onMouseLeave={() => setHover(null)}
     >
-      <text x={4} y={10} className="event-display__metric-scale">{max.toFixed(3)}</text>
-      <text x={4} y={TIMELINE_CHART_HEIGHT - 3} className="event-display__metric-scale">{min.toFixed(3)}</text>
+      <text x={4} y={10} className="event-display__metric-scale">{formatMetricValue(row.column, max)}</text>
+      <text x={4} y={TIMELINE_CHART_HEIGHT - 3} className="event-display__metric-scale">{formatMetricValue(row.column, min)}</text>
       {segments.map((pts, i) => (
         <polyline key={i} points={pts.join(' ')} className="event-display__metric-line" />
       ))}
@@ -94,7 +95,7 @@ const MetricTrack: React.FC<MetricTrackProps> = ({ row, scaleStart, visibleFrame
           <circle cx={hover.x} cy={hoverY} r={3.5} className="event-display__metric-dot" />
           <rect x={tooltipX} y={TIMELINE_CHART_PADDING} width={TOOLTIP_W} height={18} rx={4} className="event-display__metric-tooltip-bg" />
           <text x={tooltipX + TOOLTIP_W / 2} y={TIMELINE_CHART_PADDING + 13} textAnchor="middle" className="event-display__metric-tooltip">
-            {hover.value.toFixed(3)}
+            {formatMetricValue(row.column, hover.value)}
           </text>
         </>
       )}

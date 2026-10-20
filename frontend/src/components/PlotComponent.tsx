@@ -20,6 +20,7 @@ import FocusSpotlight from './FocusSpotlight'
 import PlayerLinks, { type PlayerLink } from './PlayerLinks'
 import TeamShapes, { type TeamShapeGhost, type TeamShapeMark } from './TeamShapes'
 import { SnapRing, type SnapTarget } from './pitchFx'
+import { convexHull, polygonArea, polygonContains } from '../plot/overlays/teamShapeOverlay'
 
 import { getLogger } from "../services/logger";
 
@@ -84,6 +85,45 @@ const pixelToPitch = (px: number, py: number) => {
   }
 }
 
+const CLICK_SLOP_PX = 4 // A press that moves further than this is a drag, not a click
+
+// The index in the frame of the player whose marker is at (mx, my), pixels within the graph div, or -1.
+const playerIndexAtPixel = (gd: any, fd: FrameData, overrides: Map<number, { x: number; y: number }>, mx: number, my: number, radius: number) => {
+  const xa = gd._fullLayout.xaxis
+  const ya = gd._fullLayout.yaxis
+  let hitIndex = -1
+  let bestDist = radius
+  fd.players.player_id.forEach((playerId, i) => {
+    const override = overrides.get(playerId)
+    const px = xa.c2p(override?.x ?? fd.players.x[i]) + xa._offset
+    const py = ya.c2p(override?.y ?? fd.players.y[i]) + ya._offset
+    const dist = Math.hypot(px - mx, py - my)
+    if (dist <= bestDist) {
+      bestDist = dist
+      hitIndex = i
+    }
+  })
+  return hitIndex
+}
+
+// The key of the team shape at (mx, my), pixels within the graph div; of overlapping ones, the smallest.
+const teamShapeAtPixel = (gd: any, shapes: TeamShapeMark[], mx: number, my: number) => {
+  const xa = gd._fullLayout.xaxis
+  const ya = gd._fullLayout.yaxis
+  const point = { x: xa.p2c(mx - xa._offset), y: ya.p2c(my - ya._offset) }
+  let hitKey: string | null = null
+  let smallestArea = Infinity
+  for (const shape of shapes) {
+    const hull = convexHull(shape.points)
+    const area = polygonArea(hull)
+    if (area < smallestArea && polygonContains(hull, point)) {
+      smallestArea = area
+      hitKey = shape.key
+    }
+  }
+  return hitKey
+}
+
 // Plotly bug workaround: every frame change hands Plotly new data arrays, so it does a full redraw, and a
 // full redraw (shapes.draw) clears the 'above' and 'below' shape layers but never the 'between' layer that
 // player lines are drawn in. Any 'between' shape whose index no longer exists in layout.shapes (a line
@@ -123,6 +163,11 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
   const [draftArrow, setDraftArrow] = useState<ArrowShape | null>(null) // Arrow being dragged out, not yet in the store
   const [pickCursor, setPickCursor] = useState<{ x: number; y: number } | null>(null) // Pointer in pitch metres, while a pick tool is on
   const [activeShapeIndex, setActiveShapeIndex] = useState<number | null>(null) // The shape Plotly has selected, for erasing
+  // The team shape selected for erasing. Team shapes are drawn by PitchKit, so they are selected here
+  // rather than by Plotly; at most one of the two selections is ever set.
+  const [selectedTeamShapeKey, setSelectedTeamShapeKey] = useState<string | null>(null)
+  const pointerDownRef = useRef<{ clientX: number; clientY: number; onPlotlyShape: boolean } | null>(null)
+  const teamShapesRef = useRef<TeamShapeMark[]>([])
   const [overlayTraces, setOverlayTraces] = useState<any[]>([]);
   // Temporary, visualisation-only position edits keyed by player id. These are
   // layered on top of frameData while playback is paused and are wiped whenever
@@ -430,6 +475,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
 
   // Switching tools (not just pausing one for playback) ends what the previous tool was building.
   useEffect(() => {
+    setSelectedTeamShapeKey(null)
     // Leaving 'Team Shape' finishes the shape being built; the next one starts from no players.
     if (selectedTool !== 'team_shape') {
       shapeKeyRef.current = null
@@ -520,6 +566,9 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
 
   // Plotly's selected shape, when it is one of the player lines (they come first in layout.shapes).
   const selectedLinkKey = activeShapeIndex !== null && activeShapeIndex < links.length ? links[activeShapeIndex].key : null
+  // A selected team shape that has since gone (its bar ended, or it was deleted) is no longer selected.
+  const selectedShapeKey = teamShapes.some((shape) => shape.key === selectedTeamShapeKey) ? selectedTeamShapeKey : null
+  teamShapesRef.current = teamShapes
 
   // While a pick tool is on, the visible player nearest the pointer, if close enough to pick. Link
   // Players leaves out the first player already picked.
@@ -659,39 +708,20 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     if (playing || !fd || mode !== null) return
     const gd = graphDivRef.current
     if (!gd?._fullLayout) return
-    const xa = gd._fullLayout.xaxis
-    const ya = gd._fullLayout.yaxis
     const rect = gd.getBoundingClientRect()
-    const mx = e.clientX - rect.left
-    const my = e.clientY - rect.top
-
-    const ids = fd.players.player_id
-    let hitIndex = -1
-    let bestDist = DRAG_HIT_RADIUS_PX
-    for (let i = 0; i < ids.length; i++) {
-      const override = overrides.get(ids[i])
-      const dataX = override?.x ?? fd.players.x[i]
-      const dataY = override?.y ?? fd.players.y[i]
-      const px = xa.c2p(dataX) + xa._offset
-      const py = ya.c2p(dataY) + ya._offset
-      const dist = Math.hypot(px - mx, py - my)
-      if (dist <= bestDist) {
-        bestDist = dist
-        hitIndex = i
-      }
-    }
+    const hitIndex = playerIndexAtPixel(gd, fd, overrides, e.clientX - rect.left, e.clientY - rect.top, DRAG_HIT_RADIUS_PX)
     if (hitIndex === -1) return // not on a player - let Plotly handle the event
 
     e.stopPropagation()
     e.preventDefault()
-    dragStateRef.current = { playerId: ids[hitIndex] }
+    dragStateRef.current = { playerId: fd.players.player_id[hitIndex] }
     gd.style.cursor = 'grabbing'
     window.addEventListener('mousemove', onDragMove, true)
     window.addEventListener('mouseup', endDrag, true)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [DRAG_HIT_RADIUS_PX, onDragMove, endDrag])
 
-  // Show a grab cursor when hovering a player while paused
+  // Show a grab cursor when hovering a player while paused, and a pointer over a team shape to select
   const onHoverCursor = useCallback((e: MouseEvent) => {
     const { frameData: fd, isPlaying: playing, positionOverrides: overrides, editMode: mode } = dragDepsRef.current
     const gd = graphDivRef.current
@@ -700,32 +730,54 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
       gd.style.cursor = ''
       return
     }
-    const xa = gd._fullLayout.xaxis
-    const ya = gd._fullLayout.yaxis
     const rect = gd.getBoundingClientRect()
     const mx = e.clientX - rect.left
     const my = e.clientY - rect.top
-    const ids = fd.players.player_id
-    let onPlayer = false
-    for (let i = 0; i < ids.length; i++) {
-      const override = overrides.get(ids[i])
-      const px = xa.c2p(override?.x ?? fd.players.x[i]) + xa._offset
-      const py = ya.c2p(override?.y ?? fd.players.y[i]) + ya._offset
-      if (Math.hypot(px - mx, py - my) <= DRAG_HIT_RADIUS_PX) {
-        onPlayer = true
-        break
-      }
-    }
-    gd.style.cursor = onPlayer ? 'grab' : ''
+    if (playerIndexAtPixel(gd, fd, overrides, mx, my, DRAG_HIT_RADIUS_PX) !== -1) gd.style.cursor = 'grab'
+    else gd.style.cursor = teamShapeAtPixel(gd, teamShapesRef.current, mx, my) ? 'pointer' : ''
   }, [DRAG_HIT_RADIUS_PX])
 
   // Plotly selects a shape on click without any event, so its selection is read back after every
-  // redraw and click, for the PitchKit-drawn player lines to show it.
+  // redraw and click, for the PitchKit-drawn player lines to show it. A Plotly selection clears a team shape's.
   const syncActiveShape = useCallback(() => {
     const index = graphDivRef.current?._fullLayout?._activeShapeIndex
-    setActiveShapeIndex(typeof index === 'number' && index >= 0 ? index : null)
+    const active = typeof index === 'number' && index >= 0
+    setActiveShapeIndex(active ? index : null)
+    if (active) setSelectedTeamShapeKey(null)
   }, [])
-  const syncActiveShapeAfterClick = useCallback(() => requestAnimationFrame(syncActiveShape), [syncActiveShape])
+
+  const onPointerDown = useCallback((e: MouseEvent) => {
+    const onPlotlyShape = e.target instanceof Element && e.target.closest('.shapelayer') !== null
+    pointerDownRef.current = { clientX: e.clientX, clientY: e.clientY, onPlotlyShape }
+  }, [])
+
+  // A click with no tool on selects the team shape under it, or clears the selection on empty pitch.
+  // A click on a Plotly shape is Plotly's to select, and on a player leaves the selection alone. Runs a
+  // frame later, once Plotly has handled the click. Listened for on the window: Plotly covers the page
+  // with its own element while the button is down, so the release never reaches the graph div.
+  const onPlotMouseUp = useCallback((e: MouseEvent) => {
+    const down = pointerDownRef.current
+    if (down === null) return // The press began outside the plot
+    pointerDownRef.current = null
+    requestAnimationFrame(() => {
+      const gd = graphDivRef.current
+      const { frameData: fd, positionOverrides: overrides, editMode: mode } = dragDepsRef.current
+      const isClick = Math.hypot(e.clientX - down.clientX, e.clientY - down.clientY) <= CLICK_SLOP_PX
+      if (isClick && down.onPlotlyShape) {
+        setSelectedTeamShapeKey(null)
+      } else if (isClick && mode === null && fd && gd?._fullLayout) {
+        const rect = gd.getBoundingClientRect()
+        const mx = down.clientX - rect.left
+        const my = down.clientY - rect.top
+        if (playerIndexAtPixel(gd, fd, overrides, mx, my, DRAG_HIT_RADIUS_PX) === -1) {
+          const key = teamShapeAtPixel(gd, teamShapesRef.current, mx, my)
+          if (key) gd._fullLayout._deactivateShape?.(gd)
+          setSelectedTeamShapeKey(key)
+        }
+      }
+      syncActiveShape()
+    })
+  }, [DRAG_HIT_RADIUS_PX, syncActiveShape])
 
   // Bind the imperative pointer handlers once we have the Plotly graph div
   const handleGraphDiv = useCallback((figure: any, gd: any) => {
@@ -733,24 +785,26 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     removeOrphanedBetweenShapes(gd, figure?.layout?.shapes?.length ?? 0)
     if (graphDivRef.current !== gd) {
       graphDivRef.current = gd
+      gd.addEventListener('mousedown', onPointerDown, true)
       gd.addEventListener('mousedown', onDragStart, true)
       gd.addEventListener('mousemove', onHoverCursor)
-      gd.addEventListener('mouseup', syncActiveShapeAfterClick)
+      window.addEventListener('mouseup', onPlotMouseUp, true)
     }
     syncActiveShape()
-  }, [onDragStart, onHoverCursor, syncActiveShape, syncActiveShapeAfterClick])
+  }, [onPointerDown, onDragStart, onHoverCursor, onPlotMouseUp, syncActiveShape])
 
   useEffect(() => {
     return () => {
       const gd = graphDivRef.current
       if (!gd) return
+      gd.removeEventListener('mousedown', onPointerDown, true)
       gd.removeEventListener('mousedown', onDragStart, true)
       gd.removeEventListener('mousemove', onHoverCursor)
-      gd.removeEventListener('mouseup', syncActiveShapeAfterClick)
+      window.removeEventListener('mouseup', onPlotMouseUp, true)
       window.removeEventListener('mousemove', onDragMove, true)
       window.removeEventListener('mouseup', endDrag, true)
     }
-  }, [onDragStart, onHoverCursor, onDragMove, endDrag, syncActiveShapeAfterClick])
+  }, [onPointerDown, onDragStart, onHoverCursor, onDragMove, endDrag, onPlotMouseUp])
 
   // Erasing the shape a user has clicked/selected on the plot (Plotly's own
   // "active shape" concept) has no public JS API - the only place that logic
@@ -761,8 +815,16 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
   // reaches this component through resources.plotActions and we just click
   // Plotly's own hidden button on its behalf, letting Plotly do the erase and
   // emit the plotly_relayout that handleRelayout already knows how to handle.
+  // A selected team shape is erased here instead, from this frame on, as Plotly erases its own shapes.
   useEffect(() => {
     resources.plotActions.eraseActiveShape = () => {
+      if (selectedShapeKey) {
+        annotationStore.endAnnotation(selectedShapeKey, clipFrame)
+        setSelectedTeamShapeKey(null)
+        setAnnotationTick((tick) => tick + 1)
+        onAnnotationUpdate?.()
+        return
+      }
       const gd = graphDivRef.current
       if (!gd) return
       const eraseButton = gd.querySelector('.modebar-btn[data-title="Erase active shape"]') as HTMLElement | null
@@ -771,7 +833,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     return () => {
       if (resources.plotActions.eraseActiveShape) resources.plotActions.eraseActiveShape = null
     }
-  }, [resources])
+  }, [resources, selectedShapeKey, annotationStore, clipFrame, onAnnotationUpdate])
 
   // Draws an arrow by dragging on the pitch: press for the tail, release for the head
   const handleArrowMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -1000,7 +1062,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
           padding={pitchKitProps.padding}
           style={ARROW_LAYER_STYLE}
         >
-          <TeamShapes shapes={teamShapes} ghost={teamShapeGhost} strokeWidth={plotConfig.teamShapeStrokeWidth} />
+          <TeamShapes shapes={teamShapes} selectedKey={selectedShapeKey} ghost={teamShapeGhost} strokeWidth={plotConfig.teamShapeStrokeWidth} />
           <FocusSpotlight spots={focusSpots} />
           <PlayerLinks links={links} selectedKey={selectedLinkKey} draft={linkDraft} color={plotConfig.focusLineColor} />
           {pickSnapTarget && (

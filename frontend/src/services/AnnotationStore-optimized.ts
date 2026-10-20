@@ -227,6 +227,17 @@ export default class AnnotationStore {
         this.reconstruct_active_annotations(currentFrame);
     }
 
+    endAnnotation(key: string, currentFrame: number) {
+        // Erases an annotation from this frame on (used for annotations drawn outside Plotly, such as team
+        // shapes), the way erasing a Plotly shape does: one made on this very frame is never stored.
+        const annotation = this.annotations.get(key);
+        if (!annotation) return;
+        logger.info("Ended annotation", key, "at frame:", currentFrame);
+        if ((annotation.frameStart ?? 0) >= currentFrame) this.discardAnnotation(key);
+        else annotation.frameEnd = currentFrame;
+        this.reconstruct_active_annotations(currentFrame);
+    }
+
     removeAnnotation(key: string) {
         // Permanently drops a single annotation (used by the timeline's right-click delete).
         if (!this.annotations.has(key)) return;

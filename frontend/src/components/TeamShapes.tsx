@@ -19,6 +19,7 @@ const MORPH_DURATION = 350 // ms for a shape to reshape after a player is added 
 const MORPH_SAMPLES = 64 // Points round the outline while morphing, so hulls of any corner count blend
 const SNAP_DURATION = 250 // ms for a removed shape's edges to recoil
 const PILL_DELAY = '450ms' // The pill pops in as the fill settles
+const SELECTED_HALO_WIDTH = 6 // pixels beyond the outline on each side
 
 // Compactness: the fill is strongest round a tight block and fades as it stretches.
 const COMPACT_AREA_PER_PLAYER = 40 // square metres
@@ -42,9 +43,14 @@ type Leaving = { startedAt: StartedAt; outline: Point[]; color: string; fillOpac
 // Team shapes drawn on a PitchKit layer, so they can animate. A new shape's fill inflates from its
 // centre, overshooting the outline before settling; adding or letting go of a player morphs the outline
 // smoothly into the new hull; a removed shape's edges snap at their middles and recoil into the players.
-// The fill follows how compact the block is, with its width and depth in a pill at the centre. Must be
-// rendered inside a <Pitch>.
-const TeamShapes: React.FC<{ shapes: TeamShapeMark[]; ghost: TeamShapeGhost | null; strokeWidth: number }> = ({ shapes, ghost, strokeWidth }) => {
+// The fill follows how compact the block is, with its width and depth in a pill at the centre. The
+// selected shape (to erase) is haloed. Must be rendered inside a <Pitch>.
+const TeamShapes: React.FC<{
+  shapes: TeamShapeMark[]
+  selectedKey: string | null
+  ghost: TeamShapeGhost | null
+  strokeWidth: number
+}> = ({ shapes, selectedKey, ghost, strokeWidth }) => {
   const { transform } = usePitch()
   const [previousShapes, setPreviousShapes] = useState(shapes)
   const [inflating, setInflating] = useState<Map<string, { startedAt: StartedAt }>>(new Map())
@@ -132,6 +138,16 @@ const TeamShapes: React.FC<{ shapes: TeamShapeMark[]; ghost: TeamShapeGhost | nu
     return (
       <g key={shape.key} style={{ '--pill-delay': PILL_DELAY } as React.CSSProperties}>
         <polygon points={pointsAttribute(fill)} fill={shape.color} fillOpacity={fillOpacityOf(shape)} stroke="none" />
+        {shape.key === selectedKey && (
+          <polygon
+            points={pointsAttribute(outline)}
+            fill="none"
+            stroke="#ffffff"
+            strokeOpacity={0.45}
+            strokeWidth={strokeWidth + SELECTED_HALO_WIDTH * 2}
+            strokeLinejoin="round"
+          />
+        )}
         <polygon
           points={pointsAttribute(outline)}
           fill="none"

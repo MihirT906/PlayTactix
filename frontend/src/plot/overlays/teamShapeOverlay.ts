@@ -51,6 +51,16 @@ export function polygonCentroid(polygon: Point[]): Point {
   return { x: x / (3 * twiceArea), y: y / (3 * twiceArea) }
 }
 
+// Whether the point is inside the polygon (even-odd ray casting).
+export function polygonContains(polygon: Point[], point: Point): boolean {
+  let inside = false
+  polygon.forEach((a, i) => {
+    const b = polygon[(i + 1) % polygon.length]
+    if (a.y > point.y !== b.y > point.y && point.x < a.x + ((point.y - a.y) * (b.x - a.x)) / (b.y - a.y)) inside = !inside
+  })
+  return inside
+}
+
 // A block's size the way it is usually quoted: width across the pitch and depth along it, in metres.
 export function blockSize(points: Point[]): { width: number; depth: number } {
   const xs = points.map((point) => point.x)

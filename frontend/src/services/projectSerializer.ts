@@ -32,6 +32,21 @@ export function serializeProject({ session, style, annotationStore, timelineStor
   }
 }
 
+// The user's work as a comparable string: what a project file holds, less its timestamp and colours.
+// Colours are left out because they follow the match's kits, so they change without the user doing anything.
+export function workFingerprint({ session, annotationStore, timelineStore }: Omit<SerializeInput, 'style'>): string {
+  return JSON.stringify({
+    clip: session.playback.clip,
+    eventMap: {
+      filters: session.overlays.eventMapFilters,
+      excludedIds: session.overlays.eventMapExcludedIds,
+    },
+    autoDisappearEvents: session.overlays.autoDisappearEvents,
+    annotations: annotationStore.getAllAnnotations(),
+    timelines: timelineStore.getAll(),
+  })
+}
+
 export function downloadProject(project: SavedProject): void {
   const blob = new Blob([JSON.stringify(project, null, 2)], { type: 'application/json' })
   const url = URL.createObjectURL(blob)

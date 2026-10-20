@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import './App.css'
 import DataManager from './services/DataManager'
 import AnnotationStore from './services/AnnotationStore-optimized'
@@ -18,6 +18,9 @@ import ProjectControls from './components/ProjectControls'
 import WorkspaceSidebar from './components/WorkspaceSidebar'
 import { MatchSessionProvider, useMatchSession } from './context/MatchSessionContext'
 import type OverlayManager from './services/OverlayManager'
+import { workFingerprint } from './services/projectSerializer'
+
+const DISCARD_WORK_MESSAGE = 'Your clip has changes you have not saved. Discard them?'
 
 
 type AppView = 'idle' | 'picker' | 'workspace'
@@ -93,6 +96,47 @@ function AppContent({
     const [annotationVersion, setAnnotationVersion] = useState(0)
     const handleAnnotationUpdate = useCallback(() => setAnnotationVersion((version) => version + 1), [])
     const [appView, setAppView] = useState<AppView>('idle')
+
+    // The work as it was last saved, loaded or freshly opened; anything different is unsaved.
+    // Recorded in an effect so it reads the session after the change that made it clean has rendered.
+    const savedWorkRef = useRef<string | null>(null)
+    const [savedWorkRequest, setSavedWorkRequest] = useState(0)
+    const markWorkSaved = useCallback(() => setSavedWorkRequest((request) => request + 1), [])
+    useEffect(() => {
+      if (savedWorkRequest === 0) return
+      savedWorkRef.current = workFingerprint({ session, annotationStore, timelineStore })
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [savedWorkRequest])
+
+    const hasUnsavedWork = () =>
+      selectedMatchId !== null && savedWorkRef.current !== workFingerprint({ session, annotationStore, timelineStore })
+    const confirmDiscardWork = () => !hasUnsavedWork() || window.confirm(DISCARD_WORK_MESSAGE)
+
+    // Warn before a refresh or closed tab throws the clip away.
+    const hasUnsavedWorkRef = useRef(hasUnsavedWork)
+    hasUnsavedWorkRef.current = hasUnsavedWork
+    useEffect(() => {
+      const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+        if (!hasUnsavedWorkRef.current()) return
+        event.preventDefault()
+        event.returnValue = ''
+      }
+      window.addEventListener('beforeunload', handleBeforeUnload)
+      return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+    }, [])
+
+    // Clears everything that belongs to the open match before a different one loads, including the
+    // annotations and insights tracks, which would otherwise carry over onto the new match.
+    const resetMatchData = () => {
+      setMatchMetaData(null)
+      setKeyMomentsData(null)
+      setEventsData(new Map())
+      setCurrentFrameData(null)
+      annotationStore.clear()
+      timelineStore.clear()
+      handleAnnotationUpdate()
+      markWorkSaved()
+    }
 
     useEffect(() => {
       const root = document.documentElement
@@ -240,21 +284,31 @@ function AppContent({
               >
                 Choose Game
               </button>
+              {appView === 'picker' && selectedMatchId !== null ? (
+                <button
+                  type="button"
+                  className="app-header-action"
+                  onClick={() => setAppView('workspace')}
+                  aria-label="Back to workspace"
+                >
+                  Back to Workspace
+                </button>
+              ) : null}
               <ProjectControls
                 annotationStore={annotationStore}
                 timelineStore={timelineStore}
                 keyMomentsData={keyMomentsData}
-                onResetMatchData={() => {
-                  setMatchMetaData(null)
-                  setKeyMomentsData(null)
-                  setEventsData(new Map())
-                  setCurrentFrameData(null)
-                }}
+                onResetMatchData={resetMatchData}
                 onOpenWorkspace={() => {
                   clearSidebarPanel()
                   setAppView('workspace')
                 }}
-                onProjectApplied={handleAnnotationUpdate}
+                onProjectApplied={() => {
+                  handleAnnotationUpdate()
+                  markWorkSaved()
+                }}
+                onProjectSaved={markWorkSaved}
+                confirmDiscardWork={confirmDiscardWork}
               />
             </div>
           </header>
@@ -264,12 +318,14 @@ function AppContent({
           {appView === 'picker' ? (
             <div className="app-picker-shell">
               <MatchPicker
+                currentMatchId={selectedMatchId}
+                confirmLeaveMatch={confirmDiscardWork}
                 onMatchSelected={(matchId) => {
-                  setMatchMetaData(null)
-                  setKeyMomentsData(null)
-                  setEventsData(new Map())
-                  setCurrentFrameData(null)
-                  selectMatch(matchId)
+                  // Reopening the match already in the workspace keeps the clip as it is.
+                  if (matchId !== selectedMatchId) {
+                    resetMatchData()
+                    selectMatch(matchId)
+                  }
                   setAppView('workspace')
                 }}
               />

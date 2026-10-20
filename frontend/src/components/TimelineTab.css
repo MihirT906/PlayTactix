@@ -88,6 +88,24 @@
   font-size: 0.9rem;
 }
 
+/* An overlay showing at the current frame: hover alone only tints the text, so on is also bold and tagged. */
+.timeline-add-option.is-active {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+/* Beats .workspace-sidebar-action span, which stretches every span in the button. */
+.timeline-add-option .overlay-option-state {
+  flex: 0 0 auto;
+  padding: 0.05rem 0.35rem;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .timeline-track-list {
   display: flex;
   flex-direction: column;

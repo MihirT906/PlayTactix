@@ -7,9 +7,11 @@ import type { MatchData } from '../types/MatchDataInterfaces';
 
 type MatchPickerProps = {
     onMatchSelected: (matchId: number) => void;
+    currentMatchId: number | null; // The match open in the workspace, if any
+    confirmLeaveMatch: () => boolean; // Asks before a different match replaces unsaved work; false means stay
 };
 
-const MatchPicker = ({ onMatchSelected }: MatchPickerProps) => {
+const MatchPicker = ({ onMatchSelected, currentMatchId, confirmLeaveMatch }: MatchPickerProps) => {
     const [matches, setMatches] = useState<MatchData[]>([]);
     const [loading, setLoading] = useState<boolean>(false); // Added loading state
     const [error, setError] = useState<string | null>(null);
@@ -59,6 +61,12 @@ const MatchPicker = ({ onMatchSelected }: MatchPickerProps) => {
 
     const handleMatchClick = async (matchId: number) => {
         if (inFlightRef.current) return;
+        // The open match is already downloaded; picking it again just returns to it.
+        if (matchId === currentMatchId) {
+            onMatchSelected(matchId);
+            return;
+        }
+        if (!confirmLeaveMatch()) return;
         inFlightRef.current = true;
         console.log(`Match ${matchId} clicked`);
         setLoading(true);

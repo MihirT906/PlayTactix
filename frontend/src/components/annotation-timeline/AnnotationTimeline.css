@@ -8,26 +8,41 @@
   box-sizing: border-box;
 }
 
-.annotation-timeline__header {
-  margin-bottom: 12px;
-  color: #f8fafc;
+.annotation-timeline__body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: max-content;
 }
 
-.annotation-timeline__header h3 {
+.annotation-timeline__group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.annotation-timeline__group + .annotation-timeline__group {
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* The group titles and empty states stay in view while the tracks scroll sideways beneath them. */
+.annotation-timeline__group-title,
+.annotation-timeline__empty {
+  position: sticky;
+  left: 0;
+  width: fit-content;
+}
+
+.annotation-timeline__group-title {
   margin: 0;
+  color: #f8fafc;
   font-size: small;
 }
 
 .annotation-timeline__empty {
   color: rgba(248, 250, 252, 0.6);
   font-size: 0.85rem;
-}
-
-.annotation-timeline__body {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: max-content;
 }
 
 .annotation-timeline__scroll {
@@ -94,6 +109,7 @@
   background-size: 10% 100%;
   border: 1px solid rgba(255, 255, 255, 0.1);
   min-height: 22px;
+  cursor: pointer; /* Pressing an empty stretch seeks there */
 }
 
 .annotation-timeline__current-frame {
@@ -199,6 +215,40 @@
   right: 0;
 }
 
+/* At the start of the bar, just inside its handle: most bars run to the end of the clip, which is
+   usually scrolled out of view, while their start is where the timeline opens. */
+.annotation-timeline__annotation-delete {
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  z-index: 7;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.8);
+  color: #f8fafc;
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.annotation-timeline__annotation-delete svg {
+  width: 8px;
+  height: 8px;
+}
+
+.annotation-timeline__annotation:hover .annotation-timeline__annotation-delete {
+  display: inline-flex;
+}
+
+.annotation-timeline__annotation-delete:hover {
+  background: #ef4444;
+}
+
 .annotation-timeline__annotation-label {
   display: block;
   max-width: 100%;
@@ -209,7 +259,7 @@
 
 .annotation-timeline__annotation:hover .annotation-timeline__annotation-label {
   position: absolute;
-  left: 0;
+  left: 22px; /* Clear of the ✕ */
   top: 50%;
   transform: translateY(-50%);
   width: max-content;

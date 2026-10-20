@@ -97,7 +97,7 @@ interface PlotComponentProps {
 const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, matchData, frameData, matchEvents, annotationStore, onAnnotationUpdate, annotationVersion }) => {
   const plotConfig = APP_CONFIG.plot
   const { homeTeamColor, awayTeamColor, eventStyles, teamVisibility, eventVisibility, pitchRenderer } = useStyleConfig()
-  const { session, resources, setEditMode } = useMatchSession()
+  const { session, resources } = useMatchSession()
   const overlayManager = resources.overlayManager
   const [focusPoints, setFocusPoints] = useState<number[]>([]) // Points that are highlighted on click
   const [firstPoint, setFirstPoint] = useState<number | null>(null) // First point selected when drawing a line between two players
@@ -129,7 +129,9 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
   const isPassOptionProbActive = findOverlayAt(session.playback.clip, 'pass_option_prob', clipFrame) !== undefined
   const sequenceTrailsOverlay = findOverlayAt(session.playback.clip, 'sequence_trails', clipFrame)
   const isVoronoiActive = findOverlayAt(session.playback.clip, 'voronoi', clipFrame) !== undefined
-  const editMode = session.ui.editMode;
+  // Annotation tools only work while paused: the selected tool is suspended during playback and back on pause.
+  const selectedTool = session.ui.editMode
+  const editMode = isPlaying ? null : selectedTool
   const usePitchKit = pitchRenderer === 'pitchkit'
 
   // Padding that places the PitchKit pitch exactly where Plotly's axes put the same metres.
@@ -319,8 +321,9 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
         },
       }
 
-      // Draws a halo ring (with a gap from the marker) around focused players
-      const highlightedIndices = [...new Set([...focusPoints, ...shapePlayers])]
+      // Draws a halo ring (with a gap from the marker) around focused players, the players of the team
+      // shape being built and the first player picked for a link
+      const highlightedIndices = [...new Set([...focusPoints, ...shapePlayers, ...(firstPoint !== null ? [firstPoint] : [])])]
         .map((playerId) => visiblePlayerIds.indexOf(playerId))
         .filter((index) => index !== -1)
 
@@ -352,7 +355,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
       ...build(applyVisibilityMask(playerMasks?.passing_options || EMPTY_MASK.map(() => false)), eventStyles.passingOption.color, eventStyles.passingOption.width),
       ...build(applyVisibilityMask(playerMasks?.on_ball_engagement || EMPTY_MASK.map(() => false)), eventStyles.onBallEngagement.color, eventStyles.onBallEngagement.width),
     ];
-  }, [awayTeamColor, eventStyles.onBallEngagement.color, eventStyles.onBallEngagement.width, eventStyles.passingOption.color, eventStyles.passingOption.width, eventStyles.playerPossession.color, eventStyles.playerPossession.width, eventVisibility.onBallEngagement, eventVisibility.passingOption, eventVisibility.playerPossession, frameData, homeTeamColor, matchData, playerMasks, teamVisibility.away, teamVisibility.home, focusPoints, shapePlayers, positionOverrides])
+  }, [awayTeamColor, eventStyles.onBallEngagement.color, eventStyles.onBallEngagement.width, eventStyles.passingOption.color, eventStyles.passingOption.width, eventStyles.playerPossession.color, eventStyles.playerPossession.width, eventVisibility.onBallEngagement, eventVisibility.passingOption, eventVisibility.playerPossession, frameData, homeTeamColor, matchData, playerMasks, teamVisibility.away, teamVisibility.home, focusPoints, shapePlayers, firstPoint, positionOverrides])
 
   useEffect(() => {
     let cancelled = false;
@@ -389,12 +392,9 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     };
   }, [isPassOptionProbActive, isPitchControlActive, frameData, currentFrame, overlayManager, eventStyles.passingOption.color, homeTeamColor, awayTeamColor, matchData]);
 
-  // Reset transient UI state whenever the frame changes
+  // A new frame's plot represents real tracked positions, so drop any temporary drag edits from the
+  // previous (paused) frame. The annotation tool stays on, so a move can be marked up frame by frame.
   useEffect(() => {
-    setDragMode('select')
-    setEditMode(null)
-    // A new frame's plot represents real tracked positions, so drop any
-    // temporary drag edits from the previous (paused) frame.
     setPositionOverrides((prev) => (prev.size > 0 ? new Map() : prev))
   }, [frameData, clipFrame])
 
@@ -412,12 +412,20 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     else {
       setDragMode('select')
     }
+  }, [editMode])
+
+  // Switching tools (not just pausing one for playback) ends what the previous tool was building.
+  useEffect(() => {
     // Leaving 'Team Shape' finishes the shape being built; the next one starts from no players.
-    if (editMode !== 'team_shape') {
+    if (selectedTool !== 'team_shape') {
       shapeKeyRef.current = null
       setShapePlayers((prev) => (prev.length > 0 ? [] : prev))
     }
-  }, [editMode])
+    // Likewise leaving 'Link Players' drops a first player still waiting for a second.
+    if (selectedTool !== 'draw_line_players') {
+      setFirstPoint(null)
+    }
+  }, [selectedTool])
 
   // Resolve a player's position, preferring a temporary drag override if present
   const resolvePlayerPos = (playerId: number): { x: number | undefined; y: number | undefined } => {
@@ -932,22 +940,22 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
               fillcolor: plotConfig.rectFillColor,
             } as any,
             shapes: [...lines, ...shapes], // Contains player focus lines
-            // images: isPitchBackgroundActive && !usePitchKit
-            //   ? [
-            //       {
-            //         source: image_src,
-            //         xref: 'x',
-            //         yref: 'y',
-            //         x: -X_HALF_RANGE,
-            //         y: Y_HALF_RANGE,
-            //         sizex: 2 * X_HALF_RANGE,
-            //         sizey: 2 * Y_HALF_RANGE,
-            //         layer: 'below',
-            //         opacity: 0.4,
-            //         sizing: 'stretch',
-            //       },
-            //     ]
-            //   : [],
+            images: isPitchBackgroundActive && !usePitchKit
+              ? [
+                  {
+                    source: image_src,
+                    xref: 'x',
+                    yref: 'y',
+                    x: -X_HALF_RANGE,
+                    y: Y_HALF_RANGE,
+                    sizex: 2 * X_HALF_RANGE,
+                    sizey: 2 * Y_HALF_RANGE,
+                    layer: 'below',
+                    opacity: 0.4,
+                    sizing: 'stretch',
+                  },
+                ]
+              : [],
           }}
 
           config={{

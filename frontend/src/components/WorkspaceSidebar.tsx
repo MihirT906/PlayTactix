@@ -48,6 +48,9 @@ function WorkspaceSidebar({
   const isDrawRectActive = session.ui.editMode === 'draw_rect'
   const isDrawLineActive = session.ui.editMode === 'draw_line'
   const isDrawArrowActive = session.ui.editMode === 'draw_arrow'
+  // Annotation tools only work while paused. The selected one stays highlighted during playback and is back on pause.
+  const areToolsLocked = session.playback.isPlaying
+  const toolLockTitle = areToolsLocked ? 'Pause playback to use annotation tools' : undefined
 
   return (
     <aside className={`left-panel settings-sidebar ${isSidebarPanelOpen ? 'is-open' : ''}`} aria-label="Settings sidebar">
@@ -106,8 +109,11 @@ function WorkspaceSidebar({
           </button>
         </nav>
         <span className="app-kicker workspace-sidebar-kicker">Annotations</span>
+        {areToolsLocked ? <span className="workspace-sidebar-note" role="status">Pause to use tools</span> : null}
           <button
             type="button"
+            disabled={areToolsLocked}
+            title={toolLockTitle}
             className={`app-header-action workspace-sidebar-action workspace-sidebar-action--player-focus ${isPlayerFocusActive ? 'is-active' : ''}`}
             onClick={() => setEditMode(isPlayerFocusActive ? null : 'player_focus')}
             aria-pressed={isPlayerFocusActive}
@@ -118,6 +124,8 @@ function WorkspaceSidebar({
           </button>
           <button
             type="button"
+            disabled={areToolsLocked}
+            title={toolLockTitle}
             className={`app-header-action workspace-sidebar-action workspace-sidebar-action--draw-line ${isDrawLinePlayersActive ? 'is-active' : ''}`}
             onClick={() => setEditMode(isDrawLinePlayersActive ? null : 'draw_line_players')}
             aria-pressed={isDrawLinePlayersActive}
@@ -128,6 +136,8 @@ function WorkspaceSidebar({
           </button>
           <button
             type="button"
+            disabled={areToolsLocked}
+            title={toolLockTitle}
             className={`app-header-action workspace-sidebar-action workspace-sidebar-action--team-shape ${isTeamShapeActive ? 'is-active' : ''}`}
             onClick={() => setEditMode(isTeamShapeActive ? null : 'team_shape')}
             aria-pressed={isTeamShapeActive}
@@ -138,6 +148,8 @@ function WorkspaceSidebar({
           </button>
           <button
             type="button"
+            disabled={areToolsLocked}
+            title={toolLockTitle}
             className={`app-header-action workspace-sidebar-action workspace-sidebar-action--draw-rect ${isDrawRectActive ? 'is-active' : ''}`}
             onClick={() => setEditMode(isDrawRectActive ? null : 'draw_rect')}
             aria-pressed={isDrawRectActive}
@@ -148,6 +160,8 @@ function WorkspaceSidebar({
           </button>
           <button
             type="button"
+            disabled={areToolsLocked}
+            title={toolLockTitle}
             className={`app-header-action workspace-sidebar-action workspace-sidebar-action--draw-line-shape ${isDrawLineActive ? 'is-active' : ''}`}
             onClick={() => setEditMode(isDrawLineActive ? null : 'draw_line')}
             aria-pressed={isDrawLineActive}
@@ -158,6 +172,8 @@ function WorkspaceSidebar({
           </button>
           <button
             type="button"
+            disabled={areToolsLocked}
+            title={toolLockTitle}
             className={`app-header-action workspace-sidebar-action workspace-sidebar-action--draw-arrow ${isDrawArrowActive ? 'is-active' : ''}`}
             onClick={() => setEditMode(isDrawArrowActive ? null : 'draw_arrow')}
             aria-pressed={isDrawArrowActive}
@@ -168,6 +184,8 @@ function WorkspaceSidebar({
           </button>
           <button
             type="button"
+            disabled={areToolsLocked}
+            title={toolLockTitle}
             className="app-header-action workspace-sidebar-action workspace-sidebar-action--erase-shape"
             onClick={() => resources.plotActions.eraseActiveShape?.()}
             aria-label="Erase the selected shape on the plot"

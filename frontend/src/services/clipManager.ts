@@ -143,23 +143,18 @@ export function addOverlayFrom(clip: Clip, type: OverlaySegmentKind, clipFrame: 
   }
 }
 
-// Replaces every overlay of the given type with a single one spanning the full clip,
-// same as a freshly placed segment would start at clipStart 0.
-export function addOverlay(clip: Clip, type: OverlaySegmentKind): Clip {
-  return {
-    ...clip,
-    overlaySegments: [
-      ...clip.overlaySegments.filter((overlay) => overlay.type !== type),
-      { type, clipStart: 0, clipEnd: clip.length },
-    ],
-  }
-}
+// Turns off the overlay of the given type showing at clipFrame, from that frame on: it now ends on the
+// frame before, or is removed when clipFrame is its first frame. The clip is unchanged when none is showing.
+export function endOverlayAt(clip: Clip, type: OverlaySegmentKind, clipFrame: number): Clip {
+  const showing = findOverlayAt(clip, type, clipFrame)
+  if (!showing) return clip
 
-// Removes every overlay of the given type.
-export function removeOverlay(clip: Clip, type: OverlaySegmentKind): Clip {
   return {
     ...clip,
-    overlaySegments: clip.overlaySegments.filter((overlay) => overlay.type !== type),
+    overlaySegments:
+      clipFrame <= showing.clipStart
+        ? clip.overlaySegments.filter((overlay) => overlay !== showing)
+        : clip.overlaySegments.map((overlay) => (overlay === showing ? { ...overlay, clipEnd: clipFrame - 1 } : overlay)),
   }
 }
 

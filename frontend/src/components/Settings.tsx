@@ -3,7 +3,6 @@ import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import "./Settings.css";
 import type { MatchData } from '../types/MatchDataInterfaces';
 import { useStyleConfig, type PitchRenderer } from '../context/StyleConfigContext';
-import { useMatchSession } from '../context/MatchSessionContext'
 
 
 
@@ -80,16 +79,6 @@ const Settings: React.FC<{ matchData: MatchData | null }> = ({ matchData }) => {
         setPitchRenderer,
     } = useStyleConfig();
 
-    const {
-        session,
-        setActiveOverlaySegment,
-    } = useMatchSession()
-
-    const isPassOptionProbActive = session.playback.clip.overlaySegments.some((overlay) => overlay.type === 'pass_option_prob')
-    const isPitchControlActive = session.playback.clip.overlaySegments.some((overlay) => overlay.type === 'pitch_control')
-    const isSequenceTrailsActive = session.playback.clip.overlaySegments.some((overlay) => overlay.type === 'sequence_trails')
-    const isVoronoiActive = session.playback.clip.overlaySegments.some((overlay) => overlay.type === 'voronoi')
-
     return (
         <div className="settings-display">
             <div className="settings-display-header">
@@ -103,14 +92,6 @@ const Settings: React.FC<{ matchData: MatchData | null }> = ({ matchData }) => {
                 <SettingsRow label={'Passing Options'} color={eventStyles.passingOption.color} visible={eventVisibility.passingOption} onChange={(color) => setEventStyleColor('passingOption', color)} onToggleVisibility={(visible) => setEventVisibility('passingOption', visible)}/>
                 <SettingsRow label={'On Ball Engagement'} color={eventStyles.onBallEngagement.color} visible={eventVisibility.onBallEngagement} onChange={(color) => setEventStyleColor('onBallEngagement', color)} onToggleVisibility={(visible) => setEventVisibility('onBallEngagement', visible)}/>
                 <SettingsRow label={'Off Ball Runs'} color={eventStyles.offBallRun.color} visible={eventVisibility.offBallRun} onChange={(color) => setEventStyleColor('offBallRun', color)} onToggleVisibility={(visible) => setEventVisibility('offBallRun', visible)}/>
-
-            </div>
-            <div className="settings-box settings-box--flat">
-                <div className="settings-section-heading">Overlays</div>
-                <SettingsRow label={'Pass Option Probability'} color={null} visible={isPassOptionProbActive} onChange={setHomeTeamColor} onToggleVisibility={(visible) => setActiveOverlaySegment('pass_option_prob', visible)} />
-                <SettingsRow label={'Pitch Control'} color={null} visible={isPitchControlActive} onChange={setHomeTeamColor} onToggleVisibility={(visible) => setActiveOverlaySegment('pitch_control', visible)} />
-                <SettingsRow label={'Sequence Trails'} color={null} visible={isSequenceTrailsActive} onChange={setHomeTeamColor} onToggleVisibility={(visible) => setActiveOverlaySegment('sequence_trails', visible)} />
-                <SettingsRow label={'Voronoi'} color={null} visible={isVoronoiActive} onChange={setHomeTeamColor} onToggleVisibility={(visible) => setActiveOverlaySegment('voronoi', visible)} />
 
             </div>
             <div className="settings-box settings-box--flat">

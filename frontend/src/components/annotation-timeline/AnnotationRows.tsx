@@ -147,7 +147,7 @@ export function AnnotationRows({
                 annotationStore.updateAnnotationRange(annotation.key, frameStart, frameEnd, clipFrame)
                 onAnnotationUpdate()
               }}
-              contextMenuItems={[{ label: 'Delete', danger: true, onSelect: () => onDelete(annotation.key) }]}
+              onDelete={() => onDelete(annotation.key)}
             />
           ))}
         </TimelineRow>

@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react'
+import { FaTimes } from 'react-icons/fa'
 import { useRangeDrag, type FrameRange } from './useRangeDrag'
-import { ContextMenu, type ContextMenuItem } from '../context-menu/ContextMenu'
+import { ContextMenu } from '../context-menu/ContextMenu'
 import { useContextMenu } from '../context-menu/useContextMenu'
 
 type DraggableRangeBarProps = {
@@ -19,11 +20,11 @@ type DraggableRangeBarProps = {
   /** The drag ended - drop any transient scale widening. */
   onScaleRelease?: () => void
   onRangeChange: (frameStart: number, frameEnd: number, kind: 'move' | 'resize') => void
-  /** Right-click menu entries for this bar (e.g. Delete). Omit for no menu. */
-  contextMenuItems?: ContextMenuItem[]
+  /** Removes what the bar stands for, from the ✕ shown on hover or the right-click menu. */
+  onDelete: () => void
 }
 
-/** A single croppable bar: drag the body to move it, drag either edge to resize it. */
+/** A single croppable bar: drag the body to move it, drag either edge to resize it, hover for ✕ to delete it. */
 export function DraggableRangeBar({
   frameStart,
   frameEnd,
@@ -37,7 +38,7 @@ export function DraggableRangeBar({
   onScaleRequest,
   onScaleRelease,
   onRangeChange,
-  contextMenuItems,
+  onDelete,
 }: DraggableRangeBarProps) {
   const visibleFrameSpan = Math.max(scaleEnd - scaleStart, 1)
 
@@ -65,21 +66,32 @@ export function DraggableRangeBar({
         style={{ left: `${leftPercent}%`, width: `${widthPercent}%`, top: '2px', ...style }}
         title={label}
         onPointerDown={(event) => beginDrag(event, 'move', range)}
-        onContextMenu={contextMenuItems ? (event) => openMenu(event, undefined) : undefined}
+        onContextMenu={(event) => openMenu(event, undefined)}
       >
         <div
           className="annotation-timeline__annotation-handle annotation-timeline__annotation-handle--start"
           onPointerDown={(event) => beginDrag(event, 'start', range)}
         />
         <span className="annotation-timeline__annotation-label">{label}</span>
+        <button
+          type="button"
+          className="annotation-timeline__annotation-delete"
+          aria-label={`Delete ${label}`}
+          title={`Delete ${label}`}
+          // Keeps the press from starting a move of the bar underneath.
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={onDelete}
+        >
+          <FaTimes aria-hidden="true" />
+        </button>
         <div
           className="annotation-timeline__annotation-handle annotation-timeline__annotation-handle--end"
           onPointerDown={(event) => beginDrag(event, 'end', range)}
         />
       </div>
 
-      {menu && contextMenuItems && (
-        <ContextMenu x={menu.x} y={menu.y} items={contextMenuItems} onClose={closeMenu} />
+      {menu && (
+        <ContextMenu x={menu.x} y={menu.y} items={[{ label: 'Delete', danger: true, onSelect: onDelete }]} onClose={closeMenu} />
       )}
     </>
   )

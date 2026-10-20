@@ -1,6 +1,7 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { FaArrowRight, FaChevronDown } from 'react-icons/fa'
 import { useStyleConfig } from '../context/StyleConfigContext'
+import { useMatchSession } from '../context/MatchSessionContext'
 import type { KeyMomentsData } from '../types/KeyMomentsDataInterfaces'
 import type { MatchData } from '../types/MatchDataInterfaces'
 import {
@@ -31,6 +32,19 @@ interface FilterConfig {
   period: number | null
   led_to: LedTo
 }
+
+const DEFAULT_FILTERS: FilterConfig = {
+  attacking_team_id: null,
+  attacking_phase_types: [],
+  defending_phase_types: [],
+  period: null,
+  led_to: 'any',
+}
+
+// How long a passage just added reads "Added" before settling to "In clip".
+const ADDED_NOTICE_MS = 3000
+
+const momentKey = (moment: KeyMomentItem) => `${moment.phase_index}-${moment.frame_start}-${moment.frame_end}`
 
 const LED_TO_OPTIONS: Array<{ value: LedTo; label: string }> = [
   { value: 'any', label: 'Any' },
@@ -133,33 +147,76 @@ export function SegmentedControl<T extends string | number | null>({
 
 function KeyMomentFinderComponent({ segmentRange, onAddSegment, keyMomentsData, matchData }: KeyMomentFinderComponentProps) {
   const { homeTeamColor, awayTeamColor } = useStyleConfig()
+  const { session, setCurrentClipFrame, stopPlayback } = useMatchSession()
   const [startFrame, setStartFrame] = useState(segmentRange.start.toString())
   const [endFrame, setEndFrame] = useState(segmentRange.end.toString())
+  const [customError, setCustomError] = useState<string | null>(null)
   const [expandedGroups, setExpandedGroups] = useState({
     // Goals: false,
     // Shots: false,
-    'Passages of Play': false,
+    'Passages of Play': true,
   })
-  const [filters, setFilters] = useState<FilterConfig>({
-    attacking_team_id: null,
-    attacking_phase_types: [],
-    defending_phase_types: [],
-    period: null,
-    led_to: 'any',
-  })
+  const [filters, setFilters] = useState<FilterConfig>(DEFAULT_FILTERS)
+  const [justAddedKey, setJustAddedKey] = useState<string | null>(null)
 
+  useEffect(() => {
+    if (justAddedKey === null) return
+    const timeout = setTimeout(() => setJustAddedKey(null), ADDED_NOTICE_MS)
+    return () => clearTimeout(timeout)
+  }, [justAddedKey])
+
+  const periods = matchData?.match_periods ?? []
+  const frameBounds = periods.length > 0
+    ? { min: Math.min(...periods.map((p) => p.start_frame)), max: Math.max(...periods.map((p) => p.end_frame)) }
+    : null
+
+  // The button stays enabled; a range that can't be added says why instead.
   const handleAddSegment = () => {
     const start = Number.parseInt(startFrame, 10)
     const end = Number.parseInt(endFrame, 10)
 
     if (Number.isNaN(start) || Number.isNaN(end)) {
+      setCustomError('Enter a start and an end frame.')
+      return
+    }
+    if (end <= start) {
+      setCustomError('The end frame must come after the start frame.')
+      return
+    }
+    if (frameBounds && (start < frameBounds.min || end > frameBounds.max)) {
+      setCustomError(`This match runs from frame ${frameBounds.min} to ${frameBounds.max}.`)
       return
     }
 
+    setCustomError(null)
     onAddSegment(start, end)
   }
 
-  const periods = matchData?.match_periods ?? []
+  // A passage counts as in the clip while a segment still covers exactly its frames; one resized since no longer does.
+  const matchSegments = session.playback.clip.matchSegments
+  const segmentFor = (moment: KeyMomentItem) =>
+    matchSegments.find(
+      (segment) => !segment.isDefault && segment.sourceFrameStart === moment.frame_start && segment.sourceFrameEnd === moment.frame_end
+    )
+
+  const handleMomentClick = (moment: KeyMomentItem) => {
+    const segment = segmentFor(moment)
+    // Already in the clip: go to it rather than add it a second time.
+    if (segment) {
+      setCurrentClipFrame(segment.clipStart)
+      stopPlayback()
+      return
+    }
+    onAddSegment(moment.frame_start, moment.frame_end)
+    setJustAddedKey(momentKey(moment))
+  }
+
+  const isFiltered =
+    filters.attacking_team_id !== null ||
+    filters.attacking_phase_types.length > 0 ||
+    filters.defending_phase_types.length > 0 ||
+    filters.period !== null ||
+    filters.led_to !== 'any'
   const teams = matchData ? [matchData.home_team, matchData.away_team] : []
   const teamOptions = [
     { value: null, label: 'Any' },
@@ -231,17 +288,16 @@ function KeyMomentFinderComponent({ segmentRange, onAddSegment, keyMomentsData, 
                   const attackingTeam = isHomeAttacking ? matchData?.home_team : matchData?.away_team
                   const defendingTeam = isHomeAttacking ? matchData?.away_team : matchData?.home_team
                   const chain = buildChain(moment)
+                  const key = momentKey(moment)
+                  const isInClip = segmentFor(moment) !== undefined
 
                   return (
                   <button
-                    key={`${title}-${moment.phase_index}-${moment.frame_start}-${moment.frame_end}`}
+                    key={`${title}-${key}`}
                     type="button"
                     className="key-moment-button"
-                    onClick={() => {
-                      console.log('frame_start', moment.frame_start)
-                      console.log('frame_end', moment.frame_end)
-                      onAddSegment(moment.frame_start, moment.frame_end)
-                    }}
+                    title={isInClip ? 'Already in your clip. Click to jump to it.' : 'Add to your clip'}
+                    onClick={() => handleMomentClick(moment)}
                   >
                     <span className="key-moment-row key-moment-headline">
                       <span className="key-moment-when">
@@ -256,6 +312,11 @@ function KeyMomentFinderComponent({ segmentRange, onAddSegment, keyMomentsData, 
                       ) : moment.lead_to_shot || moment.has_shot ? (
                         <span className="key-moment-outcome">
                           {moment.has_shot ? 'Shot' : 'Led to shot'}
+                        </span>
+                      ) : null}
+                      {isInClip ? (
+                        <span className="key-moment-outcome key-moment-outcome--in-clip">
+                          {justAddedKey === key ? 'Added' : 'In clip'}
                         </span>
                       ) : null}
                     </span>
@@ -319,15 +380,22 @@ function KeyMomentFinderComponent({ segmentRange, onAddSegment, keyMomentsData, 
         <h2 id="key-moment-finder-heading" className="key-moment-finder-title">
           Key Moments Finder
         </h2>
-        <p className="key-moment-finder-description">Jump to saved moments or define a custom frame range.</p>
+        <p className="key-moment-finder-description">Click a passage of play to add it to your clip, or add a custom frame range.</p>
       </div>
 
       {keyMomentsData ? (
         <div className="key-moment-groups">
           <section className="key-moment-filter-section" aria-labelledby="key-moment-filter-heading">
-            <h3 id="key-moment-filter-heading" className="key-moment-filter-title">
-              Filters
-            </h3>
+            <div className="key-moment-filter-heading">
+              <h3 id="key-moment-filter-heading" className="key-moment-filter-title">
+                Filters
+              </h3>
+              {isFiltered ? (
+                <button type="button" className="key-moment-toggle" onClick={() => setFilters(DEFAULT_FILTERS)}>
+                  Reset
+                </button>
+              ) : null}
+            </div>
             {matchData && (
               <>
                 <FilterRow label="Attacking team">
@@ -410,7 +478,10 @@ function KeyMomentFinderComponent({ segmentRange, onAddSegment, keyMomentsData, 
               className="key-moment-input"
               placeholder="Start Frame"
               value={startFrame}
-              onChange={(e) => setStartFrame(e.target.value)}
+              onChange={(e) => {
+                setStartFrame(e.target.value)
+                setCustomError(null)
+              }}
             />
           </label>
           <label className="key-moment-input-group">
@@ -420,11 +491,19 @@ function KeyMomentFinderComponent({ segmentRange, onAddSegment, keyMomentsData, 
               className="key-moment-input"
               placeholder="End Frame"
               value={endFrame}
-              onChange={(e) => setEndFrame(e.target.value)}
+              onChange={(e) => {
+                setEndFrame(e.target.value)
+                setCustomError(null)
+              }}
             />
           </label>
+          {customError ? (
+            <p className="key-moment-custom-error" role="alert">
+              {customError}
+            </p>
+          ) : null}
           <button type="button" className="key-moment-submit" onClick={handleAddSegment}>
-            Submit
+            Add to clip
           </button>
         </div>
       </section>

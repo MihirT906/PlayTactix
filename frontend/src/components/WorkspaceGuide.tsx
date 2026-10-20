@@ -72,10 +72,13 @@ const DOCS: { title: string; body: ReactNode }[] = [
             <strong>Led to</strong>: keep only the passages that led to a shot or a goal.
           </li>
         </ul>
-        <p>Clicking a passage adds it to the end of your clip as a new match segment.</p>
+        <p>
+          Clicking a passage adds it to the end of your clip as a new match segment. Passages already in your clip
+          are tagged <strong>In clip</strong>; clicking one jumps to it. <strong>Reset</strong> clears the filters.
+        </p>
         <p>
           Know the frames already? Use <strong>Create Custom Moment</strong> at the bottom: enter a start and end
-          frame and press Submit.
+          frame and press Add to clip.
         </p>
       </>
     ),
@@ -109,7 +112,10 @@ const DOCS: { title: string; body: ReactNode }[] = [
             <strong>Annotations</strong>: when each line or shape is visible.
           </li>
         </ul>
-        <p>Drag the middle of a bar to move it, or either end to resize it. Right-click a bar to delete it.</p>
+        <p>
+          Click or drag along an empty part of any row to move the playhead. Drag the middle of a bar to move it, or
+          either end to resize it. Hover a bar and press ✕ to delete it, or right-click it.
+        </p>
       </>
     ),
   },
@@ -118,8 +124,9 @@ const DOCS: { title: string; body: ReactNode }[] = [
     body: (
       <>
         <p>
-          Open <strong>Overlays</strong> and click an overlay to add it from the current frame to the end of the clip.
-          To remove one, right-click its bar under the pitch and choose Delete.
+          Open <strong>Overlays</strong> and click an overlay to turn it on from the current frame to the end of the
+          clip. Click it again to turn it off from the current frame. Overlays showing at the current frame are
+          highlighted and tagged On. To remove one entirely, hover its bar under the pitch and press ✕.
         </p>
         <ul>
           <li>
@@ -145,7 +152,10 @@ const DOCS: { title: string; body: ReactNode }[] = [
     title: 'Annotation tools',
     body: (
       <>
-        <p>Click a tool to switch it on, and again to switch it off.</p>
+        <p>
+          Click a tool to switch it on, and again to switch it off. It stays on as you step or scrub through the
+          clip. The tools only work while playback is paused: the one you picked is back on as soon as you pause.
+        </p>
         <ul>
           <li>
             <strong>Player Focus</strong>: click a player to highlight them. Click them again to remove it.

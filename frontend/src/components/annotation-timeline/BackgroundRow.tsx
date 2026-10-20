@@ -63,7 +63,7 @@ export function BackgroundRow({
         className={OVERLAY_BAR_CLASS_NAMES[overlay.type]}
         style={barStyle}
         onRangeChange={onRangeChange}
-        contextMenuItems={[{ label: 'Delete', danger: true, onSelect: onDelete }]}
+        onDelete={onDelete}
       />
     </TimelineRow>
   )

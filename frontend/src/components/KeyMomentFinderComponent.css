@@ -473,6 +473,32 @@
   color: var(--color-text-subtle);
 }
 
+.key-moment-filter-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--surface-subtle-border);
+}
+
+.key-moment-filter-heading .key-moment-filter-title {
+  margin-bottom: 0;
+  border-bottom: 0;
+}
+
+.key-moment-outcome--in-clip {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.key-moment-custom-error {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 0.8rem;
+  color: #ff6b6b;
+}
+
 .key-moment-custom-fields {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

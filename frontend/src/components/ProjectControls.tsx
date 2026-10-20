@@ -20,6 +20,9 @@ type ProjectControlsProps = {
   onOpenWorkspace: () => void
   // Called after annotations were replaced, so the plot re-reads them.
   onProjectApplied: () => void
+  onProjectSaved: () => void
+  // Asks the user before loading a project over work they haven't saved; false means stop.
+  confirmDiscardWork: () => boolean
 }
 
 const NOTICE_DURATION_MS = 6000
@@ -31,6 +34,8 @@ export default function ProjectControls({
   onResetMatchData,
   onOpenWorkspace,
   onProjectApplied,
+  onProjectSaved,
+  confirmDiscardWork,
 }: ProjectControlsProps) {
   const { session, selectMatch, restoreSession } = useMatchSession()
   const style = useStyleConfig()
@@ -99,6 +104,7 @@ export default function ProjectControls({
           timelineStore,
         })
       )
+      onProjectSaved()
       setNotice({ kind: 'info', text: 'Project saved.' })
     } catch (error) {
       logger.error('Failed to save project', error)
@@ -145,7 +151,9 @@ export default function ProjectControls({
       <button
         type="button"
         className="app-header-action"
-        onClick={() => fileInputRef.current?.click()}
+        onClick={() => {
+          if (confirmDiscardWork()) fileInputRef.current?.click()
+        }}
         disabled={busy}
         aria-label="Load project"
       >

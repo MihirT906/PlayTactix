@@ -1,4 +1,4 @@
-import { useCallback, useState, type CSSProperties } from 'react'
+import { useCallback, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
 import type AnnotationStore from '../../services/AnnotationStore-optimized'
 import { useMatchSession } from '../../context/MatchSessionContext'
 import { useStyleConfig } from '../../context/StyleConfigContext'
@@ -25,35 +25,29 @@ type AnnotationTimelineProps = {
   onAnnotationUpdate: () => void
 }
 
-type TimelineSectionProps = {
+type TimelineGroupProps = {
   title: string
-  contentWidth: number
   children: React.ReactNode
 }
 
-/** One boxed, independently-scrollable section (Match Segments, Overlays, Annotations). */
-function TimelineSection({ title, contentWidth, children }: TimelineSectionProps) {
+/** One titled group of rows (Match Segments, Overlays, Annotations) inside the shared scroll area. */
+function TimelineGroup({ title, children }: TimelineGroupProps) {
   return (
-    <section className="annotation-timeline">
-      <div className="annotation-timeline__header">
-        <h3>{title}</h3>
-      </div>
-
-      <div className="annotation-timeline__scroll">
-        <div className="annotation-timeline__body" style={{ minWidth: `${contentWidth}px` }}>
-          {children}
-        </div>
-      </div>
-    </section>
+    <div className="annotation-timeline__group">
+      <h3 className="annotation-timeline__group-title">{title}</h3>
+      {children}
+    </div>
   )
 }
 
 /**
- * Renders three boxed sections over the same frame scale: Match Segments (the
+ * Renders three groups over the same frame scale: Match Segments (the
  * source clip range), Overlays (one row per active overlay segment - pitch,
  * pitch control, pass probability), and Annotations (lane-packed rows of
- * player lines, drawn shapes). All three are draggable to move/resize; each
- * bar owns its own drag state - see useRangeDrag.
+ * player lines, drawn shapes). They share one horizontal scroll so their
+ * playheads always line up. All bars are draggable to move/resize; each
+ * bar owns its own drag state - see useRangeDrag. Pressing an empty stretch
+ * of any track seeks there.
  */
 const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
   annotationStore,
@@ -69,6 +63,8 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
     setSegmentRange,
     removeSegment,
     removeOverlaySegment,
+    setCurrentClipFrame,
+    stopPlayback,
   } = useMatchSession()
   const { homeTeamColor, awayTeamColor } = useStyleConfig()
 
@@ -117,69 +113,108 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
     100
   )
 
-  return (
-    <>
-      <TimelineSection title="Match Segments" contentWidth={contentWidth}>
-        {matchSegments.length === 0 ? (
-          <div className="annotation-timeline__empty">No match segments</div>
-        ) : (
-          <SegmentRow
-            segments={matchSegments}
-            scaleStart={scaleStart}
-            scaleEnd={scaleEnd}
-            sourceBounds={sourceBounds}
-            labelWidth={TIMELINE_LABEL_WIDTH}
-            trackWidth={trackWidth}
-            currentFrameOffsetPercent={currentFrameOffsetPercent}
-            onRangeChange={setSegmentRange}
-            onDelete={removeSegment}
-            onScaleRequest={requestScaleEnd}
-            onScaleRelease={releaseScale}
-          />
-        )}
-      </TimelineSection>
+  // Pressing an empty stretch of any track moves the playhead there, and dragging scrubs. Bars stop their own
+  // pointerdown, so this only sees presses that miss them. The playhead stays within the clip, not the headroom.
+  const handleTrackPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0) return
+    const track = (event.target as HTMLElement).closest('.annotation-timeline__track') as HTMLElement | null
+    if (!track) return
+    event.preventDefault()
 
-      <TimelineSection title="Overlays" contentWidth={contentWidth}>
-        {overlaySegments.length === 0 ? (
-          <div className="annotation-timeline__empty">No overlays</div>
-        ) : (
-          overlaySegments.map((overlay, index) => (
-            <BackgroundRow
-              key={`${overlay.type}-${index}`}
-              overlay={overlay}
+    let lastFrame: number | null = null
+    const seekTo = (clientX: number) => {
+      const rect = track.getBoundingClientRect()
+      if (rect.width === 0) return
+      const frame = Math.round(scaleStart + ((clientX - rect.left) / rect.width) * visibleFrameSpan)
+      const clamped = Math.min(Math.max(frame, clipRange.start), clipRange.end)
+      if (clamped === lastFrame) return
+      lastFrame = clamped
+      setCurrentClipFrame(clamped)
+    }
+
+    stopPlayback()
+    seekTo(event.clientX)
+
+    const handlePointerMove = (moveEvent: PointerEvent) => seekTo(moveEvent.clientX)
+    const handlePointerUp = () => {
+      window.removeEventListener('pointermove', handlePointerMove)
+      window.removeEventListener('pointerup', handlePointerUp)
+    }
+    window.addEventListener('pointermove', handlePointerMove)
+    window.addEventListener('pointerup', handlePointerUp)
+  }
+
+  return (
+    <section className="annotation-timeline">
+      <div className="annotation-timeline__scroll">
+        <div
+          className="annotation-timeline__body"
+          style={{ minWidth: `${contentWidth}px` }}
+          onPointerDown={handleTrackPointerDown}
+        >
+          <TimelineGroup title="Match Segments">
+            {matchSegments.length === 0 ? (
+              <div className="annotation-timeline__empty">No match segments</div>
+            ) : (
+              <SegmentRow
+                segments={matchSegments}
+                scaleStart={scaleStart}
+                scaleEnd={scaleEnd}
+                sourceBounds={sourceBounds}
+                labelWidth={TIMELINE_LABEL_WIDTH}
+                trackWidth={trackWidth}
+                currentFrameOffsetPercent={currentFrameOffsetPercent}
+                onRangeChange={setSegmentRange}
+                onDelete={removeSegment}
+                onScaleRequest={requestScaleEnd}
+                onScaleRelease={releaseScale}
+              />
+            )}
+          </TimelineGroup>
+
+          <TimelineGroup title="Overlays">
+            {overlaySegments.length === 0 ? (
+              <div className="annotation-timeline__empty">No overlays</div>
+            ) : (
+              overlaySegments.map((overlay, index) => (
+                <BackgroundRow
+                  key={`${overlay.type}-${index}`}
+                  overlay={overlay}
+                  scaleStart={scaleStart}
+                  scaleEnd={scaleEnd}
+                  minFrame={clipRange.start}
+                  maxFrame={clipRange.end}
+                  labelWidth={TIMELINE_LABEL_WIDTH}
+                  trackWidth={trackWidth}
+                  currentFrameOffsetPercent={currentFrameOffsetPercent}
+                  onRangeChange={(clipStart, clipEnd) => setOverlaySegmentRange(index, clipStart, clipEnd)}
+                  onDelete={() => removeOverlaySegment(index)}
+                  barStyle={getOverlayBarStyle(overlay)}
+                />
+              ))
+            )}
+          </TimelineGroup>
+
+          <TimelineGroup title="Annotations">
+            <AnnotationRows
+              annotationStore={annotationStore}
+              annotationVersion={annotationVersion}
+              clipFrame={clipFrame}
               scaleStart={scaleStart}
               scaleEnd={scaleEnd}
-              minFrame={clipRange.start}
-              maxFrame={clipRange.end}
               labelWidth={TIMELINE_LABEL_WIDTH}
               trackWidth={trackWidth}
               currentFrameOffsetPercent={currentFrameOffsetPercent}
-              onRangeChange={(clipStart, clipEnd) => setOverlaySegmentRange(index, clipStart, clipEnd)}
-              onDelete={() => removeOverlaySegment(index)}
-              barStyle={getOverlayBarStyle(overlay)}
+              onDelete={(annotationKey) => {
+                annotationStore.removeAnnotation(annotationKey)
+                onAnnotationUpdate()
+              }}
+              onAnnotationUpdate={onAnnotationUpdate}
             />
-          ))
-        )}
-      </TimelineSection>
-
-      <TimelineSection title="Annotations" contentWidth={contentWidth}>
-        <AnnotationRows
-          annotationStore={annotationStore}
-          annotationVersion={annotationVersion}
-          clipFrame={clipFrame}
-          scaleStart={scaleStart}
-          scaleEnd={scaleEnd}
-          labelWidth={TIMELINE_LABEL_WIDTH}
-          trackWidth={trackWidth}
-          currentFrameOffsetPercent={currentFrameOffsetPercent}
-          onDelete={(annotationKey) => {
-            annotationStore.removeAnnotation(annotationKey)
-            onAnnotationUpdate()
-          }}
-          onAnnotationUpdate={onAnnotationUpdate}
-        />
-      </TimelineSection>
-    </>
+          </TimelineGroup>
+        </div>
+      </div>
+    </section>
   )
 }
 

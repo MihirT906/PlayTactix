@@ -98,8 +98,8 @@ type MatchSessionContextValue = {
   resetEventMap: () => void
   setAutoDisappearEvents: (autoDisappear: boolean) => void
 
-  setActiveOverlaySegment: (kind: OverlaySegmentKind, active: boolean) => void
   addOverlaySegmentFrom: (kind: OverlaySegmentKind, clipFrame: number) => void
+  endOverlaySegmentAt: (kind: OverlaySegmentKind, clipFrame: number) => void
   removeOverlaySegment: (index: number) => void
   setOverlaySegmentRange: (index: number, clipStart: number, clipEnd: number) => void
 
@@ -439,24 +439,6 @@ export function MatchSessionProvider({
             }))
         },
 
-        setActiveOverlaySegment: (kind: OverlaySegmentKind, active: boolean) => {
-            setSession((prev) => {
-                const clip = active
-                    ? clipManager.addOverlay(prev.playback.clip, kind)
-                    : clipManager.removeOverlay(prev.playback.clip, kind)
-
-                logger.info('Clip overlay segment changed', { kind, active })
-
-                return {
-                    ...prev,
-                    playback: {
-                        ...prev.playback,
-                        clip,
-                    },
-                }
-            })
-        },
-
         addOverlaySegmentFrom: (kind: OverlaySegmentKind, clipFrame: number) => {
             setSession((prev) => {
                 logger.info('Clip overlay segment added', { kind, clipFrame })
@@ -466,6 +448,20 @@ export function MatchSessionProvider({
                     playback: {
                         ...prev.playback,
                         clip: clipManager.addOverlayFrom(prev.playback.clip, kind, clipFrame),
+                    },
+                }
+            })
+        },
+
+        endOverlaySegmentAt: (kind: OverlaySegmentKind, clipFrame: number) => {
+            setSession((prev) => {
+                logger.info('Clip overlay segment ended', { kind, clipFrame })
+
+                return {
+                    ...prev,
+                    playback: {
+                        ...prev.playback,
+                        clip: clipManager.endOverlayAt(prev.playback.clip, kind, clipFrame),
                     },
                 }
             })

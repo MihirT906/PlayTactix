@@ -77,7 +77,7 @@ export function SegmentRow({
             label={label}
             className="annotation-timeline__annotation--match"
             onRangeChange={(clipStart, clipEnd, kind) => onRangeChange(index, clipStart, clipEnd, kind)}
-            contextMenuItems={[{ label: 'Delete', danger: true, onSelect: () => onDelete(index) }]}
+            onDelete={() => onDelete(index)}
           />
         )
       })}

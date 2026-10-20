@@ -67,7 +67,7 @@ const DEFAULT_STYLE_CONFIG = {
 		onBallEngagement: true,
 		offBallRun: true,
 	},
-	pitchRenderer: 'image',
+	pitchRenderer: 'pitchkit',
 	// overlayVisibility: {
 	// 	pass_option_prob: false,
 	// 	pitch_control: false,
@@ -138,7 +138,7 @@ export const StyleConfigProvider = ({ children, matchData }: StyleConfigProvider
 					setTeamVisibilityState((current) => ({ ...current, ...style.teamVisibility }));
 					setEventVisibilityState((current) => ({ ...current, ...style.eventVisibility }));
 					// Absent in files saved before the renderer choice existed.
-					setPitchRenderer(style.pitchRenderer === 'pitchkit' ? 'pitchkit' : DEFAULT_STYLE_CONFIG.pitchRenderer);
+					setPitchRenderer(style.pitchRenderer === 'pitchkit' || style.pitchRenderer === 'image' ? style.pitchRenderer : DEFAULT_STYLE_CONFIG.pitchRenderer);
 				},
 				setHomeTeamColor: (color: string) => setHomeTeamColor(normalizeColor(color)),
 				setAwayTeamColor: (color: string) => setAwayTeamColor(normalizeColor(color)),

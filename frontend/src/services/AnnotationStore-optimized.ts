@@ -193,8 +193,10 @@ export default class AnnotationStore {
         return Array.from(this.active_annotations.values()).filter(annotation => annotation.type === 'arrow').map(annotation => annotation.shape);
     }
 
-    getPlayerLineAnnotations(_currentFrame: number) {
-        return Array.from(this.active_annotations.values()).filter(annotation => annotation.type === 'playerLine').map(annotation => annotation.shape.players);
+    getPlayerLineAnnotations(_currentFrame: number): Array<{ key: string; players: [number, number] }> {
+        return Array.from(this.active_annotations.entries())
+            .filter(([, annotation]) => annotation.type === 'playerLine')
+            .map(([key, annotation]) => ({ key, players: annotation.shape.players }));
     }
 
     getDrawAnnotations(_currentFrame: number) {

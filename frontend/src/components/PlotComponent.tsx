@@ -17,6 +17,7 @@ import { buildVoronoiPoints } from '../plot/overlays/voronoiOverlay'
 import { EMPTY_SEQUENCE_TRAIL, buildTrailLinks, getSequenceTrailAt } from '../plot/overlays/sequenceTrailsOverlay'
 import { buildFocusSpots } from '../plot/overlays/focusSpotlightOverlay'
 import FocusSpotlight from './FocusSpotlight'
+import PlayerLinks, { type LinkSnapTarget, type PlayerLink } from './PlayerLinks'
 
 import { getLogger } from "../services/logger";
 
@@ -61,6 +62,11 @@ const ARROW_LAYER_STYLE = {
 // Catches the drag that draws an arrow, so Plotly doesn't start a selection underneath.
 const ARROW_CAPTURE_STYLE: React.CSSProperties = { position: 'absolute', inset: 0, cursor: 'crosshair' }
 const MIN_ARROW_LENGTH = 1 // metres; anything shorter is treated as a stray click
+// Catches the pointer in Link Players mode, which snaps to the nearest player rather than needing a click right on one.
+const LINK_CAPTURE_STYLE: React.CSSProperties = { position: 'absolute', inset: 0 }
+const LINK_SNAP_RADIUS = 3 // metres
+// Link lines are drawn by PitchKit; Plotly keeps an invisible copy of each, this wide, to click to select and erase.
+const LINK_HIT_WIDTH = 10
 
 type ArrowShape = { x0: number; y0: number; x1: number; y1: number }
 
@@ -111,6 +117,8 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
   const [annotationTick, setAnnotationTick] = useState(0)
   const [dragMode, setDragMode] = useState<string>('select')
   const [draftArrow, setDraftArrow] = useState<ArrowShape | null>(null) // Arrow being dragged out, not yet in the store
+  const [linkCursor, setLinkCursor] = useState<{ x: number; y: number } | null>(null) // Pointer in pitch metres, in Link Players mode
+  const [activeShapeIndex, setActiveShapeIndex] = useState<number | null>(null) // The shape Plotly has selected, for erasing
   const [overlayTraces, setOverlayTraces] = useState<any[]>([]);
   // Temporary, visualisation-only position edits keyed by player id. These are
   // layered on top of frameData while playback is paused and are wiped whenever
@@ -426,6 +434,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     // Likewise leaving 'Link Players' drops a first player still waiting for a second.
     if (selectedTool !== 'draw_line_players') {
       setFirstPoint(null)
+      setLinkCursor(null)
     }
   }, [selectedTool])
 
@@ -445,15 +454,19 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
   // Annotation shapes for the current frame, derived (never stored) so they cannot go stale: the
   // store's active set is rebuilt for this clip frame, and player lines are placed from this frame's
   // positions. Lines whose players aren't in the frame (e.g. missing data) are skipped.
-  const { lines, shapes, arrows, teamShapes } = useMemo(() => {
+  const { lines, links, shapes, arrows, teamShapes } = useMemo(() => {
     annotationStore.reconstruct_active_annotations(clipFrame)
+    // Each player line twice: PitchKit draws it (links) and Plotly holds an invisible copy (lines) to select
+    // and erase it by. The two stay index-aligned.
     const lines: any[] = []
-    for (const [firstPoint, secondPoint] of annotationStore.getPlayerLineAnnotations(clipFrame) as [number, number][]) {
+    const links: PlayerLink[] = []
+    for (const { key, players: [firstPoint, secondPoint] } of annotationStore.getPlayerLineAnnotations(clipFrame)) {
       if (firstPoint === undefined || secondPoint === undefined) continue
       const { x: x0, y: y0 } = resolvePlayerPos(firstPoint)
       const { x: x1, y: y1 } = resolvePlayerPos(secondPoint)
       if (x0 === undefined || y0 === undefined || x1 === undefined || y1 === undefined) continue
 
+      links.push({ key, a: { x: x0, y: y0 }, b: { x: x1, y: y1 } })
       lines.push({
         type: 'line',
         layer: 'between',
@@ -462,15 +475,8 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
         x1,
         y1,
         line: {
-          color: plotConfig.focusLineColor,
-          width: plotConfig.focusLineWidth,
-        },
-        label: {
-          text: `${Math.hypot(x1 - x0, y1 - y0).toFixed(1)}m`,
-          textposition: 'middle',
-          font: {
-            color: plotConfig.focusLineColor,
-          },
+          color: 'rgba(0, 0, 0, 0)',
+          width: LINK_HIT_WIDTH,
         },
         editable: true,
         name: `Player1:${firstPoint},Player2:${secondPoint}`, // Using this name to identify the players connected by the line
@@ -491,12 +497,47 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     })
     return {
       lines,
+      links,
       shapes: Array.from(annotationStore.getDrawAnnotations(clipFrame)) as any[],
       arrows: annotationStore.getArrowAnnotations(clipFrame),
       teamShapes,
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [annotationStore, clipFrame, frameData, positionOverrides, annotationTick, annotationVersion, homeTeamColor, awayTeamColor])
+
+  // Plotly's selected shape, when it is one of the player lines (they come first in layout.shapes).
+  const selectedLinkKey = activeShapeIndex !== null && activeShapeIndex < links.length ? links[activeShapeIndex].key : null
+
+  // In Link Players mode, the visible player nearest the pointer, if close enough to pick, other than
+  // the first player already picked.
+  const linkSnapTarget = useMemo((): LinkSnapTarget | null => {
+    if (editMode !== 'draw_line_players' || !linkCursor || !frameData) return null
+    const visible = getVisibleTeamMask(frameData.players.team)
+    let nearest: LinkSnapTarget | null = null
+    let nearestDistance = LINK_SNAP_RADIUS
+    frameData.players.player_id.forEach((playerId, index) => {
+      if (!visible[index] || playerId === firstPoint) return
+      const { x, y } = resolvePlayerPos(playerId)
+      if (x === undefined || y === undefined) return
+      const distance = Math.hypot(x - linkCursor.x, y - linkCursor.y)
+      if (distance <= nearestDistance) {
+        nearestDistance = distance
+        nearest = { playerId, x, y }
+      }
+    })
+    return nearest
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editMode, linkCursor, frameData, firstPoint, positionOverrides, teamVisibility])
+
+  // The line stretched from the first player picked to the snapped player, or else the pointer.
+  const linkDraft = useMemo(() => {
+    if (editMode !== 'draw_line_players' || firstPoint === null) return null
+    const { x, y } = resolvePlayerPos(firstPoint)
+    const to = linkSnapTarget ?? linkCursor
+    if (x === undefined || y === undefined || !to) return null
+    return { from: { x, y }, to }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editMode, firstPoint, linkSnapTarget, linkCursor, frameData, positionOverrides])
 
   const trailLinks = useMemo(() => buildTrailLinks(matchEvents), [matchEvents])
 
@@ -656,15 +697,26 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     gd.style.cursor = onPlayer ? 'grab' : ''
   }, [DRAG_HIT_RADIUS_PX])
 
+  // Plotly selects a shape on click without any event, so its selection is read back after every
+  // redraw and click, for the PitchKit-drawn player lines to show it.
+  const syncActiveShape = useCallback(() => {
+    const index = graphDivRef.current?._fullLayout?._activeShapeIndex
+    setActiveShapeIndex(typeof index === 'number' && index >= 0 ? index : null)
+  }, [])
+  const syncActiveShapeAfterClick = useCallback(() => requestAnimationFrame(syncActiveShape), [syncActiveShape])
+
   // Bind the imperative pointer handlers once we have the Plotly graph div
   const handleGraphDiv = useCallback((figure: any, gd: any) => {
     if (!gd) return
     removeOrphanedBetweenShapes(gd, figure?.layout?.shapes?.length ?? 0)
-    if (graphDivRef.current === gd) return
-    graphDivRef.current = gd
-    gd.addEventListener('mousedown', onDragStart, true)
-    gd.addEventListener('mousemove', onHoverCursor)
-  }, [onDragStart, onHoverCursor])
+    if (graphDivRef.current !== gd) {
+      graphDivRef.current = gd
+      gd.addEventListener('mousedown', onDragStart, true)
+      gd.addEventListener('mousemove', onHoverCursor)
+      gd.addEventListener('mouseup', syncActiveShapeAfterClick)
+    }
+    syncActiveShape()
+  }, [onDragStart, onHoverCursor, syncActiveShape, syncActiveShapeAfterClick])
 
   useEffect(() => {
     return () => {
@@ -672,10 +724,11 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
       if (!gd) return
       gd.removeEventListener('mousedown', onDragStart, true)
       gd.removeEventListener('mousemove', onHoverCursor)
+      gd.removeEventListener('mouseup', syncActiveShapeAfterClick)
       window.removeEventListener('mousemove', onDragMove, true)
       window.removeEventListener('mouseup', endDrag, true)
     }
-  }, [onDragStart, onHoverCursor, onDragMove, endDrag])
+  }, [onDragStart, onHoverCursor, onDragMove, endDrag, syncActiveShapeAfterClick])
 
   // Erasing the shape a user has clicked/selected on the plot (Plotly's own
   // "active shape" concept) has no public JS API - the only place that logic
@@ -724,7 +777,44 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     window.addEventListener('mouseup', onUp, true)
   }
 
-  // Allows the user to 'Focus' on a player or draw lines between them
+  // Link Players: the first player picked waits for a second, then the two are linked. Picking the
+  // first again lets it go.
+  const pickLinkPlayer = (playerId: number) => {
+    if (firstPoint === null) {
+      setFirstPoint(playerId)
+      logger.info("First point selected for player line annotation:", playerId)
+      return
+    }
+    if (firstPoint === playerId) {
+      setFirstPoint(null)
+      return
+    }
+    logger.info("Adding player line annotation between players:", firstPoint, "and", playerId)
+    annotationStore.addPlayerLineAnnotation(firstPoint, playerId, clipFrame)
+    setAnnotationTick((tick) => tick + 1)
+    onAnnotationUpdate?.()
+    setFirstPoint(null)
+  }
+
+  const handleLinkMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    setLinkCursor(pixelToPitch(e.clientX - rect.left, e.clientY - rect.top))
+  }
+
+  // The first player picked is snapped out of linkSnapTarget, so it is found again here to let it go.
+  const handleLinkClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (linkSnapTarget) {
+      pickLinkPlayer(linkSnapTarget.playerId)
+      return
+    }
+    if (firstPoint === null) return
+    const rect = e.currentTarget.getBoundingClientRect()
+    const cursor = pixelToPitch(e.clientX - rect.left, e.clientY - rect.top)
+    const { x, y } = resolvePlayerPos(firstPoint)
+    if (x !== undefined && y !== undefined && Math.hypot(x - cursor.x, y - cursor.y) <= LINK_SNAP_RADIUS) pickLinkPlayer(firstPoint)
+  }
+
+  // Allows the user to 'Focus' on a player (Link Players clicks go through handleLinkClick instead)
   const handleClick = (event: any) => {
     if (editMode == 'player_focus') {
       if (!event?.points?.length) return
@@ -740,27 +830,6 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
 
     }
   
-    else if (editMode == 'draw_line_players') {
-      if (!event?.points?.length) return
-      const clickedPlayerId = event.points[0].customdata?.[0]
-      if (clickedPlayerId === undefined) return
-      if (firstPoint === null) {
-        setFirstPoint(clickedPlayerId)
-        logger.info("First point selected for player line annotation:", clickedPlayerId)
-      }
-      else{
-        if (firstPoint === clickedPlayerId) {
-          setFirstPoint(null) // Reset first point if the same player is clicked again
-          return
-        }
-        logger.info("Adding player line annotation between players:", firstPoint, "and", clickedPlayerId)
-        annotationStore.addPlayerLineAnnotation(firstPoint, clickedPlayerId, clipFrame)
-        setAnnotationTick((tick) => tick + 1)
-        onAnnotationUpdate?.()
-        setFirstPoint(null) // Reset first point for the next line
-      }
-    }
-
     else if (editMode == 'team_shape') {
       if (!event?.points?.length) return
       const clickedPlayerId = event.points[0].customdata?.[0]
@@ -908,7 +977,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
             />
           </Pitch>
         )}
-        {/* Always mounted, so a pool can play its switch-off after the last player is unfocused. */}
+        {/* Always mounted, so a spotlight or player line can play its exit after the last one goes. */}
         <Pitch
           type="skillcorner"
           width={PLOT_WIDTH}
@@ -918,6 +987,13 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
           style={ARROW_LAYER_STYLE}
         >
           <FocusSpotlight spots={focusSpots} />
+          <PlayerLinks
+            links={links}
+            selectedKey={selectedLinkKey}
+            draft={linkDraft}
+            snapTarget={linkSnapTarget}
+            color={plotConfig.focusLineColor}
+          />
         </Pitch>
         <Plot
           data={[
@@ -1012,6 +1088,14 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
           </Pitch>
         )}
         {editMode === 'draw_arrow' && <div style={ARROW_CAPTURE_STYLE} onMouseDown={handleArrowMouseDown} />}
+        {editMode === 'draw_line_players' && (
+          <div
+            style={{ ...LINK_CAPTURE_STYLE, cursor: linkSnapTarget ? 'pointer' : 'crosshair' }}
+            onMouseMove={handleLinkMouseMove}
+            onMouseLeave={() => setLinkCursor(null)}
+            onClick={handleLinkClick}
+          />
+        )}
       </div>
     </div>
   )

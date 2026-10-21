@@ -3,7 +3,7 @@ import type { TimelineOption } from './TimelineOption'
 import { DEFAULT_EVENT_MAP_FILTERS, EVENT_MAP_KINDS, type EventMapFilters } from '../plot/overlays/eventMapOverlay'
 
 export const PROJECT_FORMAT = 'playtactix-project'
-export const SCHEMA_VERSION = 3
+export const SCHEMA_VERSION = 5
 
 export type SavedAnnotation = {
   key: string
@@ -110,10 +110,10 @@ function isTimeline(value: unknown): value is TimelineOption {
       ? typeof value.eventType === 'string' &&
         Array.isArray(value.subtypes) &&
         value.subtypes.every((subtype: unknown) => typeof subtype === 'string') &&
-        typeof value.splitBySubtype === 'boolean'
-      : value.kind === 'metric'
-        ? typeof value.column === 'string'
-        : value.kind === 'phases')
+        typeof value.splitBySubtype === 'boolean' &&
+        (value.teamId == null || isNumber(value.teamId)) &&
+        (value.playerIds === undefined || isArrayOf(value.playerIds, 'number'))
+      : value.kind === 'metric' && typeof value.column === 'string')
   )
 }
 
@@ -143,6 +143,21 @@ const MIGRATIONS: Record<number, (raw: Record<string, unknown>) => Record<string
     delete upgraded.selectedEventIds
     return upgraded
   },
+  // v3 metric tracks charted an event column with a chosen aggregation. None of those graphs is
+  // offered any more (momentum replaced them), so their tracks are dropped.
+  3: (raw) => ({
+    ...raw,
+    timelines: Array.isArray(raw.timelines)
+      ? raw.timelines.filter((timeline) => !isObject(timeline) || timeline.kind !== 'metric')
+      : raw.timelines,
+  }),
+  // v4 could hold a phases of play track, which Insights no longer has, so it is dropped.
+  4: (raw) => ({
+    ...raw,
+    timelines: Array.isArray(raw.timelines)
+      ? raw.timelines.filter((timeline) => !isObject(timeline) || timeline.kind !== 'phases')
+      : raw.timelines,
+  }),
 }
 
 const V1_ENGAGEMENT_SUBTYPES = ['pressing', 'pressure', 'counter_press', 'recovery_press', 'other']

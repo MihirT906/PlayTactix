@@ -68,117 +68,6 @@
   transform: rotate(-90deg);
 }
 
-.annotation-timeline__group-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.annotation-timeline__group-action {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 10px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 999px;
-  background: rgba(15, 23, 42, 0.24);
-  color: #f8fafc;
-  font-size: 0.72rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.annotation-timeline__group-action svg {
-  width: 10px;
-  height: 10px;
-}
-
-.annotation-timeline__group-action:hover {
-  background: rgba(139, 92, 246, 0.28);
-  border-color: rgba(167, 139, 250, 0.6);
-}
-
-/* A picked option among the header actions, e.g. the team the event tracks are filtered to. */
-.annotation-timeline__group-action[aria-pressed='true'] {
-  background: rgba(139, 92, 246, 0.36);
-  border-color: rgba(196, 181, 253, 0.8);
-}
-
-.insight-filter {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding-left: 12px;
-  border-left: 1px solid rgba(255, 255, 255, 0.14);
-}
-
-.insight-filter__teams {
-  display: flex;
-  gap: 4px;
-}
-
-.insight-filter__swatch {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.5);
-}
-
-.insight-filter__clear {
-  padding: 0;
-  border: none;
-  background: none;
-  color: rgba(248, 250, 252, 0.7);
-  font-family: inherit;
-  font-size: 0.72rem;
-  text-decoration: underline;
-  cursor: pointer;
-}
-
-.insight-filter__clear:hover {
-  color: #f8fafc;
-}
-
-.insight-filter__players {
-  min-width: 220px;
-  max-height: 360px;
-  overflow-y: auto;
-}
-
-.insight-filter__player {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.insight-filter__player-number {
-  min-width: 1.4em;
-  color: rgba(248, 250, 252, 0.55);
-  text-align: right;
-}
-
-.insight-filter__player-name {
-  flex: 1;
-}
-
-.insight-filter__none {
-  padding: 4px 10px 8px;
-  color: rgba(248, 250, 252, 0.55);
-  font-size: 0.75rem;
-}
-
-/* A count or state at the end of an Add track menu item. */
-.insight-menu-item {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.insight-menu-item__meta {
-  color: rgba(248, 250, 252, 0.55);
-  font-weight: 500;
-}
-
 .annotation-timeline__empty {
   color: rgba(248, 250, 252, 0.6);
   font-size: 0.85rem;
@@ -238,45 +127,9 @@
   line-height: 1.4;
 }
 
-.annotation-timeline__label-row--with-actions {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 8px;
-}
-
 .annotation-timeline__label-text {
   min-width: 0;
   overflow-wrap: anywhere;
-}
-
-.annotation-timeline__label-action {
-  display: none;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: rgba(15, 23, 42, 0.8);
-  color: #f8fafc;
-  cursor: pointer;
-}
-
-.annotation-timeline__label-action svg {
-  width: 9px;
-  height: 9px;
-}
-
-.annotation-timeline__label-row:hover .annotation-timeline__label-action,
-.annotation-timeline__label-action:focus-visible {
-  display: inline-flex;
-}
-
-.annotation-timeline__label-action:hover {
-  background: #ef4444;
 }
 
 .annotation-timeline__track {

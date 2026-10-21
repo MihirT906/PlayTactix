@@ -1,14 +1,18 @@
 import { formatEventValue } from '../../constants/eventData'
 import {
+  getBarStrength,
   getEventMetricValue,
+  getMetricReach,
+  getMetricTop,
+  isSignedMetric,
   getMetricDescription,
+  getMetricGraph,
   getMetricLabel,
   matchesFilterTimeline,
-  matchesInsightFilter,
-  type ClipPhase,
 } from '../../services/timelineEvents'
 import type { Event } from '../../types/FrameDataInterfaces'
-import type { FilterTimelineOption, InsightFilter, MetricTimelineOption, TimelineOption } from '../../types/TimelineOption'
+import type { FilterTimelineOption, TimelineOption } from '../../types/TimelineOption'
+import { getMomentumStrength, getTeamPossessions, type MomentumScale, type TeamPossession } from './momentum'
 
 export const TIMELINE_LANE_HEIGHT = 22
 export const TIMELINE_CHART_HEIGHT = 64
@@ -25,18 +29,9 @@ export type PositionedEvent = Event & {
 
 export type LaneEvent = PositionedEvent & { laneIndex: number }
 
-// `value` is null when the event has none for the track's bar-height column.
-export type ValueEvent = PositionedEvent & { value: number | null }
-
-export type MetricPoint = { frame: number; value: number | null }
-
-export type PossessionBand = {
-  frameStart: number
-  frameEnd: number
-  start: number
-  end: number
-  max: number
-}
+// `value` is null when the event has none for the track's bar-height column; `strength` is its bar's
+// height as a share of the room for it, from -1 (below a middle line) to 1.
+export type ValueEvent = PositionedEvent & { value: number | null; strength: number }
 
 type RowBase = {
   key: string
@@ -59,45 +54,35 @@ export type LaneRow = EventRowBase & {
   laneCount: number
 }
 
-// Events as columns whose height follows a metric `column`; `max` is the highest value in the clip.
+// Events as columns whose height follows a metric `column`; `max` is the value at the top of the
+// track. A `signed` row draws from a middle line, with `-max` at the bottom.
 export type ValueRow = EventRowBase & {
   kind: 'value'
   column: string
   events: ValueEvent[]
   max: number
+  signed: boolean
 }
 
-export type MetricRow = RowBase & {
-  kind: 'metric'
-  column: string
-  points: MetricPoint[]
-  min: number
-  max: number
-}
-
-export type PossessionBandRow = RowBase & {
-  kind: 'possessionBand'
-  column: string
-  bands: PossessionBand[]
-  min: number
-  max: number
-}
-
-export type PositionedPhase = ClipPhase & {
+// A team possession placed on the scale; `strength` is its bar's height, from 0 to 1.
+export type MomentumBar = TeamPossession & {
   leftPercent: number
   widthPercent: number
+  strength: number
 }
 
-export type PhaseRow = RowBase & {
-  kind: 'phases'
-  phases: PositionedPhase[]
+// One bar per team possession, the home team's above the middle line and the away team's below.
+export type MomentumRow = RowBase & {
+  kind: 'momentum'
+  bars: MomentumBar[]
+  // The team drawn above the line; null when the teams are not known, and every bar goes above.
+  upperTeamId: number | null
 }
 
-export type TimelineRow = LaneRow | ValueRow | MetricRow | PossessionBandRow | PhaseRow
+export type TimelineRow = LaneRow | ValueRow | MomentumRow
 
 export function getRowHeight(row: TimelineRow): number {
   if (row.kind === 'lanes') return row.laneCount * TIMELINE_LANE_HEIGHT
-  if (row.kind === 'phases') return TIMELINE_LANE_HEIGHT
   return TIMELINE_CHART_HEIGHT
 }
 
@@ -153,43 +138,53 @@ function buildValueRow(
   clipRange: FrameRange,
   scale: FrameRange,
   column: string,
-  max: number,
+  reach: number,
 ): ValueRow {
   return {
     ...base,
     kind: 'value',
     column,
-    events: events.map((event) => ({ ...positionEvent(event, clipRange, scale), value: getEventMetricValue(event, column) })),
-    max,
+    events: events.map((event) => {
+      const value = getEventMetricValue(event, column)
+      return {
+        ...positionEvent(event, clipRange, scale),
+        value,
+        strength: value == null ? 0 : getBarStrength(column, value, reach),
+      }
+    }),
+    max: getMetricTop(column, reach),
+    signed: isSignedMetric(column),
   }
 }
 
 function buildFilterRows(
   timeline: FilterTimelineOption,
   sourceEvents: Event[],
-  filter: InsightFilter,
+  filterLabel: string | null,
   clipRange: FrameRange,
   scale: FrameRange,
 ): TimelineRow[] {
-  const matchingEvents = sourceEvents.filter(
-    (event) => matchesFilterTimeline(timeline, event) && matchesInsightFilter(filter, event),
-  )
+  const matchingEvents = sourceEvents.filter((event) => matchesFilterTimeline(timeline, event))
+  const withFilter = (label: string) => (filterLabel ? `${label} · ${filterLabel}` : label)
   const heightColumn = timeline.heightBy
   // One scale for the whole track, so split rows stay comparable with each other.
-  const max = heightColumn
-    ? Math.max(0, ...matchingEvents.map((event) => getEventMetricValue(event, heightColumn) ?? 0))
+  const reach = heightColumn
+    ? Math.max(0, ...matchingEvents.map((event) => {
+        const value = getEventMetricValue(event, heightColumn)
+        return value == null ? 0 : getMetricReach(heightColumn, value)
+      }))
     : 0
 
   const buildRow = (base: EventRowBase, events: Event[]) =>
     heightColumn
-      ? buildValueRow({ ...base, description: getMetricDescription(heightColumn) }, events, clipRange, scale, heightColumn, max)
+      ? buildValueRow({ ...base, description: getMetricDescription(heightColumn) }, events, clipRange, scale, heightColumn, reach)
       : buildLaneRow(base, events, clipRange, scale)
 
   const mergedRow = buildRow(
     {
       key: timeline.id,
       timelineId: timeline.id,
-      label: heightColumn ? `${timeline.label} · ${getMetricLabel(heightColumn)}` : timeline.label,
+      label: withFilter(heightColumn ? `${timeline.label} · ${getMetricLabel(heightColumn)}` : timeline.label),
       showSubtype: timeline.subtypes.length !== 1,
     },
     matchingEvents,
@@ -214,7 +209,7 @@ function buildFilterRows(
       {
         key: `${timeline.id}:${subtype}`,
         timelineId: timeline.id,
-        label: `${formatEventValue(timeline.eventType)} · ${formatEventValue(subtype)}`,
+        label: withFilter(`${formatEventValue(timeline.eventType)} · ${formatEventValue(subtype)}`),
         showSubtype: false,
       },
       matchingEvents.filter((event) => event.event_subtype === subtype),
@@ -222,127 +217,49 @@ function buildFilterRows(
   )
 }
 
-function computeMetricPoints(
-  timeline: MetricTimelineOption,
-  sourceEvents: Event[],
-  clipRange: FrameRange,
-): { points: MetricPoint[]; min: number; max: number } {
-  const column = timeline.column as keyof Event
-  const eventsWithValue = sourceEvents.filter(
-    (e) => e[column] != null && typeof e[column] === 'number' && e[column] !== -1,
-  )
-
-  if (eventsWithValue.length === 0) return { points: [], min: 0, max: 1 }
-
-  const boundaries = new Set<number>([clipRange.start, clipRange.end])
-  for (const event of eventsWithValue) {
-    if (event.frame_start >= clipRange.start && event.frame_start <= clipRange.end) boundaries.add(event.frame_start)
-    if (event.frame_end >= clipRange.start && event.frame_end <= clipRange.end) boundaries.add(event.frame_end)
-  }
-
-  const points: MetricPoint[] = Array.from(boundaries)
-    .sort((a, b) => a - b)
-    .map((frame) => {
-      const active = eventsWithValue.filter((e) => e.frame_start <= frame && e.frame_end >= frame)
-
-      if (active.length === 0) return { frame, value: null }
-
-      const values = active.map((e) => e[column] as number)
-      const value =
-        timeline.aggregation === 'max'
-          ? Math.max(...values)
-          : timeline.aggregation === 'latest'
-            ? values[values.length - 1]
-            : values.reduce((sum, v) => sum + v, 0) / values.length
-
-      return { frame, value }
-    })
-
-  // Fit the scale to the values in the clip; a constant line falls back to a zero baseline.
-  const values = points.flatMap((point) => (point.value == null ? [] : [point.value]))
-  if (values.length === 0) return { points, min: 0, max: 1 }
-
-  const max = Math.max(...values)
-  const min = Math.min(...values)
-
-  return { points, min: min === max ? Math.min(0, min) : min, max }
-}
-
-function computePossessionBands(
-  column: string,
-  sourceEvents: Event[],
-): { bands: PossessionBand[]; min: number; max: number } {
-  const startKey = `${column}_start` as keyof Event
-  const endKey = `${column}_end` as keyof Event
-  const maxKey = `${column}_max` as keyof Event
-  const bands: PossessionBand[] = []
-
-  for (const event of sourceEvents) {
-    const start = event[startKey]
-    const end = event[endKey]
-    const max = event[maxKey]
-
-    if (typeof start !== 'number' || typeof end !== 'number' || typeof max !== 'number') continue
-    if (start === -1 || end === -1 || max === -1) continue
-
-    bands.push({ frameStart: event.frame_start, frameEnd: event.frame_end, start, end, max })
-  }
-
-  if (bands.length === 0) return { bands: [], min: 0, max: 1 }
-
-  // Bands rest on the zero line, so only the top of the scale is fitted to the clip.
-  const values = bands.flatMap((band) => [band.start, band.end, band.max])
-
-  return { bands, min: Math.min(0, ...values), max: Math.max(...values) }
-}
-
 export type TimelineRowSources = {
   // The events in the clip, in clip frames and sorted by start.
   events: Event[]
-  // The phases of play in the clip, in clip frames and sorted by start.
-  phases: ClipPhase[]
-  // Narrows the event tracks; metric and phase tracks are drawn from every event.
-  filter: InsightFilter
+  // What an event track is narrowed to, added to its label; null when it shows everyone.
+  describeFilter: (timeline: FilterTimelineOption) => string | null
+  // The match's two teams, home first.
+  teamIds: number[]
+  // What momentum bars are measured against, taken from the whole match.
+  momentumScale: MomentumScale
 }
 
 // Turns the visible timelines into drawable rows, placed as percentages of `scale`.
 export function buildTimelineRows(
   timelines: TimelineOption[],
-  { events: clipEvents, phases, filter }: TimelineRowSources,
+  { events: clipEvents, describeFilter, teamIds, momentumScale }: TimelineRowSources,
   clipRange: FrameRange,
   scale: FrameRange = clipRange,
 ): TimelineRow[] {
   return timelines
     .filter((timeline) => !timeline.hidden)
     .flatMap((timeline): TimelineRow[] => {
-      const { id: key, label } = timeline
-
-      if (timeline.kind === 'phases') {
-        return [{
-          kind: 'phases',
-          key,
-          timelineId: key,
-          label,
-          phases: phases.map((phase) => ({ ...phase, ...placeOnScale(phase.frameStart, phase.frameEnd, clipRange, scale) })),
-        }]
-      }
+      const { id: key } = timeline
 
       if (timeline.kind === 'filter') {
-        return buildFilterRows(timeline, clipEvents, filter, clipRange, scale)
+        return buildFilterRows(timeline, clipEvents, describeFilter(timeline), clipRange, scale)
       }
 
-      const metricRow = {
+      // A graph no longer offered draws nothing.
+      const graph = getMetricGraph(timeline.column)
+      if (!graph) return []
+
+      return [{
+        kind: 'momentum',
         key,
         timelineId: key,
-        label: getMetricLabel(timeline.column),
-        description: getMetricDescription(timeline.column),
-        column: timeline.column,
-      }
-
-      if (timeline.aggregation === 'band') {
-        return [{ kind: 'possessionBand', ...metricRow, ...computePossessionBands(timeline.column, clipEvents) }]
-      }
-
-      return [{ kind: 'metric', ...metricRow, ...computeMetricPoints(timeline, clipEvents, clipRange) }]
+        label: graph.label,
+        description: graph.description,
+        upperTeamId: teamIds[0] ?? null,
+        bars: getTeamPossessions(clipEvents).map((possession) => ({
+          ...possession,
+          ...placeOnScale(possession.frameStart, possession.frameEnd, clipRange, scale),
+          strength: getMomentumStrength(possession.peak, momentumScale),
+        })),
+      }]
     })
 }

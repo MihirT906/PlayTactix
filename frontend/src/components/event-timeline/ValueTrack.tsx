@@ -32,19 +32,20 @@ const ValueTrack: React.FC<ValueTrackProps> = ({
   }
 
   const innerHeight = TIMELINE_CHART_HEIGHT - TIMELINE_CHART_PADDING * 2
-  const baseline = TIMELINE_CHART_HEIGHT - TIMELINE_CHART_PADDING
+  // A signed row draws up and down from the middle, so each side has half the room.
+  const baseline = row.signed ? TIMELINE_CHART_HEIGHT / 2 : TIMELINE_CHART_HEIGHT - TIMELINE_CHART_PADDING
+  const room = row.signed ? innerHeight / 2 : innerHeight
 
   // Tallest first, so shorter bars that overlap them stay on top and hoverable.
   const bars = row.events
     .map((event) => {
-      const strength = event.value != null && row.max > 0 ? Math.max(event.value, 0) / row.max : 0
-      const height = Math.max(strength * innerHeight, VALUE_BAR_MIN_HEIGHT)
+      const height = Math.max(Math.abs(event.strength) * room, VALUE_BAR_MIN_HEIGHT)
 
       return {
         event,
         x: (event.leftPercent / 100) * timelineTrackWidth,
         width: (event.widthPercent / 100) * timelineTrackWidth,
-        y: baseline - height,
+        y: event.strength < 0 ? baseline : baseline - height,
         height,
         color: getEventColor(event.team_id),
       }
@@ -58,6 +59,8 @@ const ValueTrack: React.FC<ValueTrackProps> = ({
     : ''
   const tooltipWidth = hoveredLabel.length * TOOLTIP_CHAR_WIDTH + 12
   const tooltipX = hovered ? Math.max(Math.min(hovered.x, timelineTrackWidth - tooltipWidth - 2), 2) : 0
+  // On a signed row, on the other side of the middle line from the bar, so it never covers it.
+  const tooltipY = row.signed && hovered && hovered.event.strength >= 0 ? baseline + 4 : 2
 
   return (
     <svg
@@ -67,6 +70,11 @@ const ValueTrack: React.FC<ValueTrackProps> = ({
       onMouseLeave={() => hover(null)}
     >
       <text x={4} y={10} className="event-display__metric-scale">{formatMetricValue(row.column, row.max)}</text>
+      {row.signed ? (
+        <text x={4} y={TIMELINE_CHART_HEIGHT - 3} className="event-display__metric-scale">
+          {formatMetricValue(row.column, -row.max)}
+        </text>
+      ) : null}
       <line x1={0} y1={baseline} x2={timelineTrackWidth} y2={baseline} className="event-display__value-baseline" />
       {bars.map((bar) => (
         <rect
@@ -94,11 +102,11 @@ const ValueTrack: React.FC<ValueTrackProps> = ({
       {hovered ? (
         <>
           <rect
-            x={tooltipX} y={2}
+            x={tooltipX} y={tooltipY}
             width={tooltipWidth} height={18}
             rx={4} className="event-display__metric-tooltip-bg"
           />
-          <text x={tooltipX + tooltipWidth / 2} y={15} textAnchor="middle" className="event-display__metric-tooltip">
+          <text x={tooltipX + tooltipWidth / 2} y={tooltipY + 13} textAnchor="middle" className="event-display__metric-tooltip">
             {hoveredLabel}
           </text>
         </>

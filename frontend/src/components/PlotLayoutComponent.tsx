@@ -4,7 +4,6 @@ import Controls from './Controls'
 import PlotComponent from './PlotComponent'
 import type { MatchData } from '../types/MatchDataInterfaces'
 import type { FrameData, Event } from '../types/FrameDataInterfaces'
-import type { PhasesOfPlay } from '../types/KeyMomentsDataInterfaces'
 import type AnnotationStore from '../services/AnnotationStore-optimized'
 import type TimelineStore from '../services/TimelineStore'
 import AnnotationTimeline from './annotation-timeline'
@@ -25,7 +24,6 @@ type PlotLayoutComponentProps = {
   matchData: MatchData | null
   frameData: FrameData | null
   matchEvents: Event[] | null
-  phases: PhasesOfPlay[] | null
   annotationStore: AnnotationStore
   timelineStore: TimelineStore
   onAnnotationUpdate: () => void
@@ -48,7 +46,6 @@ function PlotLayoutComponent({
   matchData,
   frameData,
   matchEvents,
-  phases,
   annotationStore,
   timelineStore,
   onAnnotationUpdate,
@@ -110,7 +107,6 @@ function PlotLayoutComponent({
         onAnnotationUpdate={onAnnotationUpdate}
         timelineStore={timelineStore}
         matchEvents={matchEvents}
-        phases={phases}
         matchData={matchData}
         onInsightEventHover={setHoveredInsightEvent}
       />

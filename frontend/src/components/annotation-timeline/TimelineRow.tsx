@@ -1,4 +1,4 @@
-import type { MouseEvent, ReactNode } from 'react'
+import type { ReactNode } from 'react'
 
 type TimelineRowProps = {
   label: string
@@ -8,9 +8,6 @@ type TimelineRowProps = {
   trackWidth: number
   trackHeight: number
   currentFrameOffsetPercent: number
-  /** Controls shown in the label on hover, such as a remove button. */
-  labelActions?: ReactNode
-  onLabelContextMenu?: (event: MouseEvent) => void
   children?: ReactNode
 }
 
@@ -22,19 +19,12 @@ export function TimelineRow({
   trackWidth,
   trackHeight,
   currentFrameOffsetPercent,
-  labelActions,
-  onLabelContextMenu,
   children,
 }: TimelineRowProps) {
   return (
     <div className="annotation-timeline__row" style={{ gridTemplateColumns: `${labelWidth}px ${trackWidth}px` }}>
-      <div
-        className={`annotation-timeline__label-row${labelActions ? ' annotation-timeline__label-row--with-actions' : ''}`}
-        title={description ? `${label}\n${description}` : label}
-        onContextMenu={onLabelContextMenu}
-      >
+      <div className="annotation-timeline__label-row" title={description ? `${label}\n${description}` : label}>
         <span className="annotation-timeline__label-text">{label}</span>
-        {labelActions}
       </div>
       <div className="annotation-timeline__track" style={{ height: `${trackHeight}px` }}>
         <div

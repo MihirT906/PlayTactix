@@ -73,6 +73,16 @@ interface Event {
     xshot_player_possession_start: number;
     xshot_player_possession_end: number;
     xshot_player_possession_max: number;
+    // The chance the team on the ball scores from the possession. Only on player possessions; null on
+    // other events and in data built before it was added.
+    possession_epv_for_start: number | null;
+    possession_epv_for_end: number | null;
+    // Bar heights for player possessions; null on other events and in data built before they were added.
+    possession_epv_total: number | null;
+    pass_epv_total: number | null;
+    n_opponents_bypassed: number | null;
+    overall_pressure_start_id: number | null; // 1 (no pressure) to 5 (very high)
+    n_passing_options: number | null;
 }
 
 export type { FrameData, Event, Players, Ball }

@@ -3,8 +3,6 @@ import { FaChevronDown } from 'react-icons/fa'
 
 type TimelineGroupProps = {
   title: string
-  /** Controls shown beside the title, such as a button that adds a row. */
-  actions?: ReactNode
   /** Given with onToggleCollapsed, the title becomes a button that hides and shows the rows. */
   collapsed?: boolean
   onToggleCollapsed?: () => void
@@ -12,7 +10,7 @@ type TimelineGroupProps = {
 }
 
 /** One titled group of rows (Match Segments, Insights, Overlays, Annotations) inside the shared scroll area. */
-export function TimelineGroup({ title, actions, collapsed = false, onToggleCollapsed, children }: TimelineGroupProps) {
+export function TimelineGroup({ title, collapsed = false, onToggleCollapsed, children }: TimelineGroupProps) {
   return (
     <div className="annotation-timeline__group">
       <div className="annotation-timeline__group-header">
@@ -32,7 +30,6 @@ export function TimelineGroup({ title, actions, collapsed = false, onToggleColla
         ) : (
           <h3 className="annotation-timeline__group-title">{title}</h3>
         )}
-        {actions}
       </div>
       {collapsed ? null : children}
     </div>

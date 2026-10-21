@@ -5,7 +5,6 @@ import { useMatchSession } from '../../context/MatchSessionContext'
 import { useStyleConfig } from '../../context/StyleConfigContext'
 import type { OverlaySegment } from '../../types/ClipInterfaces'
 import type { Event } from '../../types/FrameDataInterfaces'
-import type { PhasesOfPlay } from '../../types/KeyMomentsDataInterfaces'
 import type { MatchData } from '../../types/MatchDataInterfaces'
 import { SegmentRow } from './SegmentRow'
 import { BackgroundRow } from './BackgroundRow'
@@ -30,9 +29,8 @@ type AnnotationTimelineProps = {
   annotationVersion: number
   onAnnotationUpdate: () => void
   timelineStore: TimelineStore
-  /** Every event and phase of play of the match, for the Insights tracks. */
+  /** Every event of the match, for the Insights tracks. */
   matchEvents: Event[] | null
-  phases: PhasesOfPlay[] | null
   matchData: MatchData | null
   onInsightEventHover: (event: Event | null) => void
 }
@@ -56,7 +54,6 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
   onAnnotationUpdate,
   timelineStore,
   matchEvents,
-  phases,
   matchData,
   onInsightEventHover,
 }) => {
@@ -178,7 +175,6 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
           <InsightGroup
             timelineStore={timelineStore}
             matchEvents={matchEvents}
-            phases={phases}
             matchData={matchData}
             clipFrame={clipFrame}
             clipRange={clipRange}

@@ -254,6 +254,66 @@
   font-weight: 600;
 }
 
+/* The team's colour, on a team filter chip. */
+.timeline-chip-swatch {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.5);
+}
+
+/* A chip that opens a list, such as the players a track is narrowed to. */
+.timeline-dropdown {
+  align-self: flex-start;
+}
+
+.timeline-dropdown-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.timeline-dropdown svg {
+  flex-shrink: 0;
+  width: 0.6rem;
+  height: 0.6rem;
+}
+
+.timeline-player-menu {
+  min-width: 220px;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.timeline-player-menu__player {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.timeline-player-menu__number {
+  min-width: 1.4em;
+  color: rgba(248, 250, 252, 0.55);
+  text-align: right;
+}
+
+.timeline-player-menu__name {
+  flex: 1;
+}
+
+.timeline-player-menu__count {
+  color: rgba(248, 250, 252, 0.55);
+  font-weight: 500;
+}
+
+.timeline-player-menu__none {
+  padding: 4px 10px 8px;
+  color: rgba(248, 250, 252, 0.55);
+  font-size: 0.75rem;
+}
+
 .timeline-chip[aria-pressed='true'] .timeline-chip-count {
   color: var(--color-text-soft);
 }

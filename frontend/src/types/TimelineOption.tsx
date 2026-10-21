@@ -9,35 +9,20 @@ export interface FilterTimelineOption {
   splitBySubtype: boolean
   // Numeric event column whose value sets the height of each bar.
   heightBy?: string | null
+  // Narrows the track to one team; null or absent means both.
+  teamId?: number | null
+  // Narrows the track to some players; empty or absent means every player.
+  playerIds?: number[]
   hidden?: boolean
 }
-
-export type AggregationMethod = 'max' | 'average' | 'latest' | 'band'
 
 export interface MetricTimelineOption {
   id: string
   label: string
   kind: 'metric'
+  // The id of the graph the track draws (see METRIC_GRAPHS).
   column: string
-  aggregation: AggregationMethod
   hidden?: boolean
 }
 
-// The clip's phases of play, as blocks coloured by the team in possession.
-export interface PhasesTimelineOption {
-  id: string
-  label: string
-  kind: 'phases'
-  hidden?: boolean
-}
-
-export type TimelineOption = FilterTimelineOption | MetricTimelineOption | PhasesTimelineOption
-
-// Narrows the event tracks to one team and, optionally, some of its players. Metric and phase
-// tracks are left whole.
-export interface InsightFilter {
-  // Null means both teams.
-  teamId: number | null
-  // Empty means every player.
-  playerIds: number[]
-}
+export type TimelineOption = FilterTimelineOption | MetricTimelineOption

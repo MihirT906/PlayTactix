@@ -256,7 +256,14 @@ class SkillCornerDataIngestor:
             'lead_to_shot', 'lead_to_goal',
             'distance_covered', 'speed_avg', 'separation_gain', 
             'pass_angle', 'pass_distance', 'n_opponents_overtaken',
-            'player_targeted_xpass_completion', 'player_targeted_xthreat', 'xthreat', 'xpass_completion', 'xloss_player_possession_start', 'xloss_player_possession_end', 'xloss_player_possession_max', 'xshot_player_possession_start', 'xshot_player_possession_end', 'xshot_player_possession_max'
+            'player_targeted_xpass_completion', 'player_targeted_xthreat', 'xthreat', 'xpass_completion', 'xloss_player_possession_start', 'xloss_player_possession_end', 'xloss_player_possession_max', 'xshot_player_possession_start', 'xshot_player_possession_end', 'xshot_player_possession_max',
+            # The chance the team on the ball scores from the possession, at its start and end; the
+            # momentum graph is drawn from it.
+            'possession_epv_for_start', 'possession_epv_for_end',
+            # Bar heights for player possessions: the value the possession and its pass added, how many
+            # opponents the pass bypassed, the pressure on receiving (1 to 5) and the passing options.
+            'possession_epv_total', 'pass_epv_total', 'n_opponents_bypassed', 'overall_pressure_start_id',
+            'n_passing_options',
         ]
         
         silver_event_data = bronze_event_data[columns_to_keep].copy()

@@ -198,6 +198,7 @@ function WorkspaceSidebar({
           <TimelineTab
             timelineStore={timelineStore}
             matchEvents={keyMomentsData?.events ?? null}
+            matchData={matchData}
           />
         </div>
       ) : isSearchPanelOpen ? (

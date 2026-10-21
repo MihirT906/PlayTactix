@@ -3,6 +3,7 @@ from config import ALLOWED_ORIGINS, PORT  # loads .env; must come before other b
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from routes import data_routes
 
 app = FastAPI()
@@ -14,6 +15,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# Frame chunks and key moments (every event of the match) are large, repetitive JSON that compresses well.
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 app.include_router(data_routes.router)
 

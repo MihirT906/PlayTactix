@@ -192,6 +192,8 @@ function AppContent({
 
     useEffect(() => { // Fetch match metadata when a match is selected
       if (selectedMatchId === null) return
+      // Set by the cleanup when the match changes, so a slow response for the old match is dropped.
+      let cancelled = false
 
       const fetchMatchMetaData = async () => {
         // First set the metaStatus to 'loading' to indicate that we're fetching data
@@ -199,6 +201,7 @@ function AppContent({
 
         // Collect match metadata from dataManager
         const data = await dataManager.fetchMatchMetaData()
+        if (cancelled) return
         if (data) {
           setMatchMetaData(data)
           // After successfully fetching metadata, update the metaStatus to 'ready'
@@ -211,10 +214,15 @@ function AppContent({
       }
 
       fetchMatchMetaData()
+      return () => {
+        cancelled = true
+      }
     }, [selectedMatchId])
 
     useEffect(() => {
       if (selectedMatchId === null) return
+      // Set by the cleanup when the match changes, so a slow response for the old match is dropped.
+      let cancelled = false
 
       const fetchKeyMomentsData = async () => {
         // First set the keyMomentStatus to 'loading' to indicate that we're fetching data
@@ -222,6 +230,7 @@ function AppContent({
 
         // Collect key moments data from dataManager
         const data = await dataManager.fetchKeyMoments()
+        if (cancelled) return
         if (data) {
           setKeyMomentsData(data)
           // After successfully fetching key moments, update the keyMomentStatus to 'ready'
@@ -234,6 +243,9 @@ function AppContent({
       }
 
       fetchKeyMomentsData()
+      return () => {
+        cancelled = true
+      }
     }, [selectedMatchId])
 
     useEffect(() => { // For playback control - auto-advance frames when isPlaying is true

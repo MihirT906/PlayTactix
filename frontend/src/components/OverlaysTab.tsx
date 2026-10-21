@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
 import type { IconType } from 'react-icons'
-import { FaChevronDown } from 'react-icons/fa'
 import { GiAbstract006, GiFlagObjective, GiHoneycomb, GiNodular, GiPathDistance, GiSoccerField, GiTargeting } from 'react-icons/gi'
 import { useMatchSession } from '../context/MatchSessionContext'
 import type { KeyMomentsData } from '../types/KeyMomentsDataInterfaces'
@@ -23,22 +22,21 @@ const OVERLAY_OPTIONS: { kind: OverlaySegmentKind; Icon: IconType }[] = [
   { kind: 'pass_option_prob', Icon: GiTargeting },
   { kind: 'sequence_trails', Icon: GiPathDistance },
   { kind: 'voronoi', Icon: GiHoneycomb },
-  { kind: 'pass_network', Icon: GiNodular },
 ]
 
 function OverlaysTab({
   keyMomentsData,
   matchData,
 }: OverlaysTabProps) {
-  const [isEventMapOpen, setIsEventMapOpen] = useState(false)
-  const [isPassNetworkOpen, setIsPassNetworkOpen] = useState(false)
+  // The overlay whose settings are open below the buttons, one at a time.
+  const [openPanel, setOpenPanel] = useState<'event_map' | 'pass_network' | null>(null)
   // The overlay type whose last click was refused, so the reason can be shown.
   const [refusedKind, setRefusedKind] = useState<OverlaySegmentKind | null>(null)
   const { session, addOverlaySegmentFrom, endOverlaySegmentAt } = useMatchSession()
   const { clip, currentClipFrame } = session.playback
 
-  const handleEventMapSelect = () => {
-    setIsEventMapOpen((previousValue) => !previousValue)
+  const togglePanel = (panel: 'event_map' | 'pass_network') => {
+    setOpenPanel((previousValue) => (previousValue === panel ? null : panel))
   }
 
   const isShowing = (kind: OverlaySegmentKind) => findOverlayAt(clip, kind, currentClipFrame) !== undefined
@@ -102,14 +100,27 @@ function OverlaysTab({
           <button
             type="button"
             className={`app-header-action workspace-sidebar-action timeline-add-option${eventMapCount > 0 ? ' is-active' : ''}`}
-            aria-expanded={isEventMapOpen}
+            aria-expanded={openPanel === 'event_map'}
             aria-controls="event-map-panel"
             title={eventMapCount > 0 ? `Drawing ${eventMapCount} events. Open to change the filters.` : 'Choose events to draw'}
-            onClick={handleEventMapSelect}
+            onClick={() => togglePanel('event_map')}
           >
             <GiFlagObjective aria-hidden="true" />
             <span>Event Map</span>
             {eventMapCount > 0 ? <span className="overlay-option-state">On</span> : null}
+          </button>
+          {/* The Pass Network has settings, so like the Event Map its button opens them; it is turned on and off from there. */}
+          <button
+            type="button"
+            className={`app-header-action workspace-sidebar-action timeline-add-option${isShowing('pass_network') ? ' is-active' : ''}`}
+            aria-expanded={openPanel === 'pass_network'}
+            aria-controls="pass-network-panel"
+            title={isShowing('pass_network') ? 'Showing now. Open to change its settings.' : 'Open to set up and turn on'}
+            onClick={() => togglePanel('pass_network')}
+          >
+            <GiNodular aria-hidden="true" />
+            <span>{OVERLAY_SEGMENT_LABELS.pass_network}</span>
+            {isShowing('pass_network') ? <span className="overlay-option-state">On</span> : null}
           </button>
         </div>
 
@@ -119,32 +130,22 @@ function OverlaysTab({
           </p>
         ) : null}
 
-        {isEventMapOpen ? (
+        {openPanel === 'event_map' ? (
           <div id="event-map-panel">
             <EventMapPanel keyMomentsData={keyMomentsData} matchData={matchData} />
           </div>
         ) : null}
 
-        <section className={`key-moment-group${isPassNetworkOpen ? ' is-expanded' : ''}`}>
-          <div className="key-moment-header">
-            <span className="key-moment-label">Pass Network settings</span>
-            <button
-              type="button"
-              className="key-moment-toggle"
-              aria-expanded={isPassNetworkOpen}
-              aria-controls="pass-network-panel"
-              aria-label={isPassNetworkOpen ? 'Hide pass network settings' : 'Show pass network settings'}
-              onClick={() => setIsPassNetworkOpen((previousValue) => !previousValue)}
-            >
-              <FaChevronDown className={`key-moment-arrow${isPassNetworkOpen ? ' is-expanded' : ''}`} aria-hidden="true" />
-            </button>
+        {openPanel === 'pass_network' ? (
+          <div id="pass-network-panel">
+            <PassNetworkPanel
+              keyMomentsData={keyMomentsData}
+              matchData={matchData}
+              isOn={isShowing('pass_network')}
+              onToggle={() => handleOverlayToggle('pass_network')}
+            />
           </div>
-          {isPassNetworkOpen ? (
-            <div id="pass-network-panel">
-              <PassNetworkPanel keyMomentsData={keyMomentsData} matchData={matchData} />
-            </div>
-          ) : null}
-        </section>
+        ) : null}
       </div>
     </div>
   )

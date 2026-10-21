@@ -16,6 +16,8 @@ import './KeyMomentFinderComponent.css'
 type PassNetworkPanelProps = {
   keyMomentsData: KeyMomentsData | null
   matchData: MatchData | null
+  isOn: boolean // Whether the overlay is showing at the current frame
+  onToggle: () => void // Turns it on or off from the current frame
 }
 
 const WINDOW_OPTIONS: Array<{ value: PassNetworkConfig['window']; label: string; title: string }> = [
@@ -32,7 +34,7 @@ const BUILD_OPTIONS: Array<{ value: PassNetworkConfig['build']; label: string; t
 // The match clock minutes are entered as whole numbers; anything else typed is ignored.
 const minuteFrom = (input: HTMLInputElement) => (Number.isFinite(input.valueAsNumber) ? Math.max(0, Math.round(input.valueAsNumber)) : null)
 
-function PassNetworkPanel({ keyMomentsData, matchData }: PassNetworkPanelProps) {
+function PassNetworkPanel({ keyMomentsData, matchData, isOn, onToggle }: PassNetworkPanelProps) {
   const { session, updatePassNetworkConfig } = useMatchSession()
   const { homeTeamColor, awayTeamColor } = useStyleConfig()
   const config = session.overlays.passNetworkConfig
@@ -63,6 +65,13 @@ function PassNetworkPanel({ keyMomentsData, matchData }: PassNetworkPanelProps) 
 
   return (
     <div className="key-moment-groups">
+      <div className="event-map-summary" role="status">
+        <span>{isOn ? 'Showing at this frame' : 'Not showing at this frame'}</span>
+        <button type="button" className="key-moment-toggle" onClick={onToggle}>
+          {isOn ? 'Turn off from here' : 'Turn on from here'}
+        </button>
+      </div>
+
       <section className="key-moment-filter-section" aria-label="Pass network settings">
         <FilterRow label="Count passes over">
           <SegmentedControl
@@ -133,8 +142,7 @@ function PassNetworkPanel({ keyMomentsData, matchData }: PassNetworkPanelProps) 
         {config.build === 'progressive' ? ', added as each is received.' : '.'}
       </p>
       <p className="event-map-note">
-        Lines join team-mates where they are now, thicker for more passes. A player off the pitch has no lines. Turn the
-        overlay on above to draw it.
+        Lines join team-mates where they are now, thicker for more passes. A player off the pitch has no lines.
       </p>
     </div>
   )

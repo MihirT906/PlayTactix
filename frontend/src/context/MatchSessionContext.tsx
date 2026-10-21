@@ -10,6 +10,7 @@ import type DataManager from '../services/DataManager'
 import type { SidebarPanel } from '../components/WorkspaceSidebar'
 import type OverlayManager from '../services/OverlayManager'
 import { DEFAULT_EVENT_MAP_FILTERS, type EventMapFilters } from '../plot/overlays/eventMapOverlay'
+import { DEFAULT_PASS_NETWORK_CONFIG, type PassNetworkConfig } from '../plot/overlays/passNetworkOverlay'
 import type { Clip, OverlaySegmentKind } from '../types/ClipInterfaces'
 import * as clipManager from '../services/clipManager'
 import { getLogger } from '../services/logger'
@@ -41,6 +42,7 @@ export type MatchSessionState = {
     eventMapFilters: EventMapFilters // The Event Map draws everything matching these
     eventMapExcludedIds: string[] // Matching events the user has unticked
     autoDisappearEvents: boolean
+    passNetworkConfig: PassNetworkConfig // What the Pass Network counts, while its overlay is on
   }
   // Overlays are also expressed as OverlaySegments on the clip's own timeline (see
   // playback.clip.overlaySegments) so they can be independently toggled and given
@@ -75,6 +77,7 @@ type MatchSessionContextValue = {
     eventMapFilters: EventMapFilters
     eventMapExcludedIds: string[]
     autoDisappearEvents: boolean
+    passNetworkConfig: PassNetworkConfig
   }) => void
   setCurrentMatchFrame: (frame: number) => void
   setCurrentClipFrame: (clipFrame: number) => void
@@ -97,6 +100,7 @@ type MatchSessionContextValue = {
   setEventMapExcludedIds: (ids: string[]) => void
   resetEventMap: () => void
   setAutoDisappearEvents: (autoDisappear: boolean) => void
+  updatePassNetworkConfig: (changes: Partial<PassNetworkConfig>) => void
 
   addOverlaySegmentFrom: (kind: OverlaySegmentKind, clipFrame: number) => void
   endOverlaySegmentAt: (kind: OverlaySegmentKind, clipFrame: number) => void
@@ -140,6 +144,7 @@ export const createInitialMatchSessionState = (matchId: number | null = null): M
     eventMapFilters: DEFAULT_EVENT_MAP_FILTERS,
     eventMapExcludedIds: [],
     autoDisappearEvents: false,
+    passNetworkConfig: DEFAULT_PASS_NETWORK_CONFIG,
   },
   ui: {
     activeSidebarPanel: null,
@@ -180,7 +185,7 @@ export function MatchSessionProvider({
             setSession(createInitialMatchSessionState(matchId))
         },
 
-        restoreSession: ({ clip, eventMapFilters, eventMapExcludedIds, autoDisappearEvents }) => {
+        restoreSession: ({ clip, eventMapFilters, eventMapExcludedIds, autoDisappearEvents, passNetworkConfig }) => {
             logger.info('Session restored from saved project', { segments: clip.matchSegments.length })
             setSession((prev) => {
                 const first = clip.matchSegments[0]
@@ -199,6 +204,7 @@ export function MatchSessionProvider({
                         eventMapFilters,
                         eventMapExcludedIds,
                         autoDisappearEvents,
+                        passNetworkConfig,
                     },
                 }
             })
@@ -435,6 +441,17 @@ export function MatchSessionProvider({
                 overlays: {
                     ...prev.overlays,
                     autoDisappearEvents: autoDisappear,
+                },
+            }))
+        },
+
+        updatePassNetworkConfig: (changes: Partial<PassNetworkConfig>) => {
+            logger.info('Pass network config changed', changes)
+            setSession((prev) => ({
+                ...prev,
+                overlays: {
+                    ...prev.overlays,
+                    passNetworkConfig: { ...prev.overlays.passNetworkConfig, ...changes },
                 },
             }))
         },

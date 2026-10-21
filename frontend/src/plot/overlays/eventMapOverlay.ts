@@ -37,12 +37,18 @@ const FRAME_RATE = 10 // Tracking frames per second
 
 const isPoint = (x: unknown, y: unknown) => Number.isFinite(x) && Number.isFinite(y)
 
-// The match clock at `frame`. An event only carries the clock at its end ("MM:SS.s"), so it is
-// walked back from there by the frames in between.
-function clockAt(event: Event, frame: number): string {
+// The match clock at `frame`, in seconds, or null when the data has none. An event only carries the
+// clock at its end ("MM:SS.s"), so it is walked back from there by the frames in between.
+export function clockSecondsAt(event: Event, frame: number): number | null {
   const [minutes, seconds] = String(event.time_end ?? '').split(':').map(Number)
-  if (!Number.isFinite(minutes) || !Number.isFinite(seconds)) return ''
-  const total = Math.max(0, minutes * 60 + seconds - (event.frame_end - frame) / FRAME_RATE)
+  if (!Number.isFinite(minutes) || !Number.isFinite(seconds)) return null
+  return Math.max(0, minutes * 60 + seconds - (event.frame_end - frame) / FRAME_RATE)
+}
+
+// The match clock at `frame` as "MM:SS"; empty when the data has none.
+function clockAt(event: Event, frame: number): string {
+  const total = clockSecondsAt(event, frame)
+  if (total === null) return ''
   return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(Math.floor(total % 60)).padStart(2, '0')}`
 }
 

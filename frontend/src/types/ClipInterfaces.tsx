@@ -10,7 +10,7 @@ export type Segment = {
   isDefault?: boolean
 }
 
-export type OverlaySegmentKind = 'pitch' | 'pitch_control' | 'pass_option_prob' | 'sequence_trails' | 'voronoi'
+export type OverlaySegmentKind = 'pitch' | 'pitch_control' | 'pass_option_prob' | 'sequence_trails' | 'voronoi' | 'pass_network'
 
 export const OVERLAY_SEGMENT_LABELS: Record<OverlaySegmentKind, string> = {
   pitch: 'Pitch',
@@ -18,6 +18,7 @@ export const OVERLAY_SEGMENT_LABELS: Record<OverlaySegmentKind, string> = {
   pass_option_prob: 'Pass Probability',
   sequence_trails: 'Sequence Trails',
   voronoi: 'Voronoi',
+  pass_network: 'Pass Network',
 }
 
 // An overlay (e.g. the pitch background, pitch control, pass probability) placed

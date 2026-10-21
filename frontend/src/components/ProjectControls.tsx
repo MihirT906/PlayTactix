@@ -59,6 +59,7 @@ export default function ProjectControls({
       eventMapFilters: project.eventMap.filters,
       eventMapExcludedIds: project.eventMap.excludedIds,
       autoDisappearEvents: project.autoDisappearEvents,
+      passNetworkConfig: project.passNetwork,
     })
     annotationStore.load(project.annotations, 0)
     timelineStore.load(project.timelines)

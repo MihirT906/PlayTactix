@@ -50,6 +50,10 @@ export const APP_CONFIG = {
 		voronoiFillOpacity: 0.3,
 		voronoiStrokeColor: 'rgba(255, 255, 255, 0.7)',
 		voronoiStrokeWidth: 1,
+		passNetworkMinWidth: 1, // A line of the fewest passes
+		passNetworkMaxWidth: 9, // A line of the most passes
+		passNetworkMinOpacity: 0.35,
+		passNetworkMaxOpacity: 0.9,
 		highlightRingGap: 5,
 		highlightRingWidth: 1,
 		paperBackgroundColor: '#ffffff',

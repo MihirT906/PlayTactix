@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { IconType } from 'react-icons'
-import { GiAbstract006, GiFlagObjective, GiHoneycomb, GiPathDistance, GiSoccerField, GiTargeting } from 'react-icons/gi'
+import { FaChevronDown } from 'react-icons/fa'
+import { GiAbstract006, GiFlagObjective, GiHoneycomb, GiNodular, GiPathDistance, GiSoccerField, GiTargeting } from 'react-icons/gi'
 import { useMatchSession } from '../context/MatchSessionContext'
 import type { KeyMomentsData } from '../types/KeyMomentsDataInterfaces'
 import type { MatchData } from '../types/MatchDataInterfaces'
@@ -8,6 +9,7 @@ import { OVERLAY_SEGMENT_LABELS, type OverlaySegmentKind } from '../types/ClipIn
 import { findOverlayAt } from '../services/clipManager'
 import { buildEventMapItems, resolveEventMap } from '../plot/overlays/eventMapOverlay'
 import EventMapPanel from './EventMapPanel'
+import PassNetworkPanel from './PassNetworkPanel'
 import './TimelineTab.css'
 
 type OverlaysTabProps = {
@@ -21,6 +23,7 @@ const OVERLAY_OPTIONS: { kind: OverlaySegmentKind; Icon: IconType }[] = [
   { kind: 'pass_option_prob', Icon: GiTargeting },
   { kind: 'sequence_trails', Icon: GiPathDistance },
   { kind: 'voronoi', Icon: GiHoneycomb },
+  { kind: 'pass_network', Icon: GiNodular },
 ]
 
 function OverlaysTab({
@@ -28,6 +31,7 @@ function OverlaysTab({
   matchData,
 }: OverlaysTabProps) {
   const [isEventMapOpen, setIsEventMapOpen] = useState(false)
+  const [isPassNetworkOpen, setIsPassNetworkOpen] = useState(false)
   // The overlay type whose last click was refused, so the reason can be shown.
   const [refusedKind, setRefusedKind] = useState<OverlaySegmentKind | null>(null)
   const { session, addOverlaySegmentFrom, endOverlaySegmentAt } = useMatchSession()
@@ -120,6 +124,27 @@ function OverlaysTab({
             <EventMapPanel keyMomentsData={keyMomentsData} matchData={matchData} />
           </div>
         ) : null}
+
+        <section className={`key-moment-group${isPassNetworkOpen ? ' is-expanded' : ''}`}>
+          <div className="key-moment-header">
+            <span className="key-moment-label">Pass Network settings</span>
+            <button
+              type="button"
+              className="key-moment-toggle"
+              aria-expanded={isPassNetworkOpen}
+              aria-controls="pass-network-panel"
+              aria-label={isPassNetworkOpen ? 'Hide pass network settings' : 'Show pass network settings'}
+              onClick={() => setIsPassNetworkOpen((previousValue) => !previousValue)}
+            >
+              <FaChevronDown className={`key-moment-arrow${isPassNetworkOpen ? ' is-expanded' : ''}`} aria-hidden="true" />
+            </button>
+          </div>
+          {isPassNetworkOpen ? (
+            <div id="pass-network-panel">
+              <PassNetworkPanel keyMomentsData={keyMomentsData} matchData={matchData} />
+            </div>
+          ) : null}
+        </section>
       </div>
     </div>
   )

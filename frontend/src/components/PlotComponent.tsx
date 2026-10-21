@@ -16,6 +16,16 @@ import { buildEventMapItems, resolveEventMap } from '../plot/overlays/eventMapOv
 import { buildVoronoiPoints } from '../plot/overlays/voronoiOverlay'
 import { EMPTY_SEQUENCE_TRAIL, buildTrailLinks, getSequenceTrailAt } from '../plot/overlays/sequenceTrailsOverlay'
 import { buildFocusSpots } from '../plot/overlays/focusSpotlightOverlay'
+import {
+  buildCompletedPasses,
+  buildPassNetworkLines,
+  countPassEdges,
+  maxPassCount,
+  passIndexRanges,
+  passNetworkFrameRanges,
+  passRangesKey,
+} from '../plot/overlays/passNetworkOverlay'
+import PassNetwork from './PassNetwork'
 import FocusSpotlight from './FocusSpotlight'
 import PlayerLinks, { type PlayerLink } from './PlayerLinks'
 import TeamShapes, { type TeamShapeGhost, type TeamShapeMark } from './TeamShapes'
@@ -194,6 +204,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
   const isPassOptionProbActive = findOverlayAt(session.playback.clip, 'pass_option_prob', clipFrame) !== undefined
   const sequenceTrailsOverlay = findOverlayAt(session.playback.clip, 'sequence_trails', clipFrame)
   const isVoronoiActive = findOverlayAt(session.playback.clip, 'voronoi', clipFrame) !== undefined
+  const isPassNetworkActive = findOverlayAt(session.playback.clip, 'pass_network', clipFrame) !== undefined
   // Annotation tools only work while paused: the selected tool is suspended during playback and back on pause.
   const selectedTool = session.ui.editMode
   const editMode = isPlaying ? null : selectedTool
@@ -653,6 +664,44 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     [isVoronoiActive, frameData, positionOverrides],
   )
 
+  // The pass network. Which passes are in its window is found by binary search every frame, but they
+  // are only recounted when that changes: when a pass is received while it builds up, or the window moves.
+  const passNetworkConfig = session.overlays.passNetworkConfig
+  const completedPasses = useMemo(() => buildCompletedPasses(matchEvents), [matchEvents])
+  const passNetworkPlayback = {
+    currentFrame,
+    clipFrame,
+    matchSegments: session.playback.clip.matchSegments,
+  }
+  const passRanges = isPassNetworkActive
+    ? passIndexRanges(completedPasses, passNetworkFrameRanges(passNetworkConfig, passNetworkPlayback))
+    : []
+  // The whole window, even while it builds up, so a line only ever thickens as passes are added.
+  const fullPassRanges = isPassNetworkActive
+    ? passIndexRanges(completedPasses, passNetworkFrameRanges({ ...passNetworkConfig, build: 'full' }, passNetworkPlayback))
+    : []
+  const passRangesId = passRangesKey(passRanges)
+  const fullPassRangesId = passRangesKey(fullPassRanges)
+  const passEdges = useMemo(
+    () => countPassEdges(completedPasses, passRanges, passNetworkConfig),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [completedPasses, passRangesId, passNetworkConfig],
+  )
+  const passNetworkMaxCount = useMemo(
+    () => maxPassCount(countPassEdges(completedPasses, fullPassRanges, passNetworkConfig)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [completedPasses, fullPassRangesId, passNetworkConfig],
+  )
+  // Drawn between where the players are in this frame, so the network moves with them.
+  const passNetworkLines = useMemo(() => {
+    if (passEdges.length === 0) return []
+    return buildPassNetworkLines(passEdges, (playerId) => {
+      const { x, y } = resolvePlayerPos(playerId)
+      return typeof x === 'number' && typeof y === 'number' ? { x, y } : null
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [passEdges, frameData, positionOverrides])
+
   const eventMapItems = useMemo(() => buildEventMapItems(matchEvents), [matchEvents])
   const eventMapDrawn = useMemo(
     () =>
@@ -983,8 +1032,8 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
             )}
           </div>
         )}
-        {(voronoiPoints.length > 0 || sequenceTrail.carries.length > 0 || sequenceTrail.passes.length > 0 || eventMap.passes.length > 0 || eventMap.movements.length > 0) && (
-          // Voronoi cells, sequence trails and the event map sit on their own see-through pitch beneath the Plotly plot, so players stay on top.
+        {(voronoiPoints.length > 0 || passNetworkLines.length > 0 || sequenceTrail.carries.length > 0 || sequenceTrail.passes.length > 0 || eventMap.passes.length > 0 || eventMap.movements.length > 0) && (
+          // Voronoi cells, the pass network, sequence trails and the event map sit on their own see-through pitch beneath the Plotly plot, so players stay on top.
           <Pitch
             type="skillcorner"
             width={PLOT_WIDTH}
@@ -1001,6 +1050,15 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
               fillOpacity={plotConfig.voronoiFillOpacity}
               stroke={plotConfig.voronoiStrokeColor}
               strokeWidth={plotConfig.voronoiStrokeWidth}
+            />
+            <PassNetwork
+              lines={passNetworkLines}
+              maxCount={passNetworkMaxCount}
+              colorOf={teamColor}
+              minWidth={plotConfig.passNetworkMinWidth}
+              maxWidth={plotConfig.passNetworkMaxWidth}
+              minOpacity={plotConfig.passNetworkMinOpacity}
+              maxOpacity={plotConfig.passNetworkMaxOpacity}
             />
             <Comet
               data={sequenceTrail.passes}

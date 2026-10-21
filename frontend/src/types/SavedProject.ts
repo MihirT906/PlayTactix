@@ -1,9 +1,10 @@
 import type { Clip } from './ClipInterfaces'
 import type { TimelineOption } from './TimelineOption'
 import { DEFAULT_EVENT_MAP_FILTERS, EVENT_MAP_KINDS, type EventMapFilters } from '../plot/overlays/eventMapOverlay'
+import { DEFAULT_PASS_NETWORK_CONFIG, PASS_NETWORK_WINDOWS, type PassNetworkConfig } from '../plot/overlays/passNetworkOverlay'
 
 export const PROJECT_FORMAT = 'playtactix-project'
-export const SCHEMA_VERSION = 5
+export const SCHEMA_VERSION = 6
 
 export type SavedAnnotation = {
   key: string
@@ -38,6 +39,7 @@ export type SavedProject = {
     excludedIds: string[]
   }
   autoDisappearEvents: boolean
+  passNetwork: PassNetworkConfig
   annotations: SavedAnnotation[]
   timelines: TimelineOption[]
   style: SavedStyle
@@ -87,6 +89,17 @@ function isEventMap(value: unknown): value is SavedProject['eventMap'] {
     isArrayOf(filters.runTypes, 'string') &&
     isArrayOf(filters.carryStartTypes, 'string') &&
     isArrayOf(filters.carryEndTypes, 'string')
+  )
+}
+
+function isPassNetwork(value: unknown): value is PassNetworkConfig {
+  return (
+    isObject(value) &&
+    (PASS_NETWORK_WINDOWS as unknown[]).includes(value.window) &&
+    isNumber(value.rangeStartMinute) &&
+    isNumber(value.rangeEndMinute) &&
+    (value.build === 'full' || value.build === 'progressive') &&
+    (value.teamId === null || isNumber(value.teamId))
   )
 }
 
@@ -158,6 +171,8 @@ const MIGRATIONS: Record<number, (raw: Record<string, unknown>) => Record<string
       ? raw.timelines.filter((timeline) => !isObject(timeline) || timeline.kind !== 'phases')
       : raw.timelines,
   }),
+  // v5 had no pass network, so an upgraded project opens with the default one.
+  5: (raw) => ({ ...raw, passNetwork: DEFAULT_PASS_NETWORK_CONFIG }),
 }
 
 const V1_ENGAGEMENT_SUBTYPES = ['pressing', 'pressure', 'counter_press', 'recovery_press', 'other']
@@ -189,6 +204,7 @@ export function isSavedProject(value: unknown): value is SavedProject {
     isClip(value.clip) &&
     isEventMap(value.eventMap) &&
     typeof value.autoDisappearEvents === 'boolean' &&
+    isPassNetwork(value.passNetwork) &&
     Array.isArray(value.annotations) &&
     value.annotations.every(isAnnotation) &&
     Array.isArray(value.timelines) &&

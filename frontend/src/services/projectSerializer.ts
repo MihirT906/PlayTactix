@@ -26,6 +26,7 @@ export function serializeProject({ session, style, annotationStore, timelineStor
       excludedIds: session.overlays.eventMapExcludedIds,
     },
     autoDisappearEvents: session.overlays.autoDisappearEvents,
+    passNetwork: session.overlays.passNetworkConfig,
     annotations: annotationStore.getAllAnnotations(),
     timelines: timelineStore.getAll(),
     style,
@@ -42,6 +43,7 @@ export function workFingerprint({ session, annotationStore, timelineStore }: Omi
       excludedIds: session.overlays.eventMapExcludedIds,
     },
     autoDisappearEvents: session.overlays.autoDisappearEvents,
+    passNetwork: session.overlays.passNetworkConfig,
     annotations: annotationStore.getAllAnnotations(),
     timelines: timelineStore.getAll(),
   })

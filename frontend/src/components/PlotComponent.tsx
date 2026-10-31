@@ -168,7 +168,6 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
   const plotConfig = APP_CONFIG.plot
   const { homeTeamColor, awayTeamColor, eventStyles, teamVisibility, eventVisibility, pitchRenderer } = useStyleConfig()
   const { session, resources } = useMatchSession()
-  const overlayManager = resources.overlayManager
   const [firstPoint, setFirstPoint] = useState<number | null>(null) // First point selected when drawing a line between two players
   // The team shape being built in 'Team Shape' mode: the players clicked so far and, once there are enough to draw, its key in the store
   const [shapePlayers, setShapePlayers] = useState<number[]>([])
@@ -183,9 +182,6 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
   // moves or reshapes the selected mark.
   const pointerDownRef = useRef<{ clientX: number; clientY: number; editing: boolean } | null>(null)
   const editDragRef = useRef<{ mark: EditableMark; edit: MarkEdit } | null>(null)
-  const [overlayTraces, setOverlayTraces] = useState<any[]>([]);
-  // Each passing option's completion chance, written at the middle of its line.
-  const [passOptionLabels, setPassOptionLabels] = useState<PassOptionProbLabel[]>([]);
   // Temporary, visualisation-only position edits keyed by player id. These are
   // layered on top of frameData while playback is paused and are wiped whenever
   // a new frame arrives (see the [frameData] effect below), so resuming playback
@@ -442,44 +438,30 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     [isPitchControlActive, frameData, positionOverrides],
   )
 
-  useEffect(() => {
-    let cancelled = false;
+  // The pass probability and pitch control traces, built in the same render as the players so they
+  // never lag a frame behind. passOptionLabels holds each passing option's completion chance, written
+  // at the middle of its line.
+  const { overlayTraces, passOptionLabels } = useMemo(() => {
+    const traces: any[] = [];
+    const labels: PassOptionProbLabel[] = [];
 
-    async function loadOverlays() {
-      const traces: any[] = [];
-      const labels: PassOptionProbLabel[] = [];
-
-      if (isPassOptionProbActive) {
-        const result = await overlayManager.getOverlayForFrame('pass_option_prob', currentFrame, frameData);
-
-        if (result.payload?.kind === 'pass_option_prob') {
-          const passOptionProb = buildPassOptionProbOverlay(result.payload.data, eventStyles.passingOption.color);
-          traces.push(...(passOptionProb?.traces ?? []));
-          labels.push(...(passOptionProb?.labels ?? []));
-        }
-      }
-
-      if (isPitchControlActive) {
-        const config = {
-          'homeTeamColor': homeTeamColor,
-          'awayTeamColor': awayTeamColor,
-        };
-        const pitchControlTraces = buildPitchControlOverlay(pitchControlGrid, matchData, config);
-        traces.push(...(pitchControlTraces || []));
-      }
-
-      if (!cancelled) {
-        setOverlayTraces(traces);
-        setPassOptionLabels(labels);
-      }
+    if (isPassOptionProbActive) {
+      const passOptionProb = buildPassOptionProbOverlay(frameData, eventStyles.passingOption.color);
+      traces.push(...(passOptionProb?.traces ?? []));
+      labels.push(...(passOptionProb?.labels ?? []));
     }
 
-    loadOverlays();
+    if (isPitchControlActive) {
+      const config = {
+        'homeTeamColor': homeTeamColor,
+        'awayTeamColor': awayTeamColor,
+      };
+      const pitchControlTraces = buildPitchControlOverlay(pitchControlGrid, matchData, config);
+      traces.push(...(pitchControlTraces || []));
+    }
 
-    return () => {
-      cancelled = true;
-    };
-  }, [isPassOptionProbActive, isPitchControlActive, pitchControlGrid, frameData, currentFrame, overlayManager, eventStyles.passingOption.color, homeTeamColor, awayTeamColor, matchData]);
+    return { overlayTraces: traces, passOptionLabels: labels };
+  }, [isPassOptionProbActive, isPitchControlActive, pitchControlGrid, frameData, eventStyles.passingOption.color, homeTeamColor, awayTeamColor, matchData]);
 
   // A new frame's plot represents real tracked positions, so drop any temporary drag edits from the
   // previous (paused) frame. The annotation tool stays on, so a move can be marked up frame by frame.

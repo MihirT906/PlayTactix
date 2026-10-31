@@ -8,7 +8,6 @@ import {
 } from 'react'
 import type DataManager from '../services/DataManager'
 import type { SidebarPanel } from '../components/WorkspaceSidebar'
-import type OverlayManager from '../services/OverlayManager'
 import { DEFAULT_EVENT_MAP_FILTERS, type EventMapFilters } from '../plot/overlays/eventMapOverlay'
 import { DEFAULT_PASS_NETWORK_CONFIG, type PassNetworkConfig } from '../plot/overlays/passNetworkOverlay'
 import type { Clip, OverlaySegmentKind } from '../types/ClipInterfaces'
@@ -63,7 +62,6 @@ export type PlotActions = {
 
 type MatchSessionResources = {
   dataManager: DataManager
-  overlayManager: OverlayManager
   plotActions: PlotActions
 }
 
@@ -117,7 +115,6 @@ type MatchSessionContextValue = {
 type MatchSessionProviderProps = {
     children: ReactNode
     dataManager: DataManager
-    overlayManager: OverlayManager
 }
 
 const MIN_PLAYBACK_SPEED = 0.125
@@ -157,7 +154,6 @@ const MatchSessionContext = createContext<MatchSessionContextValue | null>(null)
 export function MatchSessionProvider({
   children,
   dataManager,
-  overlayManager,
 }: MatchSessionProviderProps) {
   const [session, setSession] = useState<MatchSessionState>(createInitialMatchSessionState)
 
@@ -166,10 +162,9 @@ export function MatchSessionProvider({
   const resources = useMemo(
     () => ({
         dataManager,
-        overlayManager,
         plotActions: plotActionsRef.current,
     }),
-    [dataManager, overlayManager]
+    [dataManager]
   )
 
   const value = useMemo<MatchSessionContextValue>(() => {
@@ -179,7 +174,6 @@ export function MatchSessionProvider({
 
         selectMatch: (matchId: number) => {
             dataManager.setMatchId(matchId)
-            overlayManager.setMatchId(matchId)
 
             logger.info('Clip reset for new match', { matchId })
             setSession(createInitialMatchSessionState(matchId))

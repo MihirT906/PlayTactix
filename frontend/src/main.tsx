@@ -5,10 +5,8 @@ import App from './App.tsx';
 import DataManager from './services/DataManager.ts';
 import AnnotationStore from './services/AnnotationStore-optimized.ts';
 import TimelineStore from './services/TimelineStore.ts';
-import OverlayManager from './services/OverlayManager.ts';
 
 const dataManager = new DataManager()
-const overlayManager = new OverlayManager()
 const annotationStore = new AnnotationStore()
 const timelineStore = new TimelineStore()
 
@@ -21,7 +19,6 @@ createRoot(document.getElementById('root')!).render(
         element={
           <App
             dataManager={dataManager}
-            overlayManager={overlayManager}
             annotationStore={annotationStore}
             timelineStore={timelineStore}
           />

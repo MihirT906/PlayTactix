@@ -17,7 +17,6 @@ import MatchPicker from './components/MatchPicker'
 import ProjectControls from './components/ProjectControls'
 import WorkspaceSidebar from './components/WorkspaceSidebar'
 import { MatchSessionProvider, useMatchSession } from './context/MatchSessionContext'
-import type OverlayManager from './services/OverlayManager'
 import { workFingerprint } from './services/projectSerializer'
 
 const DISCARD_WORK_MESSAGE = 'Your clip has changes you have not saved. Discard them?'
@@ -26,17 +25,15 @@ const DISCARD_WORK_MESSAGE = 'Your clip has changes you have not saved. Discard 
 type AppView = 'idle' | 'picker' | 'workspace'
 function App({
   dataManager,
-  overlayManager,
   annotationStore,
   timelineStore,
 }: {
   dataManager: DataManager
-  overlayManager: OverlayManager
   annotationStore: AnnotationStore
   timelineStore: TimelineStore
 }) {
   return (
-    <MatchSessionProvider dataManager={dataManager} overlayManager={overlayManager}>
+    <MatchSessionProvider dataManager={dataManager}>
       <AppContent
         annotationStore={annotationStore}
         timelineStore={timelineStore}

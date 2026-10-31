@@ -4,12 +4,6 @@ interface FrameData {
     players: Players;
     ball: Ball;
     events: Event[] | [];
-    overlays: {
-        pitch_control: {
-            type: string;
-            data: number[][]; // 2D array representing pitch control values
-        } | null;
-    };
     }
 
 interface Ball {

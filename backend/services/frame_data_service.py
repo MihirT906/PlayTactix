@@ -1,5 +1,4 @@
 import json
-from services.pitch_control_overlay import PitchControlOverlay
 from logger import get_logger
 
 logger = get_logger(__name__)
@@ -66,22 +65,6 @@ class FrameDataService:
 
         return players  
 
-    def _fill_missing_velocities(self, row: pd.Series) -> pd.Series:
-        '''Zero NaN velocity/speed for players with a valid position (e.g. their first visible frame).
-        Pitch control can't handle NaN velocities. Works on a copy; stored data is untouched.'''
-        row = row.copy()
-        for col in row.index:
-            if not col.endswith("_x") or not col.startswith(("home_", "away_")):
-                continue
-            prefix = col[:-2]
-            if pd.isna(row[col]):
-                continue
-            for suffix in ("vx", "vy", "speed"):
-                vel_col = f"{prefix}_{suffix}"
-                if vel_col in row.index and pd.isna(row[vel_col]):
-                    row[vel_col] = 0.0
-        return row
-
     def get_metadata(self, match_id: int) -> dict:
         try:
             logger.info("Retrieving metadata for match_id=%s from stored data", match_id)
@@ -139,7 +122,6 @@ class FrameDataService:
                             'ball_z': None,
                         },
                         'events': [],
-                        'overlays': {}
                     }
                 else:
                     frames[frame_number] = {
@@ -151,7 +133,6 @@ class FrameDataService:
                             'ball_z': self._value_or_none(row.get('ball_z')),
                         },
                         'events': [],
-                        'overlays': {}
                     }
             
                     # Adding event data
@@ -165,15 +146,6 @@ class FrameDataService:
                     ]
 
                     frames[frame_number]["events"] = list(active_events)
-                    
-                    try:
-                        frames[frame_number]["overlays"]["pitch_control"] = {
-                            "type": "pitch_control",
-                            "data": PitchControlOverlay().get_pitch_control(self._fill_missing_velocities(row))
-                        }
-                    except Exception as e:
-                        # One bad frame shouldn't fail the whole chunk; it just gets no overlay
-                        logger.warning("Pitch control failed for match_id=%s frame=%s: %s", match_id, frame_number, e)
             logger.info("Returning frames for match_id=%s", match_id, exc_info=True)
             return {
                 "requested_match_id": match_id,

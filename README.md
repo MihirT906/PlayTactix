@@ -59,7 +59,7 @@ SkillCorner open data
 match-data release        tracking + events (Parquet), metadata (JSON) per match
         │  downloaded once per match, on first request
         ▼
-FastAPI backend           on-disk cache in data/, pitch control computed per frame
+FastAPI backend           on-disk cache in data/, frames sliced by range
         │  /data/frames in 300-frame chunks
         ▼
 React frontend            in-memory frame buffer, Plotly pitch, clip state
@@ -70,8 +70,8 @@ React frontend            in-memory frame buffer, Plotly pitch, clip state
 
 - **Match data is built ahead of time.** Parsing raw tracking data peaks above 1GB of RAM per match, so the server never does it. `backend/scripts/build_match_data.py` parses each match with kloppy and writes three small files — tracking, events and metadata — which the **Build match data** GitHub Action publishes to the `match-data` release.
 - **The backend caches each match on first use.** `GET /data/match/{match_id}` streams those three files into `data/`. A lock per match id stops two concurrent requests from downloading the same match twice, without blocking anyone loading a different match. The metadata file is written last, so its presence marks the set as complete; until then the other endpoints answer `409`.
-- **Frames are served by range.** `/data/frames` slices the requested frames, attaches the events active on each one, and computes pitch control for each frame with databallpy, returning it as an overlay embedded in the frame.
-- **The frontend buffers and draws.** It requests frames in chunks of 300 and keeps up to 5,000 in memory, evicting older ones. Everything on the pitch is a Plotly layer; Pass Probability is drawn in the browser from the expected pass completion values in the event data.
+- **Frames are served by range.** `/data/frames` slices the requested frames and attaches the events active on each one.
+- **The frontend buffers and draws.** It requests frames in chunks of 300 and keeps up to 5,000 in memory, evicting older ones. Everything on the pitch is a Plotly layer; Pass Probability is drawn in the browser from the expected pass completion values in the event data. Pitch control (the Fernández & Bornn model, ported from databallpy) and Voronoi cells are computed in the browser from player positions and velocities, so they follow players dragged while paused.
 - **A clip lives entirely in the browser.** Segments, overlays, annotations, insights tracks and colours are client-side state, and the project file is that state serialized. The backend stores nothing per user, which is why a project file opens on any machine.
 
 See [Design Notes](#design-notes) for the reasoning behind the caching decisions.
@@ -81,7 +81,7 @@ See [Design Notes](#design-notes) for the reasoning behind the caching decisions
 | Layer | Technology |
 |---|---|
 | Frontend | React 19, TypeScript, Vite, Plotly.js |
-| Backend | Python, FastAPI, pandas, databallpy (pitch control) |
+| Backend | Python, FastAPI, pandas |
 | Data build | kloppy (parses SkillCorner tracking data ahead of time) |
 
 ## Development
@@ -139,7 +139,7 @@ PlayTactix/
 ├── .github/workflows/   # Build match data action
 ├── backend/
 │   ├── routes/          # FastAPI route definitions
-│   ├── services/        # Match cache, frame serving, key moments, pitch control
+│   ├── services/        # Match cache, frame serving, key moments
 │   ├── scripts/         # build_match_data.py (prebuilds per-match data files)
 │   ├── tests/           # Helpers for calling the API from scripts and notebooks
 │   ├── notebooks/       # Exploratory notebooks

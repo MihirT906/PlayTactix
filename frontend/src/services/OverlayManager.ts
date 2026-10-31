@@ -2,7 +2,6 @@ import type { FrameData } from '../types/FrameDataInterfaces'
 
 export type OverlayPayload =
   | { kind: 'pass_option_prob'; data: FrameData | null }
-  | { kind: 'pitch_control'; data: number[][] | null }
 
 export type OverlayRequestResult = {
   payload: OverlayPayload | null
@@ -32,10 +31,6 @@ export default class OverlayManager {
           data: frameData,
         },
       }
-    }
-
-    if (overlay === 'pitch_control') {
-      // delegate to pitch-control-specific cache/fetch logic
     }
 
     return {

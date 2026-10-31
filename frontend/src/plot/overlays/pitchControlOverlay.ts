@@ -1,4 +1,4 @@
-import type { FrameData } from '../../types/FrameDataInterfaces'
+import { PITCH_CONTROL_COLS, PITCH_CONTROL_ROWS, PITCH_LENGTH, PITCH_WIDTH } from '../pitchControl'
 import type { MatchData } from '../../types/MatchDataInterfaces'
 
 const toHex = (value: number) => value.toString(16).padStart(2, '0')
@@ -48,53 +48,40 @@ export type PitchControlOverlayConfig = {
   awayTeamColor?: string;
 }
 
-export async function buildPitchControlOverlay(
-  frameData: FrameData | null,
+// A filled contour of a pitch control grid (see computePitchControl): home colour where the home team
+// controls the space, away colour where the away team does, a blend of the two where it is contested.
+export function buildPitchControlOverlay(
+  pitchControl: number[][] | null,
   matchData: MatchData | null,
   config: PitchControlOverlayConfig,
 ) {
-  if (!frameData) {
+  if (!pitchControl) {
     return null
   }
 
-  try {
-    const pitchControl = frameData.overlays?.pitch_control?.data
-    if (!pitchControl) {
-      return null
-    }
-    const homeTeamColor = config['homeTeamColor'] || normalizeColor(matchData?.home_team_kit?.jersey_color, '#DC2626')
-    const awayTeamColor = config['awayTeamColor'] || normalizeColor(matchData?.away_team_kit?.jersey_color, '#2563EB')
-    // const awayColor = normalizeColor(matchData?.away_team_kit?.jersey_color, '#2563EB')
-    // const homeColor = normalizeColor(matchData?.home_team_kit?.jersey_color, '#DC2626')
+  const homeTeamColor = config['homeTeamColor'] || normalizeColor(matchData?.home_team_kit?.jersey_color, '#DC2626')
+  const awayTeamColor = config['awayTeamColor'] || normalizeColor(matchData?.away_team_kit?.jersey_color, '#2563EB')
+  const blendedColor = blendHexColors(awayTeamColor, homeTeamColor, 0.5)
 
-    const rows = 68
-    const cols = 106
-
-    const blendedColor = blendHexColors(awayTeamColor, homeTeamColor, 0.5)
-
-    return [{
-      type: 'contour',
-      z: pitchControl,
-      x0: -53,
-      dx: 106 / (cols - 1),
-      y0: -34,
-      dy: 68 / (rows - 1),
-      hoverinfo: 'skip',
-      showscale: false,
-      opacity: 0.4,
-      contours: {
-        // showlabels: true,
-        coloring: 'fill',
-        showlines: true,
-      },
-      colorscale: [
-        [0, homeTeamColor],
-        [0.5, blendedColor],
-        [1, awayTeamColor],
-      ],
-    }]
-  } catch (error) {
-    console.error('Error fetching pitch control overlay:', error)
-    return null
-  }
+  return [{
+    type: 'contour',
+    z: pitchControl,
+    x0: -PITCH_LENGTH / 2,
+    dx: PITCH_LENGTH / (PITCH_CONTROL_COLS - 1),
+    y0: -PITCH_WIDTH / 2,
+    dy: PITCH_WIDTH / (PITCH_CONTROL_ROWS - 1),
+    hoverinfo: 'skip',
+    showscale: false,
+    opacity: 0.4,
+    contours: {
+      // showlabels: true,
+      coloring: 'fill',
+      showlines: true,
+    },
+    colorscale: [
+      [0, homeTeamColor],
+      [0.5, blendedColor],
+      [1, awayTeamColor],
+    ],
+  }]
 }

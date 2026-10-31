@@ -12,6 +12,7 @@ import { useMatchSession } from '../context/MatchSessionContext'
 import { findOverlayAt } from '../services/clipManager'
 import { buildPassOptionProbOverlay, type PassOptionProbLabel } from '../plot/overlays/passOptionProbOverlay'
 import { buildPitchControlOverlay } from '../plot/overlays/pitchControlOverlay.ts'
+import { computePitchControl } from '../plot/pitchControl'
 import { buildEventMapItems, resolveEventMap } from '../plot/overlays/eventMapOverlay'
 import { buildVoronoiPoints } from '../plot/overlays/voronoiOverlay'
 import { EMPTY_SEQUENCE_TRAIL, buildTrailLinks, getSequenceTrailAt } from '../plot/overlays/sequenceTrailsOverlay'
@@ -435,6 +436,12 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     ];
   }, [awayTeamColor, eventStyles.onBallEngagement.color, eventStyles.onBallEngagement.width, eventStyles.passingOption.color, eventStyles.passingOption.width, eventStyles.playerPossession.color, eventStyles.playerPossession.width, eventVisibility.onBallEngagement, eventVisibility.passingOption, eventVisibility.playerPossession, frameData, homeTeamColor, matchData, playerMasks, teamVisibility.away, teamVisibility.home, shapePlayers, firstPoint, positionOverrides])
 
+  // Pitch control is computed here rather than by the backend so it follows dragged players while paused.
+  const pitchControlGrid = useMemo(
+    () => (isPitchControlActive ? computePitchControl(frameData, positionOverrides) : null),
+    [isPitchControlActive, frameData, positionOverrides],
+  )
+
   useEffect(() => {
     let cancelled = false;
 
@@ -457,7 +464,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
           'homeTeamColor': homeTeamColor,
           'awayTeamColor': awayTeamColor,
         };
-        const pitchControlTraces = await buildPitchControlOverlay(frameData, matchData, config);
+        const pitchControlTraces = buildPitchControlOverlay(pitchControlGrid, matchData, config);
         traces.push(...(pitchControlTraces || []));
       }
 
@@ -472,7 +479,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     return () => {
       cancelled = true;
     };
-  }, [isPassOptionProbActive, isPitchControlActive, frameData, currentFrame, overlayManager, eventStyles.passingOption.color, homeTeamColor, awayTeamColor, matchData]);
+  }, [isPassOptionProbActive, isPitchControlActive, pitchControlGrid, frameData, currentFrame, overlayManager, eventStyles.passingOption.color, homeTeamColor, awayTeamColor, matchData]);
 
   // A new frame's plot represents real tracked positions, so drop any temporary drag edits from the
   // previous (paused) frame. The annotation tool stays on, so a move can be marked up frame by frame.

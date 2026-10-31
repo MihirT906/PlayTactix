@@ -1,0 +1,41 @@
+/* Fills the foreignObject and puts the box at the edge nearest the player, centred over them. */
+.focus-name-tag {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.focus-name-tag--below {
+  align-items: flex-start;
+}
+
+/* The same square, glassy panel as the loading indicator over the pitch. */
+.focus-name-tag__box {
+  padding: 3px 8px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--match-section-radius);
+  background: var(--glass-surface), rgba(15, 23, 42, 0.8);
+  box-shadow: var(--glass-shadow);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-sans);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  animation: focus-name-tag-in 150ms ease-out both;
+}
+
+@keyframes focus-name-tag-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .focus-name-tag__box {
+    animation: none;
+  }
+}

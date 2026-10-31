@@ -26,6 +26,7 @@ import {
   passRangesKey,
 } from '../plot/overlays/passNetworkOverlay'
 import PassNetwork from './PassNetwork'
+import FocusNameTags from './FocusNameTags'
 import FocusSpotlight from './FocusSpotlight'
 import PlayerLinks, { type PlayerLink } from './PlayerLinks'
 import TeamShapes, { type TeamShapeGhost, type TeamShapeMark } from './TeamShapes'
@@ -647,6 +648,12 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     return buildFocusSpots(focusPoints, currentFrame, segmentStartFrame, (frame) => resources.dataManager.getBufferedFrame(frame), resolvePlayerPos)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusPoints, session.playback.clip.matchSegments, currentFrame, clipFrame, frameData, positionOverrides, resources.dataManager])
+  // The name tag over each focused player: their shirt number and short name.
+  const getFocusLabel = useCallback((playerId: number) => {
+    const player = matchData?.players.find((p) => p.id === playerId)
+    if (!player) return null
+    return player.number != null ? `#${player.number} ${player.short_name}` : player.short_name
+  }, [matchData])
   // The players of the hovered insight event, where they are in this frame. The event may be from
   // another moment of the clip, so either can be missing.
   const eventHighlight = useMemo(() => {
@@ -1207,6 +1214,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
           padding={pitchKitProps.padding}
           style={ARROW_LAYER_STYLE}
         >
+          <FocusNameTags spots={focusSpots} getLabel={getFocusLabel} markerSize={plotConfig.markerSize} />
           <Rectangles
             rects={rects}
             draft={draft?.tool === 'rect' ? draft : null}

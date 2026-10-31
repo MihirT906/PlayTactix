@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import type AnnotationStore from '../../services/AnnotationStore-optimized'
 import { TimelineRow } from './TimelineRow'
+import { describeWithDuration } from './barLabels'
 import { DraggableRangeBar } from './DraggableRangeBar'
 
 const LANE_HEIGHT = 22
@@ -10,9 +11,12 @@ const ROW_LABELS: Record<string, string> = {
   draw: 'Draw Shapes',
   arrow: 'Arrows',
   teamShape: 'Team Shapes',
+  playerFocus: 'Player Focus',
 }
 
-const getAnnotationLabel = (annotation: { type: string; shape: any }) => {
+const getAnnotationLabel = (annotation: { type: string; shape: any }, getPlayerName: (playerId: number) => string) => {
+  if (annotation.type === 'playerFocus') return getPlayerName(annotation.shape.playerId)
+
   if (annotation.type === 'playerLine') {
     const [player1, player2] = annotation.shape.players ?? []
     return `P${player1 ?? '?'} ↔ P${player2 ?? '?'}`
@@ -54,6 +58,10 @@ type AnnotationRowsProps = {
   currentFrameOffsetPercent: number
   onDelete: (annotationKey: string) => void
   onAnnotationUpdate: () => void
+  /** The clip's last frame, which an annotation that has not been ended runs to. */
+  clipEnd: number
+  /** A player's name for a bar's label, e.g. the player a focus is on. */
+  getPlayerName: (playerId: number) => string
 }
 
 /** One lane-packed row per annotation type (player lines, drawn shapes, ...) - draggable to move/resize, like Segments and Overlays. */
@@ -68,6 +76,8 @@ export function AnnotationRows({
   currentFrameOffsetPercent,
   onDelete,
   onAnnotationUpdate,
+  getPlayerName,
+  clipEnd,
 }: AnnotationRowsProps) {
   const rows = useMemo<AnnotationRow[]>(() => {
     const allAnnotations = annotationStore.getAllAnnotations()
@@ -87,7 +97,9 @@ export function AnnotationRows({
         .filter((annotation) => (annotation.frameEnd ?? Infinity) >= scaleStart && annotation.frameStart <= scaleEnd)
         .map((annotation) => {
           const isOngoing = annotation.frameEnd == null
-          const effectiveEnd = annotation.frameEnd ?? scaleEnd
+          // One not yet ended runs to the end of the clip, like an overlay, not across the runway past it;
+          // one ending past the clip (dragged there, or the clip since cut shorter) is drawn up to its end too.
+          const effectiveEnd = Math.min(annotation.frameEnd ?? clipEnd, clipEnd)
 
           let laneIndex = laneEndFrames.findIndex((endFrame) => endFrame <= annotation.frameStart)
           if (laneIndex === -1) {
@@ -112,7 +124,7 @@ export function AnnotationRows({
         laneCount: Math.max(...laidOut.map((a) => a.laneIndex + 1), 1),
       }
     })
-  }, [annotationStore, scaleStart, scaleEnd, annotationVersion])
+  }, [annotationStore, scaleStart, scaleEnd, clipEnd, annotationVersion])
 
   if (rows.length === 0) {
     return <div className="annotation-timeline__empty">No annotations</div>
@@ -137,8 +149,9 @@ export function AnnotationRows({
               scaleStart={scaleStart}
               scaleEnd={scaleEnd}
               minFrame={scaleStart}
-              maxFrame={scaleEnd}
-              label={getAnnotationLabel(annotation)}
+              maxFrame={clipEnd}
+              label={getAnnotationLabel(annotation, getPlayerName)}
+              describe={describeWithDuration(getAnnotationLabel(annotation, getPlayerName))}
               className={annotation.isOngoing ? 'annotation-timeline__annotation--ongoing' : 'annotation-timeline__annotation--minimal'}
               style={{ top: `${annotation.laneIndex * LANE_HEIGHT + 2}px` }}
               onRangeChange={(frameStart, frameEnd) => {

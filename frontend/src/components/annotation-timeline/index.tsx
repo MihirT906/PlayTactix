@@ -222,6 +222,7 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
           <TimelineGroup title="Annotations">
             <AnnotationRows
               annotationStore={annotationStore}
+              clipEnd={clipRange.end}
               annotationVersion={annotationVersion}
               clipFrame={clipFrame}
               scaleStart={scaleStart}
@@ -234,6 +235,9 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
                 onAnnotationUpdate()
               }}
               onAnnotationUpdate={onAnnotationUpdate}
+              getPlayerName={(playerId) =>
+                matchData?.players.find((player) => player.id === playerId)?.short_name ?? `Player ${playerId}`
+              }
             />
           </TimelineGroup>
         </div>

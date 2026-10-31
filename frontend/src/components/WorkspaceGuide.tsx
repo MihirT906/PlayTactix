@@ -158,7 +158,8 @@ const DOCS: { title: string; body: ReactNode }[] = [
         </p>
         <ul>
           <li>
-            <strong>Player Focus</strong>: click a player to highlight them. Click them again to remove it.
+            <strong>Player Focus</strong>: click a player to highlight them from this frame on. Click them again to
+            stop. Each focus is a bar under Annotations, so you can drag it to set when it shows.
           </li>
           <li>
             <strong>Link Players</strong>: click two players to join them with a line that follows them as they

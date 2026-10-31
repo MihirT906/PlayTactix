@@ -168,7 +168,6 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
   const { homeTeamColor, awayTeamColor, eventStyles, teamVisibility, eventVisibility, pitchRenderer } = useStyleConfig()
   const { session, resources } = useMatchSession()
   const overlayManager = resources.overlayManager
-  const [focusPoints, setFocusPoints] = useState<number[]>([]) // Points that are highlighted on click
   const [firstPoint, setFirstPoint] = useState<number | null>(null) // First point selected when drawing a line between two players
   // The team shape being built in 'Team Shape' mode: the players clicked so far and, once there are enough to draw, its key in the store
   const [shapePlayers, setShapePlayers] = useState<number[]>([])
@@ -530,7 +529,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
   // Annotations for the current frame, derived (never stored) so they cannot go stale: the store's
   // active set is rebuilt for this clip frame, and player lines are placed from this frame's positions.
   // Lines whose players aren't in the frame (e.g. missing data) are skipped.
-  const { links, shapes, arrows, teamShapes } = useMemo(() => {
+  const { links, shapes, arrows, teamShapes, focusPoints } = useMemo(() => {
     annotationStore.reconstruct_active_annotations(clipFrame)
     const links: PlayerLink[] = []
     for (const { key, players: [firstPoint, secondPoint] } of annotationStore.getPlayerLineAnnotations(clipFrame)) {
@@ -552,6 +551,8 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
       shapes: annotationStore.getDrawAnnotations(clipFrame),
       arrows: annotationStore.getArrowAnnotations(clipFrame),
       teamShapes,
+      // Focused players, each once even if two focus annotations overlap.
+      focusPoints: [...new Set(annotationStore.getPlayerFocusAnnotations().map((focus) => focus.playerId))],
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [annotationStore, clipFrame, frameData, positionOverrides, annotationTick, annotationVersion, homeTeamColor, awayTeamColor])
@@ -993,12 +994,12 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
       console.log(event.points)
       const clickedPlayerId = event.points[0].customdata?.[0]
       if (clickedPlayerId === undefined) return
-      if (focusPoints.includes(clickedPlayerId)) {
-        setFocusPoints(prev => prev.filter(p => p !== clickedPlayerId))
-      }else {
-        setFocusPoints(prev => [...prev, clickedPlayerId])
-      }
-      logger.info("Player focused:", clickedPlayerId)
+      // A focus is an annotation with its own range on the timeline: clicking focuses the player from
+      // this frame on, and clicking a focused player ends the focus here.
+      annotationStore.togglePlayerFocus(clickedPlayerId, clipFrame)
+      setAnnotationTick((tick) => tick + 1)
+      onAnnotationUpdate?.()
+      logger.info("Player focus toggled:", clickedPlayerId)
 
     }
 

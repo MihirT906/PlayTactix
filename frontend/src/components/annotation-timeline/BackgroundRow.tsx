@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react'
 import { OVERLAY_SEGMENT_LABELS, type OverlaySegment, type OverlaySegmentKind } from '../../types/ClipInterfaces'
+import { describeWithDuration } from './barLabels'
 import { DraggableRangeBar } from './DraggableRangeBar'
 import { TimelineRow } from './TimelineRow'
 
@@ -73,6 +74,7 @@ export function BackgroundRow({
           minFrame={position > 0 ? sorted[position - 1].overlay.clipEnd + 1 : minFrame}
           maxFrame={position < sorted.length - 1 ? sorted[position + 1].overlay.clipStart - 1 : maxFrame}
           label={label}
+          describe={describeWithDuration(label)}
           className={OVERLAY_BAR_CLASS_NAMES[type]}
           style={barStyle}
           onRangeChange={(clipStart, clipEnd) => onRangeChange(index, clipStart, clipEnd)}

@@ -31,6 +31,11 @@ function newTeamShapeKey(): string {
     return `teamShape|${Date.now().toString(36)}-${(teamShapeCounter++).toString(36)}`;
 }
 
+let playerFocusCounter = 0;
+function newPlayerFocusKey(): string {
+    return `playerFocus|${Date.now().toString(36)}-${(playerFocusCounter++).toString(36)}`;
+}
+
 // A team shape needs a triangle at least; fewer players enclose no area.
 const MIN_TEAM_SHAPE_PLAYERS = 3;
 
@@ -120,6 +125,30 @@ export default class AnnotationStore {
             shape: { x0, y0, x1, y1 },
         });
         this.update_active_annotation(currentFrame)
+    }
+
+    togglePlayerFocus(playerId: number, currentFrame: number) {
+        // Focuses the player from this frame on, open-ended like any new annotation; a player already
+        // focused here is unfocused from this frame instead, so the focus still shows before it.
+        const focused = this.getPlayerFocusAnnotations().find((focus) => focus.playerId === playerId);
+        if (focused) {
+            this.endAnnotation(focused.key, currentFrame);
+            return;
+        }
+        logger.info("Added player focus annotation for player:", playerId, "at frame:", currentFrame);
+        this.annotations.set(newPlayerFocusKey(), {
+            type: 'playerFocus',
+            frameStart: currentFrame,
+            frameEnd: undefined,
+            shape: { playerId },
+        });
+        this.update_active_annotation(currentFrame)
+    }
+
+    getPlayerFocusAnnotations(): Array<{ key: string; playerId: number }> {
+        return Array.from(this.active_annotations.entries())
+            .filter(([, annotation]) => annotation.type === 'playerFocus')
+            .map(([key, annotation]) => ({ key, playerId: annotation.shape.playerId }));
     }
 
     setTeamShapePlayers(key: string | null, players: number[], currentFrame: number): string | null {

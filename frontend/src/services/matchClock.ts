@@ -22,9 +22,8 @@ export function formatClock(totalSeconds: number): string {
   return `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`
 }
 
-// A length of play from its frame count: "8s" under a minute, "1m 05s" from there.
+// A length of play from its frame count, as "M:SS": "0:13", "1:05".
 export function formatFrameDuration(frames: number): string {
   const seconds = Math.max(Math.round(frames / FRAME_RATE), 0)
-  if (seconds < 60) return `${seconds}s`
-  return `${Math.floor(seconds / 60)}m ${String(seconds % 60).padStart(2, '0')}s`
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
 }

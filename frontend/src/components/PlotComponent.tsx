@@ -10,7 +10,7 @@ import type { MatchData } from '../types/MatchDataInterfaces'
 import { useStyleConfig } from '../context/StyleConfigContext'
 import { useMatchSession } from '../context/MatchSessionContext'
 import { findOverlayAt } from '../services/clipManager'
-import { buildPassOptionProbOverlay } from '../plot/overlays/passOptionProbOverlay'
+import { buildPassOptionProbOverlay, type PassOptionProbLabel } from '../plot/overlays/passOptionProbOverlay'
 import { buildPitchControlOverlay } from '../plot/overlays/pitchControlOverlay.ts'
 import { buildEventMapItems, resolveEventMap } from '../plot/overlays/eventMapOverlay'
 import { buildVoronoiPoints } from '../plot/overlays/voronoiOverlay'
@@ -183,6 +183,8 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
   const pointerDownRef = useRef<{ clientX: number; clientY: number; editing: boolean } | null>(null)
   const editDragRef = useRef<{ mark: EditableMark; edit: MarkEdit } | null>(null)
   const [overlayTraces, setOverlayTraces] = useState<any[]>([]);
+  // Each passing option's completion chance, written at the middle of its line.
+  const [passOptionLabels, setPassOptionLabels] = useState<PassOptionProbLabel[]>([]);
   // Temporary, visualisation-only position edits keyed by player id. These are
   // layered on top of frameData while playback is paused and are wiped whenever
   // a new frame arrives (see the [frameData] effect below), so resuming playback
@@ -438,12 +440,15 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
 
     async function loadOverlays() {
       const traces: any[] = [];
+      const labels: PassOptionProbLabel[] = [];
 
       if (isPassOptionProbActive) {
         const result = await overlayManager.getOverlayForFrame('pass_option_prob', currentFrame, frameData);
 
         if (result.payload?.kind === 'pass_option_prob') {
-          traces.push(...(buildPassOptionProbOverlay(result.payload.data, eventStyles.passingOption.color) || []));
+          const passOptionProb = buildPassOptionProbOverlay(result.payload.data, eventStyles.passingOption.color);
+          traces.push(...(passOptionProb?.traces ?? []));
+          labels.push(...(passOptionProb?.labels ?? []));
         }
       }
 
@@ -458,6 +463,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
 
       if (!cancelled) {
         setOverlayTraces(traces);
+        setPassOptionLabels(labels);
       }
     }
 
@@ -1165,6 +1171,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
             hovermode: 'closest',
             hoverdistance: 1,
             dragmode: 'select',
+            annotations: passOptionLabels,
             images: isPitchBackgroundActive && !usePitchKit
               ? [
                   {

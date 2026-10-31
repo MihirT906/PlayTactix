@@ -2,9 +2,10 @@ import type { Clip } from './ClipInterfaces'
 import type { TimelineOption } from './TimelineOption'
 import { DEFAULT_EVENT_MAP_FILTERS, EVENT_MAP_KINDS, type EventMapFilters } from '../plot/overlays/eventMapOverlay'
 import { DEFAULT_PASS_NETWORK_CONFIG, PASS_NETWORK_WINDOWS, type PassNetworkConfig } from '../plot/overlays/passNetworkOverlay'
+import { CARRY_COLUMNS, getFilterTimelineLabel } from '../services/timelineEvents'
 
 export const PROJECT_FORMAT = 'playtactix-project'
-export const SCHEMA_VERSION = 6
+export const SCHEMA_VERSION = 7
 
 export type SavedAnnotation = {
   key: string
@@ -173,6 +174,12 @@ const MIGRATIONS: Record<number, (raw: Record<string, unknown>) => Record<string
   }),
   // v5 had no pass network, so an upgraded project opens with the default one.
   5: (raw) => ({ ...raw, passNetwork: DEFAULT_PASS_NETWORK_CONFIG }),
+  // v6 event tracks showed SkillCorner's event types; Insights now shows carries, pass options,
+  // presses and runs.
+  6: (raw) => ({
+    ...raw,
+    timelines: Array.isArray(raw.timelines) ? raw.timelines.map(migrateV6Timeline) : raw.timelines,
+  }),
 }
 
 const V1_ENGAGEMENT_SUBTYPES = ['pressing', 'pressure', 'counter_press', 'recovery_press', 'other']
@@ -192,6 +199,34 @@ function migrateV1Timeline(timeline: unknown): unknown {
   }
 
   return { ...rest, eventType: value, subtypes: [], splitBySubtype: false }
+}
+
+const V6_EVENT_TYPES: Record<string, string> = {
+  player_possession: 'carry',
+  passing_option: 'pass_option',
+  on_ball_engagement: 'press',
+  off_ball_run: 'run',
+}
+
+// Each SkillCorner event type becomes its Insights kind, keeping its subtypes. A player possession
+// track becomes a carry track: possessions had no subtypes, and a carry is not sized by the values
+// of the pass it ended with.
+function migrateV6Timeline(timeline: unknown): unknown {
+  if (!isObject(timeline) || timeline.kind !== 'filter' || typeof timeline.eventType !== 'string') return timeline
+
+  const eventType = V6_EVENT_TYPES[timeline.eventType]
+  if (!eventType) return timeline
+
+  const isCarry = eventType === 'carry'
+  const subtypes = isCarry || !Array.isArray(timeline.subtypes) ? [] : (timeline.subtypes as string[])
+  const keepsHeight = !isCarry || (typeof timeline.heightBy === 'string' && CARRY_COLUMNS.includes(timeline.heightBy))
+  return {
+    ...timeline,
+    eventType,
+    subtypes,
+    heightBy: keepsHeight ? timeline.heightBy : null,
+    label: getFilterTimelineLabel(eventType, subtypes),
+  }
 }
 
 export function isSavedProject(value: unknown): value is SavedProject {

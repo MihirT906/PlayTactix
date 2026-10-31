@@ -4,7 +4,9 @@ import TimelineStore from '../services/TimelineStore'
 import { useMatchSession } from '../context/MatchSessionContext'
 import {
   HEIGHT_COLUMNS,
+  INSIGHT_EVENT_TYPES,
   METRIC_GRAPHS,
+  buildInsightEvents,
   getClipEvents,
   getEventMetricValue,
   getMetricDescription,
@@ -15,7 +17,7 @@ import {
   matchesFilterTimeline,
   type MetricGraph,
 } from '../services/timelineEvents'
-import { EVENT_TYPES, formatEventValue } from '../constants/eventData'
+import { formatEventValue } from '../constants/eventData'
 import type { Event } from '../types/FrameDataInterfaces'
 import type { MatchData } from '../types/MatchDataInterfaces'
 import type { FilterTimelineOption, MetricTimelineOption, TimelineOption } from '../types/TimelineOption'
@@ -41,13 +43,15 @@ function TimelineTab({ timelineStore, matchEvents, matchData }: TimelineTabProps
 
   useEffect(() => timelineStore.subscribe(setTimelines), [timelineStore])
 
+  const insightEvents = useMemo(() => buildInsightEvents(matchEvents), [matchEvents])
+
   // Subtypes, and the columns that can set bar height, are read from the match's events rather than
   // hardcoded per event type.
   const { subtypesByEventType, heightColumnsByEventType } = useMemo(() => {
     const subtypes = new Map<string, Set<string>>()
     const heightColumns = new Map<string, Set<string>>()
 
-    for (const event of matchEvents ?? []) {
+    for (const event of insightEvents) {
       for (const column of HEIGHT_COLUMNS) {
         if (getEventMetricValue(event, column) == null) continue
         if (!heightColumns.has(event.event_type)) heightColumns.set(event.event_type, new Set())
@@ -60,9 +64,9 @@ function TimelineTab({ timelineStore, matchEvents, matchData }: TimelineTabProps
     }
 
     return { subtypesByEventType: subtypes, heightColumnsByEventType: heightColumns }
-  }, [matchEvents])
+  }, [insightEvents])
 
-  const clipEvents = useMemo(() => getClipEvents(matchEvents, matchSegments), [matchEvents, matchSegments])
+  const clipEvents = useMemo(() => getClipEvents(insightEvents, matchSegments), [insightEvents, matchSegments])
 
   // Counted as a track would show them; `track` narrows them to its team and players.
   const countClipEvents = (
@@ -279,7 +283,7 @@ function TimelineTab({ timelineStore, matchEvents, matchData }: TimelineTabProps
           Add events
         </h3>
         <div className="timeline-chip-group">
-          {EVENT_TYPES.map((eventType) => (
+          {INSIGHT_EVENT_TYPES.map((eventType) => (
             <button
               key={eventType}
               type="button"

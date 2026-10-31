@@ -10,6 +10,8 @@ type DraggableRangeBarProps = {
   scaleStart: number
   scaleEnd: number
   label: string
+  /** What the bar reads for the range it covers, kept up to date while it is dragged. Defaults to `label`. */
+  describe?: (range: FrameRange) => { text: string; title: string }
   className: string
   style?: CSSProperties
   /** Hard clip-frame bounds for a dragged edge (source footage + neighbours). Defaults to the scale. */
@@ -31,6 +33,7 @@ export function DraggableRangeBar({
   scaleStart,
   scaleEnd,
   label,
+  describe,
   className,
   style,
   minFrame,
@@ -58,13 +61,14 @@ export function DraggableRangeBar({
   const clampedEnd = Math.min(range.frameEnd, scaleEnd)
   const leftPercent = ((clampedStart - scaleStart) / visibleFrameSpan) * 100
   const widthPercent = Math.max(((clampedEnd - clampedStart) / visibleFrameSpan) * 100, 0.6)
+  const description = describe?.(range) ?? { text: label, title: label }
 
   return (
     <>
       <div
         className={`annotation-timeline__annotation annotation-timeline__annotation--croppable ${className}`}
         style={{ left: `${leftPercent}%`, width: `${widthPercent}%`, top: '2px', ...style }}
-        title={label}
+        title={description.title}
         onPointerDown={(event) => beginDrag(event, 'move', range)}
         onContextMenu={(event) => openMenu(event, undefined)}
       >
@@ -72,7 +76,7 @@ export function DraggableRangeBar({
           className="annotation-timeline__annotation-handle annotation-timeline__annotation-handle--start"
           onPointerDown={(event) => beginDrag(event, 'start', range)}
         />
-        <span className="annotation-timeline__annotation-label">{label}</span>
+        <span className="annotation-timeline__annotation-label">{description.text}</span>
         <button
           type="button"
           className="annotation-timeline__annotation-delete"

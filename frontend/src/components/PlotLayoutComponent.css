@@ -17,3 +17,54 @@
   width: fit-content;
   max-width: 100%;
 }
+
+/* Shown over the pitch while frames are still loading, so a pause in playback is explained. */
+.plot-layout__loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--match-section-radius);
+  background: var(--glass-surface), rgba(15, 23, 42, 0.55);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: var(--glass-blur);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-sans);
+  font-size: 0.9rem;
+  font-weight: 600;
+  pointer-events: none;
+  z-index: 5;
+  animation: plot-layout-loading-in 150ms ease-out;
+}
+
+.plot-layout__spinner {
+  width: 18px;
+  height: 18px;
+  border: 3px solid var(--surface-subtle-border);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: plot-layout-spin 0.8s linear infinite;
+}
+
+@keyframes plot-layout-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes plot-layout-loading-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plot-layout__spinner {
+    animation-duration: 2.4s;
+  }
+}

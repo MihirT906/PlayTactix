@@ -3,6 +3,8 @@ import './Controls.css'
 import AnnotationStore from '../services/AnnotationStore-optimized'
 import { FaPlay, FaPause } from 'react-icons/fa'
 import { RiSlowDownLine, RiSpeedUpLine } from "react-icons/ri";
+import { formatClock, matchClockSecondsAt } from '../services/matchClock'
+import type { MatchData } from '../types/MatchDataInterfaces'
 
 interface ControlsProps {
   isPlaying: boolean
@@ -18,7 +20,11 @@ interface ControlsProps {
   segmentStart: number
   missingRanges: { start: number; end: number }[]
   annotationStore: AnnotationStore
+  // The match's periods, to show the match clock; null until match meta loads.
+  matchPeriods: MatchData['match_periods'] | null
 }
+
+const FRAME_RATE = 10 // Tracking frames per second
 
 const formatSpeed = (speed: number) => {
   const formatted = Number.isInteger(speed) ? speed.toString() : speed.toFixed(3).replace(/0+$/, '').replace(/\.$/, '')
@@ -66,7 +72,11 @@ const buildTrackGradient = (
   return `linear-gradient(to right, ${stops.join(', ')})`
 }
 
-const Controls: React.FC<ControlsProps> = ({ isPlaying, onPlayPause, playbackSpeed, onDoubleSpeed, onHalveSpeed, currentMatchFrame, clipFrame, clipRange, onClipFrameChange, chunkRange, segmentStart, missingRanges, annotationStore }) => {
+const Controls: React.FC<ControlsProps> = ({ isPlaying, onPlayPause, playbackSpeed, onDoubleSpeed, onHalveSpeed, currentMatchFrame, clipFrame, clipRange, onClipFrameChange, chunkRange, segmentStart, missingRanges, annotationStore, matchPeriods }) => {
+  const matchSeconds = matchClockSecondsAt(currentMatchFrame, matchPeriods)
+  const matchTime = matchSeconds === null ? '--:--' : formatClock(matchSeconds)
+  const clipTime = `${formatClock(clipFrame / FRAME_RATE)} / ${formatClock(clipRange.end / FRAME_RATE)}`
+
   const handleSliderChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const frame = parseInt(event.target.value, 10)
     onClipFrameChange(frame)
@@ -97,7 +107,10 @@ const Controls: React.FC<ControlsProps> = ({ isPlaying, onPlayPause, playbackSpe
             <span className="speed-button-label">2x</span>
           </button>
         </div>
-        <span className="frame-label">Match Frame: {currentMatchFrame} | Clip Frame: {clipFrame}</span>
+        {/* Frame numbers stay on hover, for matching a moment against the data. */}
+        <span className="frame-label" title={`Match frame ${currentMatchFrame} · Clip frame ${clipFrame}`}>
+          Match Time: {matchTime} | Clip Time: {clipTime}
+        </span>
       </div>
       <input
         className="frame-slider"

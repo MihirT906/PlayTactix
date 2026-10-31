@@ -218,8 +218,10 @@ function buildFilterRows(
 }
 
 export type TimelineRowSources = {
-  // The events in the clip, in clip frames and sorted by start.
+  // The events in the clip, in clip frames and sorted by start; momentum is built from these.
   events: Event[]
+  // The same, as Insights shows them (see buildInsightEvents); event tracks draw these.
+  insightEvents: Event[]
   // What an event track is narrowed to, added to its label; null when it shows everyone.
   describeFilter: (timeline: FilterTimelineOption) => string | null
   // The match's two teams, home first.
@@ -231,7 +233,7 @@ export type TimelineRowSources = {
 // Turns the visible timelines into drawable rows, placed as percentages of `scale`.
 export function buildTimelineRows(
   timelines: TimelineOption[],
-  { events: clipEvents, describeFilter, teamIds, momentumScale }: TimelineRowSources,
+  { events: clipEvents, insightEvents, describeFilter, teamIds, momentumScale }: TimelineRowSources,
   clipRange: FrameRange,
   scale: FrameRange = clipRange,
 ): TimelineRow[] {
@@ -241,7 +243,7 @@ export function buildTimelineRows(
       const { id: key } = timeline
 
       if (timeline.kind === 'filter') {
-        return buildFilterRows(timeline, clipEvents, describeFilter(timeline), clipRange, scale)
+        return buildFilterRows(timeline, insightEvents, describeFilter(timeline), clipRange, scale)
       }
 
       // A graph no longer offered draws nothing.

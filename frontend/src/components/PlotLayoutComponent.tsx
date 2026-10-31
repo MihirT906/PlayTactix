@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import './PlotLayoutComponent.css'
 import Controls from './Controls'
 import PlotComponent from './PlotComponent'
@@ -28,6 +28,28 @@ type PlotLayoutComponentProps = {
   timelineStore: TimelineStore
   onAnnotationUpdate: () => void
   annotationVersion: number
+  // Whether the frame on screen is still being fetched.
+  isFrameLoading: boolean
+}
+
+// How long frames have to keep loading before the spinner shows. Frames already in memory load
+// almost at once, so a shorter wait would flash the spinner on every frame of playback.
+const LOADING_INDICATOR_DELAY_MS = 250
+
+// True once `active` has stayed true for `delayMs`; false again as soon as it is not.
+function useDelayedFlag(active: boolean, delayMs: number): boolean {
+  const [elapsed, setElapsed] = useState(false)
+
+  useEffect(() => {
+    if (!active) return
+    const timeout = setTimeout(() => setElapsed(true), delayMs)
+    return () => {
+      clearTimeout(timeout)
+      setElapsed(false)
+    }
+  }, [active, delayMs])
+
+  return active && elapsed
 }
 
 function PlotLayoutComponent({
@@ -50,7 +72,10 @@ function PlotLayoutComponent({
   timelineStore,
   onAnnotationUpdate,
   annotationVersion,
+  isFrameLoading,
 }: PlotLayoutComponentProps) {
+  const showLoading = useDelayedFlag(isFrameLoading, LOADING_INDICATOR_DELAY_MS)
+
   // The insight event under the pointer on the timeline, whose players the pitch picks out.
   const [hoveredInsightEvent, setHoveredInsightEvent] = useState<Event | null>(null)
 
@@ -81,6 +106,7 @@ function PlotLayoutComponent({
         segmentStart={segmentRange.start}
         missingRanges={missingFrameRanges}
         annotationStore={annotationStore}
+        matchPeriods={matchData?.match_periods ?? null}
       />
       <div className="plot-layout__plot">
         <div className="plot-layout__stage">
@@ -95,6 +121,12 @@ function PlotLayoutComponent({
             annotationVersion={annotationVersion}
             highlightedEvent={hoveredInsightEvent}
           />
+          {showLoading ? (
+            <div className="plot-layout__loading" role="status" aria-live="polite">
+              <span className="plot-layout__spinner" aria-hidden="true" />
+              Loading frames...
+            </div>
+          ) : null}
         </div>
       </div>
 

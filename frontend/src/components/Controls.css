@@ -123,4 +123,6 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: rgba(248, 250, 252, 0.62);
+  /* Equal-width digits, so the label doesn't shift as the clock ticks. */
+  font-variant-numeric: tabular-nums;
 }

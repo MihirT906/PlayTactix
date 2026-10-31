@@ -193,8 +193,8 @@ const DOCS: { title: string; body: ReactNode }[] = [
       <>
         <p>
           The <strong>Insights</strong> rows under the pitch show what was happening across the clip. Add them from{' '}
-          <strong>Insights</strong> in the sidebar. An event track shows when a type of event happened, such as pressing
-          or an overlap, and who was involved. A metric track charts a value such as xthreat.
+          <strong>Insights</strong> in the sidebar. An event track shows when carries, pass options, presses or runs happened,
+          and who was involved. A metric track charts a value such as xthreat.
         </p>
         <p>
           Hover an event to see its players on the pitch, and click an event to jump to its start. The same panel

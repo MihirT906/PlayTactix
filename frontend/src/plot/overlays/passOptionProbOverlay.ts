@@ -1,3 +1,4 @@
+import type { Data } from 'plotly.js'
 import type { FrameData } from '../../types/FrameDataInterfaces'
 import { APP_CONFIG } from '../../config'
 
@@ -28,10 +29,27 @@ const getOverlayOpacity = (xPassCompletion: number) => {
     return 0.15 + 0.85 * Math.pow(Math.max(0, Math.min(normalized, 1)), 0.4)
 }
 
+// A label at the middle of a passing option's line, showing its completion chance as a percentage.
+// Drawn as a Plotly layout annotation: a line trace only shows hover at its end points, which sit
+// under the player markers, so a tooltip alone never shows.
+export type PassOptionProbLabel = {
+    x: number
+    y: number
+    text: string
+    showarrow: false
+    xref: 'x'
+    yref: 'y'
+    font: { family: string; size: number; color: string }
+    bgcolor: string
+    bordercolor: string
+    borderwidth: number
+    borderpad: number
+}
+
 export function buildPassOptionProbOverlay(
   frameData: FrameData | null,
   passingOptionColor: string
-){
+): { traces: Data[]; labels: PassOptionProbLabel[] } | null {
     if (!frameData) {
         return null;
     }
@@ -43,42 +61,61 @@ export function buildPassOptionProbOverlay(
       players.player_id.map((playerId, index) => [playerId, index])
     );
 
-    const traces = frameData.events.flatMap((event) => {
-        if (event.event_type !== 'passing_option') return [];
+    const traces: Data[] = [];
+    const labels: PassOptionProbLabel[] = [];
+
+    for (const event of frameData.events) {
+        if (event.event_type !== 'passing_option') continue;
 
         const sourcePlayerId = event.player_in_possession_id;
         const targetPlayerId = event.player_id;
 
-        if (!sourcePlayerId || !targetPlayerId) return [];
+        if (!sourcePlayerId || !targetPlayerId) continue;
 
         const sourceIndex = playerIndexById.get(sourcePlayerId);
         const targetIndex = playerIndexById.get(targetPlayerId);
 
-        if (sourceIndex == null || targetIndex == null) return [];
+        if (sourceIndex == null || targetIndex == null) continue;
 
         const xPassCompletion = event.xpass_completion;
-        if (xPassCompletion === -1) return [];
+        if (xPassCompletion == null || xPassCompletion === -1) continue;
 
         const isGoodPass = xPassCompletion >= PASS_COMPLETION_THRESHOLD
         const opacity = getOverlayOpacity(xPassCompletion)
         const lineColor = isGoodPass
             ? passingOptionColor
             : getInvertedHexColor(passingOptionColor)
+        const percent = `${Math.round(xPassCompletion * 100)}%`
+        const x = [players.x[sourceIndex], players.x[targetIndex]]
+        const y = [players.y[sourceIndex], players.y[targetIndex]]
 
-        return [{
-            x: [players.x[sourceIndex], players.x[targetIndex]],
-            y: [players.y[sourceIndex], players.y[targetIndex]],
+        traces.push({
+            x,
+            y,
             type: 'scatter',
             mode: 'lines',
-            hovertemplate:`xPass Completion: ${xPassCompletion.toFixed(2)}<extra></extra>`,
-            hoverlabel: 'xPass Completion',
+            hovertemplate: `xPass Completion: ${percent}<extra></extra>`,
             opacity,
             line: {
                 color: lineColor,
                 width: plotConfig.markerSize,
             },
-        }];
-    });
-    
-    return traces;
+        });
+
+        labels.push({
+            x: (x[0] + x[1]) / 2,
+            y: (y[0] + y[1]) / 2,
+            text: percent,
+            showarrow: false,
+            xref: 'x',
+            yref: 'y',
+            font: { family: 'Inter, sans-serif', size: 11, color: '#f8fafc' },
+            bgcolor: 'rgba(15, 23, 42, 0.85)',
+            bordercolor: lineColor,
+            borderwidth: 1,
+            borderpad: 2,
+        });
+    }
+
+    return { traces, labels };
 }

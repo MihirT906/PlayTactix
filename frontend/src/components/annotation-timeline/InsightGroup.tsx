@@ -3,7 +3,7 @@ import type TimelineStore from '../../services/TimelineStore'
 import { useMatchSession } from '../../context/MatchSessionContext'
 import { useStyleConfig } from '../../context/StyleConfigContext'
 import { APP_CONFIG } from '../../config'
-import { describeTrackFilter, getClipEvents } from '../../services/timelineEvents'
+import { buildInsightEvents, describeTrackFilter, getClipEvents } from '../../services/timelineEvents'
 import type { Event } from '../../types/FrameDataInterfaces'
 import type { MatchData } from '../../types/MatchDataInterfaces'
 import type { TimelineOption } from '../../types/TimelineOption'
@@ -65,6 +65,12 @@ export function InsightGroup({
   const { start: clipStart, end: clipEnd } = clipRange
 
   const clipEvents = useMemo(() => getClipEvents(matchEvents, matchSegments), [matchEvents, matchSegments])
+  // Built from the whole match first, so a pass played just before the clip still finds its receiver.
+  const matchInsightEvents = useMemo(() => buildInsightEvents(matchEvents), [matchEvents])
+  const clipInsightEvents = useMemo(
+    () => getClipEvents(matchInsightEvents, matchSegments),
+    [matchInsightEvents, matchSegments],
+  )
 
   const getTeamName = useCallback(
     (teamId: number) => {
@@ -88,6 +94,7 @@ export function InsightGroup({
         timelines,
         {
           events: clipEvents,
+          insightEvents: clipInsightEvents,
           describeFilter: (timeline) => describeTrackFilter(timeline, getTeamName, getPlayerName),
           teamIds: homeTeamId != null && awayTeamId != null ? [homeTeamId, awayTeamId] : [],
           momentumScale,
@@ -95,7 +102,7 @@ export function InsightGroup({
         { start: clipStart, end: clipEnd },
         { start: scaleStart, end: scaleEnd },
       ),
-    [timelines, clipEvents, getTeamName, getPlayerName, homeTeamId, awayTeamId, momentumScale, clipStart, clipEnd, scaleStart, scaleEnd],
+    [timelines, clipEvents, clipInsightEvents, getTeamName, getPlayerName, homeTeamId, awayTeamId, momentumScale, clipStart, clipEnd, scaleStart, scaleEnd],
   )
 
   const getEventColor = (teamId: number) => {

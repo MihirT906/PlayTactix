@@ -17,7 +17,9 @@ const OVERLAY_BAR_CLASS_NAMES: Record<OverlaySegmentKind, string> = {
 }
 
 type BackgroundRowProps = {
-  overlay: OverlaySegment
+  type: OverlaySegmentKind
+  /** Every segment of this overlay type, with its index in the clip's overlay segments. */
+  segments: { overlay: OverlaySegment; index: number }[]
   scaleStart: number
   scaleEnd: number
   /** Clip-frame bounds the overlay edges are held within (the real clip, not the drag headroom). */
@@ -26,14 +28,19 @@ type BackgroundRowProps = {
   labelWidth: number
   trackWidth: number
   currentFrameOffsetPercent: number
-  onRangeChange: (clipStart: number, clipEnd: number) => void
-  onDelete: () => void
+  onRangeChange: (index: number, clipStart: number, clipEnd: number) => void
+  onDelete: (index: number) => void
   barStyle?: CSSProperties
 }
 
-/** One active overlay segment (pitch, pitch control, pass probability): the clip range it's shown for. */
+/**
+ * One overlay type (pitch, pitch control, pass probability, ...): a bar for each clip range it's shown
+ * for. Turning an overlay off and on again leaves several bars on the same row; each can only be
+ * dragged up to its neighbours, so two bars of one type never overlap.
+ */
 export function BackgroundRow({
-  overlay,
+  type,
+  segments,
   scaleStart,
   scaleEnd,
   minFrame,
@@ -45,27 +52,33 @@ export function BackgroundRow({
   onDelete,
   barStyle,
 }: BackgroundRowProps) {
+  const label = OVERLAY_SEGMENT_LABELS[type]
+  const sorted = [...segments].sort((a, b) => a.overlay.clipStart - b.overlay.clipStart)
+
   return (
     <TimelineRow
-      label={OVERLAY_SEGMENT_LABELS[overlay.type]}
+      label={label}
       labelWidth={labelWidth}
       trackWidth={trackWidth}
       trackHeight={LANE_HEIGHT}
       currentFrameOffsetPercent={currentFrameOffsetPercent}
     >
-      <DraggableRangeBar
-        frameStart={overlay.clipStart}
-        frameEnd={overlay.clipEnd}
-        scaleStart={scaleStart}
-        scaleEnd={scaleEnd}
-        minFrame={minFrame}
-        maxFrame={maxFrame}
-        label={OVERLAY_SEGMENT_LABELS[overlay.type]}
-        className={OVERLAY_BAR_CLASS_NAMES[overlay.type]}
-        style={barStyle}
-        onRangeChange={onRangeChange}
-        onDelete={onDelete}
-      />
+      {sorted.map(({ overlay, index }, position) => (
+        <DraggableRangeBar
+          key={index}
+          frameStart={overlay.clipStart}
+          frameEnd={overlay.clipEnd}
+          scaleStart={scaleStart}
+          scaleEnd={scaleEnd}
+          minFrame={position > 0 ? sorted[position - 1].overlay.clipEnd + 1 : minFrame}
+          maxFrame={position < sorted.length - 1 ? sorted[position + 1].overlay.clipStart - 1 : maxFrame}
+          label={label}
+          className={OVERLAY_BAR_CLASS_NAMES[type]}
+          style={barStyle}
+          onRangeChange={(clipStart, clipEnd) => onRangeChange(index, clipStart, clipEnd)}
+          onDelete={() => onDelete(index)}
+        />
+      ))}
     </TimelineRow>
   )
 }

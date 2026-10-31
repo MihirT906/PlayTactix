@@ -148,7 +148,14 @@ function AppContent({
 
 
     useEffect(() => { // Fetch frame data when currentMatchFrame changes
-      if (selectedMatchId === null) return
+      if (selectedMatchId === null) {
+        // A fetch cancelled by closing the match would otherwise leave the flag set.
+        if (session.playback.isFrameLoading) setFrameLoading(false)
+        return
+      }
+      // Set by the cleanup when the frame moves on, so a slow fetch for an earlier frame neither shows
+      // its frame nor clears the loading flag while the current frame is still loading.
+      let cancelled = false
 
       const fetchFrameData = async () => {
         // First, set the frameLoading flag to true to indicate that we're fetching data
@@ -157,6 +164,12 @@ function AppContent({
         // Collect frame data from dataManager
         const result = await dataManager.getFrameData(currentMatchFrame)
 
+        // If a new chunk was loaded, update the chunk range
+        if (result.didLoadChunk && result.newChunkRange) {
+          setLoadedFrameRange(result.newChunkRange)
+        }
+        if (cancelled) return
+
         if (result.frameData) {
           setCurrentFrameData(result.frameData)
         } else {
@@ -164,21 +177,20 @@ function AppContent({
           setCurrentFrameData(null)
         }
 
-        // If a new chunk was loaded, update the chunk range
-        if (result.didLoadChunk && result.newChunkRange) {
-          setLoadedFrameRange(result.newChunkRange)
-        }
-
         // Finally, set the frameLoading flag back to false
         setFrameLoading(false)
       }
 
       fetchFrameData()
+      return () => {
+        cancelled = true
+      }
     }, [currentMatchFrame, selectedMatchId, dataManager])
 
     useEffect(() => { // Recompute known-missing frame ranges (mapped to clip coordinates) whenever more data loads
       if (selectedMatchId === null || !segment) {
-        setMissingFrameRanges([])
+        // Keeps the same empty list, so this does not re-render (and re-run) when nothing changed.
+        setMissingFrameRanges((current) => (current.length === 0 ? current : []))
         return
       }
 
@@ -188,7 +200,8 @@ function AppContent({
         end: range.end - segment.sourceFrameStart + segment.clipStart,
       }))
       setMissingFrameRanges(clipRanges)
-    }, [chunkRange, segment?.sourceFrameStart, segment?.sourceFrameEnd, segment?.clipStart, selectedMatchId, dataManager])
+      // chunkRange is a new object every render when nothing has loaded, so its bounds are the deps.
+    }, [chunkRange.start, chunkRange.end, segment?.sourceFrameStart, segment?.sourceFrameEnd, segment?.clipStart, selectedMatchId, dataManager])
 
     useEffect(() => { // Fetch match metadata when a match is selected
       if (selectedMatchId === null) return
@@ -386,6 +399,7 @@ function AppContent({
                       timelineStore={timelineStore}
                       onAnnotationUpdate={handleAnnotationUpdate}
                       annotationVersion={annotationVersion}
+                      isFrameLoading={isFetching}
                     />
                   </div>
                 </div>

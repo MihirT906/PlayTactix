@@ -1,9 +1,9 @@
-import { useCallback, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
+import { useCallback, useMemo, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
 import type AnnotationStore from '../../services/AnnotationStore-optimized'
 import type TimelineStore from '../../services/TimelineStore'
 import { useMatchSession } from '../../context/MatchSessionContext'
 import { useStyleConfig } from '../../context/StyleConfigContext'
-import type { OverlaySegment } from '../../types/ClipInterfaces'
+import type { OverlaySegment, OverlaySegmentKind } from '../../types/ClipInterfaces'
 import type { Event } from '../../types/FrameDataInterfaces'
 import type { MatchData } from '../../types/MatchDataInterfaces'
 import { SegmentRow } from './SegmentRow'
@@ -68,8 +68,8 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
   } = useMatchSession()
   const { homeTeamColor, awayTeamColor } = useStyleConfig()
 
-  const getOverlayBarStyle = (overlay: OverlaySegment): CSSProperties | undefined =>
-    overlay.type === 'pitch_control'
+  const getOverlayBarStyle = (type: OverlaySegmentKind): CSSProperties | undefined =>
+    type === 'pitch_control'
       ? {
           background: `linear-gradient(90deg, color-mix(in srgb, ${awayTeamColor} 50%, transparent), color-mix(in srgb, ${homeTeamColor} 50%, transparent))`,
         }
@@ -77,6 +77,14 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
 
   const matchSegments = session.playback.clip.matchSegments
   const overlaySegments = session.playback.clip.overlaySegments
+  // One row per overlay type, in the order each was first added, holding all of that type's segments.
+  const overlayRows = useMemo(() => {
+    const rows = new Map<OverlaySegmentKind, { overlay: OverlaySegment; index: number }[]>()
+    overlaySegments.forEach((overlay, index) => {
+      rows.set(overlay.type, [...(rows.get(overlay.type) ?? []), { overlay, index }])
+    })
+    return Array.from(rows, ([type, segments]) => ({ type, segments }))
+  }, [overlaySegments])
 
   // Transient scale widening while an edge is dragged past the visible end (Option B).
   // Cleared on drag release, when the scale falls back to the clip length + headroom.
@@ -158,6 +166,7 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
             ) : (
               <SegmentRow
                 segments={matchSegments}
+                matchPeriods={matchData?.match_periods ?? null}
                 scaleStart={scaleStart}
                 scaleEnd={scaleEnd}
                 sourceBounds={sourceBounds}
@@ -190,10 +199,11 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
             {overlaySegments.length === 0 ? (
               <div className="annotation-timeline__empty">No overlays</div>
             ) : (
-              overlaySegments.map((overlay, index) => (
+              overlayRows.map(({ type, segments }) => (
                 <BackgroundRow
-                  key={`${overlay.type}-${index}`}
-                  overlay={overlay}
+                  key={type}
+                  type={type}
+                  segments={segments}
                   scaleStart={scaleStart}
                   scaleEnd={scaleEnd}
                   minFrame={clipRange.start}
@@ -201,9 +211,9 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
                   labelWidth={TIMELINE_LABEL_WIDTH}
                   trackWidth={trackWidth}
                   currentFrameOffsetPercent={currentFrameOffsetPercent}
-                  onRangeChange={(clipStart, clipEnd) => setOverlaySegmentRange(index, clipStart, clipEnd)}
-                  onDelete={() => removeOverlaySegment(index)}
-                  barStyle={getOverlayBarStyle(overlay)}
+                  onRangeChange={setOverlaySegmentRange}
+                  onDelete={removeOverlaySegment}
+                  barStyle={getOverlayBarStyle(type)}
                 />
               ))
             )}

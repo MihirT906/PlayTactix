@@ -259,3 +259,63 @@ export function getEventMetricValue(event: Event, column: string): number | null
   const value = event[column as keyof Event]
   return typeof value === 'number' && Number.isFinite(value) ? value : null
 }
+
+// The kinds of event an Insights event track can show, saved on the track as its `eventType`.
+export type InsightEventType = 'carry' | 'pass_option' | 'press' | 'run'
+
+export const INSIGHT_EVENT_TYPES: InsightEventType[] = ['carry', 'pass_option', 'press', 'run']
+
+// How far the ball has to move with a player for their possession to count as a carry; anything
+// shorter is a touch or a turn on the spot.
+export const MIN_CARRY_DISTANCE = 3 // metres
+
+// A player possession also holds the values of the pass it ended with; a carry keeps only its own.
+export const CARRY_COLUMNS: string[] = ['possession_epv_total', 'overall_pressure_start_id', 'n_passing_options']
+
+// SkillCorner's event types that Insights shows as they are, under its own names.
+const RAW_TYPES: Partial<Record<string, InsightEventType>> = {
+  passing_option: 'pass_option',
+  on_ball_engagement: 'press',
+  off_ball_run: 'run',
+}
+
+const isPoint = (x: unknown, y: unknown) => Number.isFinite(x) && Number.isFinite(y)
+
+// The possession as a carry, by what it ended in (pass, shot, possession loss, ...).
+function toCarry(possession: Event): Event {
+  const ending = possession.end_type && possession.end_type !== 'unknown' && possession.end_type !== 'None'
+  const carry: Event = {
+    ...possession,
+    event_id: `carry:${possession.event_id}`,
+    event_type: 'carry',
+    event_subtype: ending ? possession.end_type : '',
+  }
+  for (const column of HEIGHT_COLUMNS) {
+    if (!CARRY_COLUMNS.includes(column)) (carry as unknown as Record<string, unknown>)[column] = null
+  }
+  return carry
+}
+
+// The match's events as Insights shows them, sorted by start frame:
+//   carry        a player possession in which the ball moved at least MIN_CARRY_DISTANCE
+//   pass_option  a passing option, lasting as long as the player was one; hovering it picks out the
+//                player and the team-mate on the ball
+//   press        an on ball engagement, by SkillCorner's subtype (pressing, pressure, counter press, ...)
+//   run          an off ball run, by SkillCorner's subtype (behind, overlap, coming short, ...)
+export function buildInsightEvents(matchEvents: Event[] | null): Event[] {
+  if (!matchEvents) return []
+
+  return matchEvents
+    .flatMap((event): Event[] => {
+      if (event.event_type === 'player_possession') {
+        const moved =
+          isPoint(event.x_start, event.y_start) && isPoint(event.x_end, event.y_end)
+            ? Math.hypot(event.x_end - event.x_start, event.y_end - event.y_start)
+            : 0
+        return moved >= MIN_CARRY_DISTANCE ? [toCarry(event)] : []
+      }
+      const eventType = RAW_TYPES[event.event_type]
+      return eventType ? [{ ...event, event_type: eventType }] : []
+    })
+    .sort(byStartThenEnd)
+}

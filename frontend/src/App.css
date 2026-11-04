@@ -57,7 +57,7 @@
 
 .app-title {
   margin: 0;
-  font-size: 3.8rem;
+  font-size: 2.6rem;
   font-family: 'Barlow Condensed', var(--font-family-sans);
   font-weight: 800;
   text-transform: uppercase;
@@ -77,6 +77,10 @@
   letter-spacing: 0.02em;
   cursor: pointer;
   transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+.app-header .app-header-action {
+  font-size: 1rem;
 }
 
 .app-header-action:hover,

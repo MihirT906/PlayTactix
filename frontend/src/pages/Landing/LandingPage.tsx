@@ -60,7 +60,8 @@ export default function LandingPage({ onChooseGame }: LandingPageProps) {
               <section className="landing-section">
                 <h2 className="landing-heading">Data you can show a dressing room</h2>
                 <p className="landing-text">
-                  Tracking data records where every player and the ball are, ten times a second, for a whole match.
+                  Tracking data records where every player and the ball are, ten times a second, for a whole match, and
+                  more and more of it now comes from computer vision models that pull it straight out of match video.
                   Almost anything you'd want to know about the game is in there. It's also a table tens of thousands of
                   rows long, which is a hard thing to put in front of a team. {APP_CONFIG.brand.title} turns those rows
                   back into the game you know: moments you can replay, pull apart and show to the people who need to see

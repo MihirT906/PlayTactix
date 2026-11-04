@@ -2,7 +2,7 @@
   color: var(--color-text-primary);
   font-family: var(--font-family-sans);
   padding: 0 0 4rem;
-  --landing-headline-size: clamp(3rem, 7vw, 7.5rem);
+  --landing-headline-size: clamp(2.6rem, 5.5vw, 5.75rem);
 }
 .landing-main { padding-top: 3rem; }
 .landing-intro { padding-bottom: 3rem; }

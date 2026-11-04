@@ -292,6 +292,11 @@ function AppContent({
       stopPlayback() // Pause playback when a new segment is added
     }
 
+    const openMatchPicker = () => {
+      clearSidebarPanel()
+      setAppView('picker')
+    }
+
     return (
       <StyleConfigProvider matchData={matchMetaData}>
         <div className="app-shell">
@@ -303,10 +308,7 @@ function AppContent({
               <button
                 type="button"
                 className={`app-header-action ${appView === 'picker' ? 'is-active' : ''}`}
-                onClick={() => {
-                    clearSidebarPanel()
-                    setAppView('picker')
-                  }}
+                onClick={openMatchPicker}
                 aria-label="Choose game"
               >
                 Choose Game
@@ -340,7 +342,7 @@ function AppContent({
             </div>
           </header>
 
-          {appView === 'idle' ? <LandingPage /> : null}
+          {appView === 'idle' ? <LandingPage onChooseGame={openMatchPicker} /> : null}
 
           {appView === 'picker' ? (
             <div className="app-picker-shell">

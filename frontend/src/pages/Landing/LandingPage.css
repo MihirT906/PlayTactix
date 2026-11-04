@@ -4,9 +4,23 @@
   padding: 0 0 4rem;
   --landing-headline-size: clamp(3rem, 7vw, 7.5rem);
 }
-.landing-hero { padding: 3rem 0 3rem; }
+.landing-main { padding-top: 3rem; }
+.landing-intro { padding-bottom: 3rem; }
+/* Copy on the left, the chalkboard sketch in whatever room is left before the steps column */
+.landing-body { display: grid; grid-template-columns: minmax(0, 1fr) clamp(15rem, 24vw, 30rem); column-gap: 3rem; align-items: center; }
+.landing-art { width: 100%; height: auto; justify-self: center; }
+@media (max-width: 80rem) {
+  .landing-body { display: block; }
+  .landing-art { display: none; }
+}
 .landing-headline { font-family: 'Barlow Condensed', var(--font-family-sans); font-weight: 800; text-transform: uppercase; font-size: var(--landing-headline-size); line-height: 0.95; letter-spacing: 0.01em; color: var(--color-accent); margin: 0 0 1.5rem; }
 .landing-lede { max-width: 60rem; font-size: 1.1rem; line-height: 1.7; color: var(--color-text-muted); margin: 0 0 2rem; }
+.landing-cta { border: 0; border-radius: 0; padding: 0.8rem 1.6rem; background: var(--color-accent); color: var(--color-text-inverse); font-family: 'Barlow Condensed', var(--font-family-sans); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; font-size: 1.25rem; cursor: pointer; transition: background 0.2s ease; }
+.landing-cta:hover { background: color-mix(in srgb, var(--color-accent) 85%, white); }
+.landing-cta:focus-visible { outline: 2px solid var(--focus-outline-color); outline-offset: 4px; }
+.landing-actions { display: flex; flex-wrap: wrap; gap: 1rem; }
+.landing-cta-secondary { display: inline-block; text-decoration: none; background: transparent; color: var(--color-accent); box-shadow: inset 0 0 0 2px var(--color-accent); }
+.landing-cta-secondary:hover { background: color-mix(in srgb, var(--color-accent) 15%, transparent); }
 .landing-section { padding: 3rem 0; border-top: 1px solid var(--surface-subtle-border); }
 .landing-heading { font-family: 'Barlow Condensed', var(--font-family-sans); font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; font-size: 2.2rem; margin: 0 0 1rem; }
 .landing-text { max-width: 60rem; line-height: 1.7; color: var(--color-text-muted); font-size: 1.1rem; }
@@ -16,3 +30,17 @@
 .landing-card p { margin: 0; font-size: 0.94rem; line-height: 1.5; color: var(--color-text-muted); }
 
 .landing-top { position: relative; --first-clip-steps-offset: calc(3rem + var(--landing-headline-size) * 0.175 - 0.32rem); }
+
+.chalkboard { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.chalkboard-lines { stroke: rgba(255, 255, 255, 0.78); stroke-width: 3; }
+.chalkboard-lines .chalkboard-spot { fill: rgba(255, 255, 255, 0.78); }
+.chalkboard-defenders { stroke: rgba(255, 255, 255, 0.55); stroke-width: 3; }
+.chalkboard-attackers { stroke: #7dd3fc; stroke-width: 4; }
+.chalkboard-arrows { stroke: var(--color-accent); stroke-width: 4; }
+.chalkboard-arrow-line { stroke-dasharray: 1; animation: chalk-draw 0.8s ease-out var(--chalk-delay) both; }
+.chalkboard-arrow-head { animation: chalk-appear 0.2s ease-out calc(var(--chalk-delay) + 0.75s) both; }
+@keyframes chalk-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes chalk-appear { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .chalkboard-arrow-line, .chalkboard-arrow-head { animation: none; }
+}

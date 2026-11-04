@@ -29,6 +29,7 @@ const ROUTES = {
   picker: '/matches',
   workspace: '/matches/:matchId',
   docs: '/docs',
+  docsPage: '/docs/:slug',
 } as const
 
 const workspacePath = (matchId: number) => `/matches/${matchId}`
@@ -110,7 +111,8 @@ function AppContent({
 
     const navigate = useNavigate()
     const isPickerRoute = useMatch(ROUTES.picker) !== null
-    const isDocsRoute = useMatch(ROUTES.docs) !== null
+    // The splat also matches /docs itself, so the Docs button stays active on the docs home and every page.
+    const isDocsRoute = useMatch(`${ROUTES.docs}/*`) !== null
     const workspaceRoute = useMatch(ROUTES.workspace)
     const urlMatchId = workspaceRoute ? parseMatchId(workspaceRoute.params.matchId) : null
     // Set when the match a workspace URL names could not be downloaded.
@@ -504,6 +506,7 @@ function AppContent({
           } />
 
           <Route path={ROUTES.docs} element={<DocsPage />} />
+          <Route path={ROUTES.docsPage} element={<DocsPage />} />
 
           <Route path="*" element={<Navigate to={ROUTES.landing} replace />} />
           </Routes>

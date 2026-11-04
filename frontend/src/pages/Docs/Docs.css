@@ -1,0 +1,18 @@
+.docs { display: grid; grid-template-columns: 16rem minmax(0, 1fr); column-gap: 3rem; align-items: start; color: var(--color-text-primary); font-family: var(--font-family-sans); padding: 1.5rem 0 4rem; }
+@media (max-width: 48rem) {
+  .docs { display: block; }
+  .docs-sidebar { position: static; max-height: none; margin-bottom: 2rem; }
+}
+
+/* Stays in view while the page scrolls, and scrolls itself if the list is taller than the window */
+.docs-sidebar { position: sticky; top: 1.5rem; max-height: calc(100vh - 3rem); overflow-y: auto; }
+.docs-sidebar-section + .docs-sidebar-section { margin-top: 1.75rem; }
+.docs-sidebar-heading { margin: 0 0 0.5rem; font-size: 0.95rem; font-weight: 600; color: var(--color-text-primary); }
+.docs-sidebar-list { list-style: none; margin: 0; padding: 0; }
+.docs-sidebar-link { display: block; padding: 0.3rem 0; font-size: 0.95rem; color: var(--color-text-muted); text-decoration: none; }
+.docs-sidebar-link:hover { color: var(--color-text-primary); }
+.docs-sidebar-link.is-active { color: var(--color-accent); }
+.docs-sidebar-link:focus-visible { outline: 2px solid var(--focus-outline-color); outline-offset: 2px; }
+
+.docs-article { max-width: 48rem; }
+.docs-title { margin: 0 0 1.5rem; font-size: 2.4rem; font-weight: 700; line-height: 1.15; }

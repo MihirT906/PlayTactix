@@ -1,9 +1,9 @@
 
 interface FrameData {
+    frame: number;
     period: number | null;
     players: Players;
     ball: Ball;
-    events: Event[] | [];
     }
 
 interface Ball {

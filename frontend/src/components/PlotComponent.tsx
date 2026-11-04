@@ -13,6 +13,7 @@ import { findOverlayAt } from '../services/clipManager'
 import { buildPassOptionProbOverlay, type PassOptionProbLabel } from '../plot/overlays/passOptionProbOverlay'
 import { buildPitchControlOverlay } from '../plot/overlays/pitchControlOverlay.ts'
 import { computePitchControl } from '../plot/pitchControl'
+import { eventsActiveAt } from '../plot/frameEvents'
 import { buildEventMapItems, resolveEventMap } from '../plot/overlays/eventMapOverlay'
 import { buildVoronoiPoints } from '../plot/overlays/voronoiOverlay'
 import { EMPTY_SEQUENCE_TRAIL, buildTrailLinks, getSequenceTrailAt } from '../plot/overlays/sequenceTrailsOverlay'
@@ -240,19 +241,22 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
       return true;
     });
 
+  // The events active on the frame on screen.
+  const frameEvents = useMemo(() => eventsActiveAt(matchEvents, frameData), [matchEvents, frameData]);
+
   // Trace for off-ball runs
   const offBallRunTrace = useMemo(() => {
     if (!eventVisibility.offBallRun) {
       return null;
     }
 
-    if (frameData?.events.length === 0) {
+    if (frameEvents.length === 0) {
       return null; // No events to process, return null to avoid rendering an empty trace
     }
 
-    const events = frameData?.events?.filter(
+    const events = frameEvents.filter(
       e => e.event_type === 'off_ball_run'
-    ) || [];
+    );
     
     const x: (number | null)[] = [];
     const y: (number | null)[] = [];
@@ -273,7 +277,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
         dash: 'dashdot',
       },
     };
-  }, [eventStyles.offBallRun.color, eventStyles.offBallRun.width, eventVisibility.offBallRun, frameData]);
+  }, [eventStyles.offBallRun.color, eventStyles.offBallRun.width, eventVisibility.offBallRun, frameEvents]);
 
   // Player masks to determine which players are in possession, passing options, or on-ball engagement based on the events in the current frame
   const playerMasks = useMemo(() => {
@@ -282,16 +286,16 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     const playerIds = frameData.players.player_id || [];
 
     const possessionPlayerId =
-      frameData.events?.find(e => e.event_type === 'player_possession')?.player_id;
+      frameEvents.find(e => e.event_type === 'player_possession')?.player_id;
 
     const passingOptionsSet = new Set(
-      frameData.events?.filter(e => e.event_type === 'passing_option')
-        .map(e => e.player_id) || []
+      frameEvents.filter(e => e.event_type === 'passing_option')
+        .map(e => e.player_id)
     );
 
     const engagementSet = new Set(
-      frameData.events?.filter(e => e.event_type === 'on_ball_engagement')
-        .map(e => e.player_id) || []
+      frameEvents.filter(e => e.event_type === 'on_ball_engagement')
+        .map(e => e.player_id)
     );
 
     const possessionMask = playerIds.map(id => id === possessionPlayerId);
@@ -319,7 +323,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
           !visibleEngagementMask[index]
       ),
     };
-  }, [eventVisibility.onBallEngagement, eventVisibility.passingOption, eventVisibility.playerPossession, frameData]);
+  }, [eventVisibility.onBallEngagement, eventVisibility.passingOption, eventVisibility.playerPossession, frameData, frameEvents]);
 
   // Lookup of player id -> display info (name, position, shirt number) sourced from matchData
   const playerInfoById = useMemo(() => {
@@ -446,7 +450,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     const labels: PassOptionProbLabel[] = [];
 
     if (isPassOptionProbActive) {
-      const passOptionProb = buildPassOptionProbOverlay(frameData, eventStyles.passingOption.color);
+      const passOptionProb = buildPassOptionProbOverlay(frameData, frameEvents, eventStyles.passingOption.color);
       traces.push(...(passOptionProb?.traces ?? []));
       labels.push(...(passOptionProb?.labels ?? []));
     }
@@ -461,7 +465,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     }
 
     return { overlayTraces: traces, passOptionLabels: labels };
-  }, [isPassOptionProbActive, isPitchControlActive, pitchControlGrid, frameData, eventStyles.passingOption.color, homeTeamColor, awayTeamColor, matchData]);
+  }, [isPassOptionProbActive, isPitchControlActive, pitchControlGrid, frameData, frameEvents, eventStyles.passingOption.color, homeTeamColor, awayTeamColor, matchData]);
 
   // A new frame's plot represents real tracked positions, so drop any temporary drag edits from the
   // previous (paused) frame. The annotation tool stays on, so a move can be marked up frame by frame.

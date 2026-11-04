@@ -5,7 +5,7 @@ logger = get_logger(__name__)
 
 import pandas as pd
 
-from paths import meta_data_path, tracking_data_path, events_data_path
+from paths import meta_data_path, tracking_data_path
 
 class FrameDataService:
     def _empty_players(self) -> dict:
@@ -85,7 +85,6 @@ class FrameDataService:
             # Read stored data
             logger.info("Reading data files for match_id=%s", match_id)
             tracking_df = pd.read_parquet(tracking_data_path(match_id))
-            events_df = pd.read_parquet(events_data_path(match_id))
             with meta_data_path(match_id).open("r") as f:
                 meta_data = json.load(f)
 
@@ -102,10 +101,8 @@ class FrameDataService:
                 for _, row in final_df.drop_duplicates("frame").iterrows()
             }
 
-            # Process frames
-            event_idx = 0
-            n_events = len(events_df)
-            active_events = []
+            # Process frames. Events aren't attached: the frontend already has every event of the match
+            # (from /data/match_key_moments) and looks up the ones active on each frame itself.
             missing_frames = []
             frames = {}
             for frame_number in range(start, end + 1):
@@ -114,6 +111,7 @@ class FrameDataService:
                 if row is None:
                     missing_frames.append(frame_number)
                     frames[frame_number] = {
+                        'frame': frame_number,
                         'period': None,
                         'players': self._empty_players(),
                         'ball': {
@@ -121,10 +119,10 @@ class FrameDataService:
                             'ball_y': None,
                             'ball_z': None,
                         },
-                        'events': [],
                     }
                 else:
                     frames[frame_number] = {
+                        'frame': frame_number,
                         'period': int(row['period_id']) if 'period_id' in row.index and pd.notna(row['period_id']) else None,
                         'players': self._players_from_row(row, player_descriptors),
                         'ball': {
@@ -132,20 +130,7 @@ class FrameDataService:
                             'ball_y': self._value_or_none(row.get('ball_y')),
                             'ball_z': self._value_or_none(row.get('ball_z')),
                         },
-                        'events': [],
                     }
-            
-                    # Adding event data
-                    while event_idx < n_events and events_df.iloc[event_idx]["frame_start"] <= frame_number:
-                        active_events.append(events_df.iloc[event_idx].to_dict())
-                        event_idx += 1
-
-                    active_events = [
-                        event for event in active_events
-                        if event["frame_start"] <= frame_number <= event["frame_end"]
-                    ]
-
-                    frames[frame_number]["events"] = list(active_events)
             logger.info("Returning frames for match_id=%s", match_id, exc_info=True)
             return {
                 "requested_match_id": match_id,

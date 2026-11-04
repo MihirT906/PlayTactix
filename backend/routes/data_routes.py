@@ -51,20 +51,27 @@ def download_match_data(match_id: int):
         logger.error("Error occurred while downloading match data for match_id=%s", match_id, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
+# The data routes are plain `def`, not `async def`: their pandas and file work blocks, so FastAPI runs
+# them in its threadpool rather than on the event loop, where they would stall every other request.
 @router.get("/frames", dependencies=[Depends(require_loaded_match)])
-async def get_frame_data(match_id: int = Query(...), start: int = Query(1), end: int = Query(50)):
+def get_frame_data(match_id: int = Query(...), start: int = Query(1), end: int = Query(50)):
     try:
         logger.info("Fetching frames match_id=%s start=%s end=%s", match_id, start, end)
         frame_data_service = FrameDataService()
         ret = frame_data_service.get_frames(match_id=match_id, start=start, end=end)
+        if "error" in ret:
+            # A 200 carrying {"error": ...} would look like a successful, empty chunk to the frontend.
+            raise HTTPException(status_code=500, detail=ret["error"])
         return JSONResponse(content=sanitize_nan(ret))
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error("Failed to fetch frames match_id=%s start=%s end=%s", match_id, start, end, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
     
 @router.get("/match_meta", dependencies=[Depends(require_loaded_match)])
-async def get_match_meta_data(match_id: int = Query(...)):
+def get_match_meta_data(match_id: int = Query(...)):
     try:
         logger.info("Fetching match metadata for match_id=%s", match_id)
         frame_data_service = FrameDataService()
@@ -76,7 +83,7 @@ async def get_match_meta_data(match_id: int = Query(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/match_key_moments", dependencies=[Depends(require_loaded_match)])
-async def get_match_key_moments(match_id: int = Query(...)):
+def get_match_key_moments(match_id: int = Query(...)):
     try:
         logger.info("Fetching key moments for match_id=%s", match_id)
 

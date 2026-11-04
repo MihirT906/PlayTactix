@@ -35,7 +35,7 @@ export type MatchSessionState = {
     playbackSpeed: number
   }
   rawData: {
-    loadedFrameRange: { start: number; end: number } | null
+    loadedFrameRanges: { start: number; end: number }[] // The frames in memory, in frame order
   }
   overlays: {
     eventMapFilters: EventMapFilters // The Event Map draws everything matching these
@@ -106,7 +106,7 @@ type MatchSessionContextValue = {
   setOverlaySegmentRange: (index: number, clipStart: number, clipEnd: number) => void
 
   setFrameLoading: (isLoading: boolean) => void
-  setLoadedFrameRange: (range: { start: number; end: number } | null) => void
+  setLoadedFrameRanges: (ranges: { start: number; end: number }[]) => void
 
   setMetaStatus: (status: LoadStatus) => void
   setKeyMomentStatus: (status: LoadStatus) => void
@@ -135,7 +135,7 @@ export const createInitialMatchSessionState = (matchId: number | null = null): M
     playbackSpeed: 1,
   },
   rawData: {
-    loadedFrameRange: null,
+    loadedFrameRanges: [],
   },
   overlays: {
     eventMapFilters: DEFAULT_EVENT_MAP_FILTERS,
@@ -507,7 +507,8 @@ export function MatchSessionProvider({
         },
 
         setFrameLoading: (isLoading: boolean) => {
-            setSession((prev) => ({
+            // Called on every frame, so leave the session untouched (no re-render) when the flag already matches.
+            setSession((prev) => prev.playback.isFrameLoading === isLoading ? prev : ({
                 ...prev,
                 playback: {
                     ...prev.playback,
@@ -516,12 +517,12 @@ export function MatchSessionProvider({
             }))
         },
 
-        setLoadedFrameRange: (range) => {
+        setLoadedFrameRanges: (ranges) => {
             setSession((prev) => ({
                 ...prev,
                 rawData: {
                     ...prev.rawData,
-                    loadedFrameRange: range,
+                    loadedFrameRanges: ranges,
                 },
             }))
         },

@@ -16,7 +16,7 @@ interface ControlsProps {
   clipFrame: number
   clipRange: { start: number; end: number }
   onClipFrameChange: (clipFrame: number) => void
-  chunkRange: { start: number; end: number }
+  loadedFrameRanges: { start: number; end: number }[] // Match frames in memory
   segmentStart: number
   missingRanges: { start: number; end: number }[]
   annotationStore: AnnotationStore
@@ -37,14 +37,14 @@ const formatSpeed = (speed: number) => {
 const buildTrackGradient = (
   clipRange: { start: number; end: number },
   clipFrame: number,
-  cacheEndFrame: number,
+  cachedRanges: { start: number; end: number }[],
   missingRanges: { start: number; end: number }[]
 ): string => {
   const totalLength = clipRange.end - clipRange.start || 1
   const toPercent = (frame: number) => Math.min(100, Math.max(0, ((frame - clipRange.start) / totalLength) * 100))
 
-  const breakpoints = new Set<number>([0, 100, toPercent(clipFrame), toPercent(cacheEndFrame)])
-  missingRanges.forEach(({ start, end }) => {
+  const breakpoints = new Set<number>([0, 100, toPercent(clipFrame)])
+  ;[...cachedRanges, ...missingRanges].forEach(({ start, end }) => {
     breakpoints.add(toPercent(start))
     breakpoints.add(toPercent(end + 1))
   })
@@ -56,7 +56,8 @@ const buildTrackGradient = (
     const isMissing = missingRanges.some(({ start, end }) => frame >= start && frame < end + 1)
     if (isMissing) return 'var(--controls-slider-missing, #6b6b6b)'
     if (frame < clipFrame) return 'var(--controls-slider-progress, red)'
-    if (frame < cacheEndFrame) return 'var(--controls-slider-cached, darkgray)'
+    const isCached = cachedRanges.some(({ start, end }) => frame >= start && frame < end + 1)
+    if (isCached) return 'var(--controls-slider-cached, darkgray)'
     return 'var(--controls-slider-track, lightgray)'
   }
 
@@ -72,10 +73,13 @@ const buildTrackGradient = (
   return `linear-gradient(to right, ${stops.join(', ')})`
 }
 
-const Controls: React.FC<ControlsProps> = ({ isPlaying, onPlayPause, playbackSpeed, onDoubleSpeed, onHalveSpeed, currentMatchFrame, clipFrame, clipRange, onClipFrameChange, chunkRange, segmentStart, missingRanges, annotationStore, matchPeriods }) => {
+const Controls: React.FC<ControlsProps> = ({ isPlaying, onPlayPause, playbackSpeed, onDoubleSpeed, onHalveSpeed, currentMatchFrame, clipFrame, clipRange, onClipFrameChange, loadedFrameRanges, segmentStart, missingRanges, annotationStore, matchPeriods }) => {
   const matchSeconds = matchClockSecondsAt(currentMatchFrame, matchPeriods)
   const matchTime = matchSeconds === null ? '--:--' : formatClock(matchSeconds)
   const clipTime = `${formatClock(clipFrame / FRAME_RATE)} / ${formatClock(clipRange.end / FRAME_RATE)}`
+
+  // The frames in memory on the clip's timeline, drawn as cached bands ahead of the playhead.
+  const cachedClipRanges = loadedFrameRanges.map(({ start, end }) => ({ start: start - segmentStart, end: end - segmentStart }))
 
   const handleSliderChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const frame = parseInt(event.target.value, 10)
@@ -121,7 +125,7 @@ const Controls: React.FC<ControlsProps> = ({ isPlaying, onPlayPause, playbackSpe
         onChange={handleSliderChange}
         onMouseUp={handleSliderDragEnd}
         style={{
-          background: buildTrackGradient(clipRange, clipFrame, chunkRange.end - segmentStart, missingRanges),
+          background: buildTrackGradient(clipRange, clipFrame, cachedClipRanges, missingRanges),
         }}
       />
     </div>

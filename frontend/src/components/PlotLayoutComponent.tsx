@@ -19,7 +19,7 @@ type PlotLayoutComponentProps = {
   onClipFrameChange: (clipFrame: number) => void
   clipRange: { start: number; end: number }
   segmentRange: { start: number; end: number }
-  chunkRange: { start: number; end: number }
+  loadedFrameRanges: { start: number; end: number }[]
   missingFrameRanges: { start: number; end: number }[]
   matchData: MatchData | null
   frameData: FrameData | null
@@ -63,7 +63,7 @@ function PlotLayoutComponent({
   onClipFrameChange,
   clipRange,
   segmentRange,
-  chunkRange,
+  loadedFrameRanges,
   missingFrameRanges,
   matchData,
   frameData,
@@ -102,7 +102,7 @@ function PlotLayoutComponent({
         clipFrame={clipFrame}
         clipRange={clipRange}
         onClipFrameChange={onClipFrameChange}
-        chunkRange={chunkRange}
+        loadedFrameRanges={loadedFrameRanges}
         segmentStart={segmentRange.start}
         missingRanges={missingFrameRanges}
         annotationStore={annotationStore}

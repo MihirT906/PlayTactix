@@ -16,6 +16,8 @@ export const APP_CONFIG = {
 	},
 	timing: {
 		chunkSize: 300,
+		// Footage kept in memory, in minutes. Clips longer than this refetch their start on every loop.
+		bufferMinutes: 1,
 		sleepIntervalMs: 100,
 	},
 	selection: {
@@ -101,6 +103,7 @@ export const APP_CONFIG = {
 } as const;
 
 export const CHUNK_SIZE = APP_CONFIG.timing.chunkSize;
+export const BUFFER_MINUTES = APP_CONFIG.timing.bufferMinutes;
 export const SLEEP_INTERVAL = APP_CONFIG.timing.sleepIntervalMs;
 
 export const SELECTED_POINTS_OPACITY = APP_CONFIG.selection.selectedPointsOpacity;

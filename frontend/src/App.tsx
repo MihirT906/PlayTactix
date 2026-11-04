@@ -63,7 +63,7 @@ function AppContent({
       setSidebarPanel,
       clearSidebarPanel,
       setFrameLoading,
-      setLoadedFrameRange,
+      setLoadedFrameRanges,
       setMetaStatus,
       setKeyMomentStatus,
     } = useMatchSession()
@@ -82,7 +82,7 @@ function AppContent({
     const playbackSpeed = session.playback.playbackSpeed
     const isFetching = session.playback.isFrameLoading
     const activeSidebarPanel = session.ui.activeSidebarPanel
-    const chunkRange = session.rawData.loadedFrameRange ?? { start: 0, end: 0 }
+    const loadedFrameRanges = session.rawData.loadedFrameRanges
     const metaStatus = session.match.metaStatus
 
     const [matchMetaData, setMatchMetaData] = useState<MatchData | null>(null)
@@ -144,10 +144,23 @@ function AppContent({
     }, [])
 
 
+    useEffect(() => { // Every chunk that lands, prefetched or fetched for the playhead, updates the slider's cached bands and refreshes the missing-frame gaps
+      dataManager.setLoadedRangesListener(setLoadedFrameRanges)
+      return () => dataManager.setLoadedRangesListener(null)
+    }, [dataManager, setLoadedFrameRanges])
+
     useEffect(() => { // Fetch frame data when currentMatchFrame changes
       if (selectedMatchId === null) {
         // A fetch cancelled by closing the match would otherwise leave the flag set.
         if (session.playback.isFrameLoading) setFrameLoading(false)
+        return
+      }
+      // A loaded frame (the usual case once the prefetch is ahead) shows straight away. Only a frame that
+      // has to be fetched raises the loading flag, which pauses playback until it arrives.
+      const loadedFrame = dataManager.getLoadedFrame(currentMatchFrame)
+      if (loadedFrame) {
+        setCurrentFrameData(loadedFrame)
+        setFrameLoading(false)
         return
       }
       // Set by the cleanup when the frame moves on, so a slow fetch for an earlier frame neither shows
@@ -160,11 +173,6 @@ function AppContent({
 
         // Collect frame data from dataManager
         const result = await dataManager.getFrameData(currentMatchFrame)
-
-        // If a new chunk was loaded, update the chunk range
-        if (result.didLoadChunk && result.newChunkRange) {
-          setLoadedFrameRange(result.newChunkRange)
-        }
         if (cancelled) return
 
         if (result.frameData) {
@@ -197,8 +205,8 @@ function AppContent({
         end: range.end - segment.sourceFrameStart + segment.clipStart,
       }))
       setMissingFrameRanges(clipRanges)
-      // chunkRange is a new object every render when nothing has loaded, so its bounds are the deps.
-    }, [chunkRange.start, chunkRange.end, segment?.sourceFrameStart, segment?.sourceFrameEnd, segment?.clipStart, selectedMatchId, dataManager])
+      // loadedFrameRanges is replaced each time a chunk lands, so it marks when more data has loaded.
+    }, [loadedFrameRanges, segment?.sourceFrameStart, segment?.sourceFrameEnd, segment?.clipStart, selectedMatchId, dataManager])
 
     useEffect(() => { // Fetch match metadata when a match is selected
       if (selectedMatchId === null) return
@@ -387,7 +395,7 @@ function AppContent({
                       onClipFrameChange={handleClipFrameChange}
                       clipRange={clipRange}
                       segmentRange={segmentRange}
-                      chunkRange={chunkRange}
+                      loadedFrameRanges={loadedFrameRanges}
                       missingFrameRanges={missingFrameRanges}
                       matchData={matchMetaData}
                       frameData={currentFrameData}

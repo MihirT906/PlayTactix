@@ -1,5 +1,5 @@
 import type { Data } from 'plotly.js'
-import type { FrameData } from '../../types/FrameDataInterfaces'
+import type { Event, FrameData } from '../../types/FrameDataInterfaces'
 import { APP_CONFIG } from '../../config'
 
 const PASS_COMPLETION_THRESHOLD = 0.65
@@ -48,6 +48,7 @@ export type PassOptionProbLabel = {
 
 export function buildPassOptionProbOverlay(
   frameData: FrameData | null,
+  frameEvents: Event[],
   passingOptionColor: string
 ): { traces: Data[]; labels: PassOptionProbLabel[] } | null {
     if (!frameData) {
@@ -64,7 +65,7 @@ export function buildPassOptionProbOverlay(
     const traces: Data[] = [];
     const labels: PassOptionProbLabel[] = [];
 
-    for (const event of frameData.events) {
+    for (const event of frameEvents) {
         if (event.event_type !== 'passing_option') continue;
 
         const sourcePlayerId = event.player_in_possession_id;

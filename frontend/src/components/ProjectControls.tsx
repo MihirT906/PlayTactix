@@ -15,6 +15,8 @@ type ProjectControlsProps = {
   annotationStore: AnnotationStore
   timelineStore: TimelineStore
   keyMomentsData: KeyMomentsData | null
+  // Save only makes sense on the open match's workspace; Load stays available everywhere.
+  showSave: boolean
   // Clears the match data App holds locally (metadata, key moments, frames) before a different match loads.
   onResetMatchData: () => void
   onOpenWorkspace: (matchId: number) => void
@@ -31,6 +33,7 @@ export default function ProjectControls({
   annotationStore,
   timelineStore,
   keyMomentsData,
+  showSave,
   onResetMatchData,
   onOpenWorkspace,
   onProjectApplied,
@@ -140,15 +143,17 @@ export default function ProjectControls({
 
   return (
     <>
-      <button
-        type="button"
-        className="app-header-action"
-        onClick={handleSave}
-        disabled={session.match.id === null || !matchReady}
-        aria-label="Save project"
-      >
-        Save Project
-      </button>
+      {showSave ? (
+        <button
+          type="button"
+          className="app-header-action"
+          onClick={handleSave}
+          disabled={session.match.id === null || !matchReady}
+          aria-label="Save project"
+        >
+          Save Project
+        </button>
+      ) : null}
       <button
         type="button"
         className="app-header-action"

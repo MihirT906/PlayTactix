@@ -6,6 +6,7 @@ import MatchDataManager from './services/MatchDataManager'
 import AnnotationStore from './services/AnnotationStore-optimized'
 import TimelineStore from './services/TimelineStore'
 import LandingPage from './pages/Landing/LandingPage'
+import DocsPage from './pages/Docs/DocsPage'
 import FirstClipSteps from './components/FirstClipSteps'
 import WorkspaceGuide from './components/WorkspaceGuide'
 import { APP_CONFIG, SLEEP_INTERVAL, THEME_CSS_VARIABLES } from './config'
@@ -27,6 +28,7 @@ const ROUTES = {
   landing: '/',
   picker: '/matches',
   workspace: '/matches/:matchId',
+  docs: '/docs',
 } as const
 
 const workspacePath = (matchId: number) => `/matches/${matchId}`
@@ -108,6 +110,7 @@ function AppContent({
 
     const navigate = useNavigate()
     const isPickerRoute = useMatch(ROUTES.picker) !== null
+    const isDocsRoute = useMatch(ROUTES.docs) !== null
     const workspaceRoute = useMatch(ROUTES.workspace)
     const urlMatchId = workspaceRoute ? parseMatchId(workspaceRoute.params.matchId) : null
     // Set when the match a workspace URL names could not be downloaded.
@@ -363,7 +366,11 @@ function AppContent({
         <div className="app-shell">
           <header className="app-header">
             <div className="app-title-group">
-              <h1 className="app-title">{APP_CONFIG.brand.title}</h1>
+              <h1 className="app-title">
+                <Link to={ROUTES.landing} className="app-title-link" onClick={clearSidebarPanel}>
+                  {APP_CONFIG.brand.title}
+                </Link>
+              </h1>
             </div>
             <div className="navigation-bar">
               <button
@@ -384,10 +391,22 @@ function AppContent({
                   Back to Workspace
                 </button>
               ) : null}
+              <button
+                type="button"
+                className={`app-header-action ${isDocsRoute ? 'is-active' : ''}`}
+                onClick={() => {
+                  clearSidebarPanel()
+                  navigate(ROUTES.docs)
+                }}
+                aria-label="Docs"
+              >
+                Docs
+              </button>
               <ProjectControls
                 annotationStore={annotationStore}
                 timelineStore={timelineStore}
                 keyMomentsData={keyMomentsData}
+                showSave={urlMatchId !== null && urlMatchId === selectedMatchId}
                 onResetMatchData={resetMatchData}
                 onOpenWorkspace={openWorkspace}
                 onProjectApplied={() => {
@@ -483,6 +502,8 @@ function AppContent({
             </div>
             )
           } />
+
+          <Route path={ROUTES.docs} element={<DocsPage />} />
 
           <Route path="*" element={<Navigate to={ROUTES.landing} replace />} />
           </Routes>

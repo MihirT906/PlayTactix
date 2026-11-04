@@ -17,7 +17,7 @@ type ProjectControlsProps = {
   keyMomentsData: KeyMomentsData | null
   // Clears the match data App holds locally (metadata, key moments, frames) before a different match loads.
   onResetMatchData: () => void
-  onOpenWorkspace: () => void
+  onOpenWorkspace: (matchId: number) => void
   // Called after annotations were replaced, so the plot re-reads them.
   onProjectApplied: () => void
   onProjectSaved: () => void
@@ -127,7 +127,7 @@ export default function ProjectControls({
       // Same match is already open with its data loaded, so apply directly.
       apply(project)
       setBusy(false)
-      onOpenWorkspace()
+      onOpenWorkspace(project.match.id)
       return
     }
 
@@ -135,7 +135,7 @@ export default function ProjectControls({
     onResetMatchData()
     selectMatch(project.match.id)
     setPending(project)
-    onOpenWorkspace()
+    onOpenWorkspace(project.match.id)
   }
 
   return (

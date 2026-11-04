@@ -1,52 +1,16 @@
-2026-11-04 07:41:06 | INFO     | playtactix | Log cleared — new data download started
-2026-11-04 07:41:06 | INFO     | playtactix.routes.data_routes | Downloading match data for match_id=1959846
-2026-11-04 07:41:06 | INFO     | playtactix.services.match_cache | Downloading prebuilt data for match_id=1959846
-2026-11-04 07:41:09 | INFO     | playtactix.services.match_cache | Prebuilt data cached for match_id=1959846
-2026-11-04 07:41:09 | INFO     | playtactix.routes.data_routes | Fetching frames match_id=1959846 start=0 end=299
-2026-11-04 07:41:09 | INFO     | playtactix.services.frame_data_service | Reading data files for match_id=1959846
-2026-11-04 07:41:09 | INFO     | playtactix.routes.data_routes | Fetching match metadata for match_id=1959846
-2026-11-04 07:41:09 | INFO     | playtactix.routes.data_routes | Fetching key moments for match_id=1959846
-2026-11-04 07:41:09 | INFO     | playtactix.services.frame_data_service | Retrieving metadata for match_id=1959846 from stored data
-2026-11-04 07:41:09 | INFO     | playtactix.services.key_moments_service | Fetching key moments for match_id=1959846
-2026-11-04 07:41:09 | INFO     | playtactix.services.key_moments_service | Key moments computed goals=9
-2026-11-04 07:41:09 | INFO     | playtactix.services.frame_data_service | Filtering frames for match_id=1959846 to range 0-299
-2026-11-04 07:41:09 | INFO     | playtactix.services.key_moments_service | Key moments computed shots=45
-2026-11-04 07:41:09 | INFO     | playtactix.services.frame_data_service | Returning frames for match_id=1959846
-NoneType: None
-2026-11-04 07:41:09 | INFO     | playtactix.services.key_moments_service | Key moments computed pops=376
-2026-11-04 07:41:09 | INFO     | playtactix.services.key_moments_service | Key moments computed events=4669
-2026-11-04 07:41:31 | INFO     | playtactix.routes.data_routes | Fetching frames match_id=1959846 start=300 end=599
-2026-11-04 07:41:31 | INFO     | playtactix.services.frame_data_service | Reading data files for match_id=1959846
-2026-11-04 07:41:31 | INFO     | playtactix.services.frame_data_service | Filtering frames for match_id=1959846 to range 300-599
-2026-11-04 07:41:31 | INFO     | playtactix.services.frame_data_service | Returning frames for match_id=1959846
-NoneType: None
-2026-11-04 07:41:54 | INFO     | playtactix.routes.data_routes | Fetching frames match_id=1959846 start=600 end=899
-2026-11-04 07:41:54 | INFO     | playtactix.services.frame_data_service | Reading data files for match_id=1959846
-2026-11-04 07:41:54 | INFO     | playtactix.services.frame_data_service | Filtering frames for match_id=1959846 to range 600-899
-2026-11-04 07:41:54 | INFO     | playtactix.services.frame_data_service | Returning frames for match_id=1959846
-NoneType: None
-2026-11-04 07:41:57 | INFO     | playtactix.routes.data_routes | Fetching frames match_id=1959846 start=900 end=1199
-2026-11-04 07:41:57 | INFO     | playtactix.services.frame_data_service | Reading data files for match_id=1959846
-2026-11-04 07:41:57 | INFO     | playtactix.services.frame_data_service | Filtering frames for match_id=1959846 to range 900-1199
-2026-11-04 07:41:57 | INFO     | playtactix.services.frame_data_service | Returning frames for match_id=1959846
-NoneType: None
-2026-11-04 07:42:01 | INFO     | playtactix.routes.data_routes | Fetching frames match_id=1959846 start=1200 end=1499
-2026-11-04 07:42:01 | INFO     | playtactix.services.frame_data_service | Reading data files for match_id=1959846
-2026-11-04 07:42:01 | INFO     | playtactix.services.frame_data_service | Filtering frames for match_id=1959846 to range 1200-1499
-2026-11-04 07:42:01 | INFO     | playtactix.services.frame_data_service | Returning frames for match_id=1959846
-NoneType: None
-2026-11-04 07:42:03 | INFO     | playtactix.routes.data_routes | Fetching frames match_id=1959846 start=0 end=299
-2026-11-04 07:42:03 | INFO     | playtactix.services.frame_data_service | Reading data files for match_id=1959846
-2026-11-04 07:42:03 | INFO     | playtactix.services.frame_data_service | Filtering frames for match_id=1959846 to range 0-299
-2026-11-04 07:42:03 | INFO     | playtactix.services.frame_data_service | Returning frames for match_id=1959846
-NoneType: None
-2026-11-04 07:42:21 | INFO     | playtactix.routes.data_routes | Fetching frames match_id=1959846 start=3600 end=3899
-2026-11-04 07:42:21 | INFO     | playtactix.services.frame_data_service | Reading data files for match_id=1959846
-2026-11-04 07:42:21 | INFO     | playtactix.services.frame_data_service | Filtering frames for match_id=1959846 to range 3600-3899
-2026-11-04 07:42:21 | INFO     | playtactix.services.frame_data_service | Returning frames for match_id=1959846
-NoneType: None
-2026-11-04 07:42:21 | INFO     | playtactix.routes.data_routes | Fetching frames match_id=1959846 start=3900 end=4199
-2026-11-04 07:42:21 | INFO     | playtactix.services.frame_data_service | Reading data files for match_id=1959846
-2026-11-04 07:42:21 | INFO     | playtactix.services.frame_data_service | Filtering frames for match_id=1959846 to range 3900-4199
-2026-11-04 07:42:21 | INFO     | playtactix.services.frame_data_service | Returning frames for match_id=1959846
+2026-11-04 08:56:17 | INFO     | playtactix | Log cleared — new data download started
+2026-11-04 08:56:17 | INFO     | playtactix.routes.data_routes | Downloading match data for match_id=1874553
+2026-11-04 08:56:17 | INFO     | playtactix.services.match_cache | match_id=1874553 already cached, skipping download
+2026-11-04 08:56:17 | INFO     | playtactix.routes.data_routes | Fetching frames match_id=1874553 start=0 end=299
+2026-11-04 08:56:17 | INFO     | playtactix.routes.data_routes | Fetching match metadata for match_id=1874553
+2026-11-04 08:56:17 | INFO     | playtactix.services.frame_data_service | Reading data files for match_id=1874553
+2026-11-04 08:56:17 | INFO     | playtactix.services.frame_data_service | Retrieving metadata for match_id=1874553 from stored data
+2026-11-04 08:56:17 | INFO     | playtactix.routes.data_routes | Fetching key moments for match_id=1874553
+2026-11-04 08:56:17 | INFO     | playtactix.services.key_moments_service | Fetching key moments for match_id=1874553
+2026-11-04 08:56:17 | INFO     | playtactix.services.key_moments_service | Key moments computed goals=7
+2026-11-04 08:56:17 | INFO     | playtactix.services.key_moments_service | Key moments computed shots=29
+2026-11-04 08:56:17 | INFO     | playtactix.services.frame_data_service | Filtering frames for match_id=1874553 to range 0-299
+2026-11-04 08:56:17 | INFO     | playtactix.services.key_moments_service | Key moments computed pops=360
+2026-11-04 08:56:17 | INFO     | playtactix.services.key_moments_service | Key moments computed events=4915
+2026-11-04 08:56:17 | INFO     | playtactix.services.frame_data_service | Returning frames for match_id=1874553
 NoneType: None

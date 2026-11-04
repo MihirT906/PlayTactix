@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { Link, Navigate, Route, Routes, matchPath, useBlocker, useMatch, useNavigate } from 'react-router-dom'
 import './App.css'
 import DataManager from './services/DataManager'
+import MatchDataManager from './services/MatchDataManager'
 import AnnotationStore from './services/AnnotationStore-optimized'
 import TimelineStore from './services/TimelineStore'
 import LandingPage from './pages/Landing/LandingPage'
@@ -21,8 +23,20 @@ import { workFingerprint } from './services/projectSerializer'
 
 const DISCARD_WORK_MESSAGE = 'Your clip has changes you have not saved. Discard them?'
 
+const ROUTES = {
+  landing: '/',
+  picker: '/matches',
+  workspace: '/matches/:matchId',
+} as const
 
-type AppView = 'idle' | 'picker' | 'workspace'
+const workspacePath = (matchId: number) => `/matches/${matchId}`
+
+// The match a workspace path names, or null when the path is not a workspace or its id is not a match id.
+const parseMatchId = (raw: string | undefined) => {
+  const matchId = Number(raw)
+  return Number.isInteger(matchId) && matchId >= 0 ? matchId : null
+}
+
 function App({
   dataManager,
   annotationStore,
@@ -91,7 +105,13 @@ function AppContent({
     const [missingFrameRanges, setMissingFrameRanges] = useState<{ start: number; end: number }[]>([])
     const [annotationVersion, setAnnotationVersion] = useState(0)
     const handleAnnotationUpdate = useCallback(() => setAnnotationVersion((version) => version + 1), [])
-    const [appView, setAppView] = useState<AppView>('idle')
+
+    const navigate = useNavigate()
+    const isPickerRoute = useMatch(ROUTES.picker) !== null
+    const workspaceRoute = useMatch(ROUTES.workspace)
+    const urlMatchId = workspaceRoute ? parseMatchId(workspaceRoute.params.matchId) : null
+    // Set when the match a workspace URL names could not be downloaded.
+    const [urlMatchError, setUrlMatchError] = useState<number | null>(null)
 
     // The work as it was last saved, loaded or freshly opened; anything different is unsaved.
     // Recorded in an effect so it reads the session after the change that made it clean has rendered.
@@ -121,6 +141,19 @@ function AppContent({
       return () => window.removeEventListener('beforeunload', handleBeforeUnload)
     }, [])
 
+    // Back/Forward onto another match's workspace would replace the clip, so ask first. In-app links
+    // that switch matches (the picker, loading a project) already ask before they navigate.
+    const blocker = useBlocker(({ nextLocation, historyAction }) => {
+      if (historyAction !== 'POP') return false
+      const next = matchPath(ROUTES.workspace, nextLocation.pathname)
+      return next !== null && parseMatchId(next.params.matchId) !== selectedMatchId && hasUnsavedWork()
+    })
+    useEffect(() => {
+      if (blocker.state !== 'blocked') return
+      if (window.confirm(DISCARD_WORK_MESSAGE)) blocker.proceed()
+      else blocker.reset()
+    }, [blocker])
+
     // Clears everything that belongs to the open match before a different one loads, including the
     // annotations and insights tracks, which would otherwise carry over onto the new match.
     const resetMatchData = () => {
@@ -132,6 +165,29 @@ function AppContent({
       handleAnnotationUpdate()
       markWorkSaved()
     }
+
+    // A workspace URL for a match that is not open (a refresh, a shared link, Back/Forward) downloads
+    // and opens that match. Picking a match in the app opens it before navigating, so this does nothing then.
+    useEffect(() => {
+      if (urlMatchId === null || urlMatchId === selectedMatchId) return
+      // Set by the cleanup when the URL moves on, so a slow download does not open a match no longer asked for.
+      let cancelled = false
+      setUrlMatchError(null)
+
+      new MatchDataManager().downloadMatchData(urlMatchId)
+        .then(() => {
+          if (cancelled) return
+          resetMatchData()
+          selectMatch(urlMatchId)
+        })
+        .catch(() => {
+          if (!cancelled) setUrlMatchError(urlMatchId)
+        })
+      return () => {
+        cancelled = true
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [urlMatchId, selectedMatchId])
 
     useEffect(() => {
       const root = document.documentElement
@@ -294,7 +350,12 @@ function AppContent({
 
     const openMatchPicker = () => {
       clearSidebarPanel()
-      setAppView('picker')
+      navigate(ROUTES.picker)
+    }
+
+    const openWorkspace = (matchId: number) => {
+      clearSidebarPanel()
+      navigate(workspacePath(matchId))
     }
 
     return (
@@ -307,17 +368,17 @@ function AppContent({
             <div className="navigation-bar">
               <button
                 type="button"
-                className={`app-header-action ${appView === 'picker' ? 'is-active' : ''}`}
+                className={`app-header-action ${isPickerRoute ? 'is-active' : ''}`}
                 onClick={openMatchPicker}
                 aria-label="Choose game"
               >
                 Choose Game
               </button>
-              {appView === 'picker' && selectedMatchId !== null ? (
+              {isPickerRoute && selectedMatchId !== null ? (
                 <button
                   type="button"
                   className="app-header-action"
-                  onClick={() => setAppView('workspace')}
+                  onClick={() => openWorkspace(selectedMatchId)}
                   aria-label="Back to workspace"
                 >
                   Back to Workspace
@@ -328,10 +389,7 @@ function AppContent({
                 timelineStore={timelineStore}
                 keyMomentsData={keyMomentsData}
                 onResetMatchData={resetMatchData}
-                onOpenWorkspace={() => {
-                  clearSidebarPanel()
-                  setAppView('workspace')
-                }}
+                onOpenWorkspace={openWorkspace}
                 onProjectApplied={() => {
                   handleAnnotationUpdate()
                   markWorkSaved()
@@ -342,9 +400,10 @@ function AppContent({
             </div>
           </header>
 
-          {appView === 'idle' ? <LandingPage onChooseGame={openMatchPicker} /> : null}
+          <Routes>
+          <Route path={ROUTES.landing} element={<LandingPage onChooseGame={openMatchPicker} />} />
 
-          {appView === 'picker' ? (
+          <Route path={ROUTES.picker} element={
             <div className="app-picker-shell">
               <MatchPicker
                 currentMatchId={selectedMatchId}
@@ -355,14 +414,23 @@ function AppContent({
                     resetMatchData()
                     selectMatch(matchId)
                   }
-                  setAppView('workspace')
+                  openWorkspace(matchId)
                 }}
               />
               <FirstClipSteps />
             </div>
-          ) : null}
+          } />
 
-          {appView === 'workspace' ? (
+          <Route path={ROUTES.workspace} element={
+            urlMatchId === null ? (
+              <Navigate to={ROUTES.picker} replace />
+            ) : urlMatchError === urlMatchId ? (
+              <div className="match-info-error">
+                Failed to load match {urlMatchId}. <Link to={ROUTES.picker}>Choose another game</Link>
+              </div>
+            ) : urlMatchId !== selectedMatchId ? (
+              <div className="match-info-loading">Loading match...</div>
+            ) : (
             <div className="workspace-content">
               {metaStatus === 'loading' ? (
                 <div className="match-info-loading">Loading match metadata...</div>
@@ -413,7 +481,11 @@ function AppContent({
               </div>
               <WorkspaceGuide />
             </div>
-          ) : null}
+            )
+          } />
+
+          <Route path="*" element={<Navigate to={ROUTES.landing} replace />} />
+          </Routes>
         </div>
       </StyleConfigProvider>
     )

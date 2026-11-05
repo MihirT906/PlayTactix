@@ -14,3 +14,13 @@
 2026-11-05 07:03:44 | INFO     | playtactix.services.key_moments_service | Key moments computed events=4915
 2026-11-05 07:03:44 | INFO     | playtactix.services.frame_data_service | Returning frames for match_id=1874553
 NoneType: None
+2026-11-05 07:18:13 | INFO     | playtactix.routes.data_routes | Fetching frames match_id=1874553 start=300 end=599
+2026-11-05 07:18:13 | INFO     | playtactix.services.frame_data_service | Reading data files for match_id=1874553
+2026-11-05 07:18:13 | INFO     | playtactix.services.frame_data_service | Filtering frames for match_id=1874553 to range 300-599
+2026-11-05 07:18:13 | INFO     | playtactix.services.frame_data_service | Returning frames for match_id=1874553
+NoneType: None
+2026-11-05 07:19:20 | INFO     | playtactix.routes.data_routes | Fetching frames match_id=1874553 start=600 end=899
+2026-11-05 07:19:20 | INFO     | playtactix.services.frame_data_service | Reading data files for match_id=1874553
+2026-11-05 07:19:20 | INFO     | playtactix.services.frame_data_service | Filtering frames for match_id=1874553 to range 600-899
+2026-11-05 07:19:20 | INFO     | playtactix.services.frame_data_service | Returning frames for match_id=1874553
+NoneType: None

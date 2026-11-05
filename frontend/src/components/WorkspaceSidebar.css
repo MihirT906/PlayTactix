@@ -12,6 +12,27 @@
   min-width: 120px;
 }
 
+.settings-sidebar.is-open {
+  flex-direction: column;
+}
+
+.workspace-sidebar-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  font-size: 0.95rem;
+}
+
+.workspace-sidebar-back svg {
+  width: 14px;
+  height: 14px;
+}
+
+.workspace-sidebar-back:focus-visible {
+  outline-offset: 3px;
+}
+
 .settings-sidebar-rail {
   display: flex;
   flex-direction: column;
@@ -380,7 +401,7 @@
 }
 
 .settings-sidebar-panel {
-  width: min(100%, 210px);
+  width: 100%;
   display: flex;
 }
 

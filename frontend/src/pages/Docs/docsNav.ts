@@ -30,11 +30,17 @@ export const DOCS_SECTIONS: DocsNavSection[] = [
     pages: [
       { slug: 'choosing-a-match', title: 'Choosing a match' },
       { slug: 'the-workspace', title: 'The workspace' },
+    ],
+  },
+  {
+    // One page per tool, in the order you use them to build a clip; the tour links into these.
+    title: 'Deep dive',
+    pages: [
       { slug: 'playback-and-the-timeline', title: 'Playback and the timeline' },
+      { slug: 'key-moments', title: 'Search for key moments' },
+      { slug: 'overlays', title: 'Overlays' },
       { slug: 'clips-and-segments', title: 'Clips and segments' },
       { slug: 'annotations', title: 'Annotations' },
-      { slug: 'overlays', title: 'Overlays' },
-      { slug: 'key-moments', title: 'Key moments' },
       { slug: 'saving-and-loading-projects', title: 'Saving and loading projects' },
     ],
   },

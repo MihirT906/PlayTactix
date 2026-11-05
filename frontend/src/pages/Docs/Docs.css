@@ -22,11 +22,14 @@
 /* Page body: the prose under each page's title */
 .docs-body { font-size: 1.05rem; line-height: 1.7; color: var(--color-text-secondary); }
 .docs-body h2 { margin: 2.5rem 0 0.75rem; font-size: 1.5rem; font-weight: 600; line-height: 1.3; color: var(--color-text-primary); }
+.docs-body h3 { margin: 1.75rem 0 0.5rem; font-size: 1.15rem; font-weight: 600; color: var(--color-text-primary); }
 .docs-body p { margin: 0 0 1rem; }
 .docs-body ul, .docs-body ol { margin: 0 0 1rem; padding-left: 1.25rem; }
 .docs-body ol li { margin-bottom: 0.75rem; }
 .docs-body ul.docs-legend { list-style: none; padding-left: 0; }
-.docs-swatch { display: inline-block; width: 0.75rem; height: 0.75rem; margin-right: 0.6rem; border-radius: 50%; vertical-align: baseline; }
+.docs-swatch { display: inline-block; width: 0.75rem; height: 0.75rem; margin-right: 0.6rem; vertical-align: baseline; }
+.docs-swatch--dot { border-radius: 50%; }
+.docs-swatch--bar { width: 1.5rem; height: 0.5rem; border-radius: 2px; vertical-align: middle; }
 .docs-body li { margin-bottom: 0.4rem; }
 .docs-body strong { color: var(--color-text-primary); font-weight: 600; }
 .docs-body a { color: var(--color-accent); }

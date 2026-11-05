@@ -90,7 +90,7 @@ const DOCS: { title: string; body: ReactNode }[] = [
         <p>The play button sits above the pitch, with the current speed shown over it.</p>
         <p>
           The slider covers the whole clip. Red is what has played, dark grey is loaded and ready, light grey is
-          still loading.
+          still loading, and black has no tracking data.
         </p>
         <p>The label on the right shows the frame in the match and the frame in your clip.</p>
       </>

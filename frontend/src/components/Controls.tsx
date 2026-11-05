@@ -4,6 +4,7 @@ import AnnotationStore from '../services/AnnotationStore-optimized'
 import { FaPlay, FaPause } from 'react-icons/fa'
 import { RiSlowDownLine, RiSpeedUpLine } from "react-icons/ri";
 import { formatClock, matchClockSecondsAt } from '../services/matchClock'
+import { SLIDER_COLORS } from '../constants/sliderColors'
 import type { MatchData } from '../types/MatchDataInterfaces'
 
 interface ControlsProps {
@@ -54,11 +55,11 @@ const buildTrackGradient = (
   const colorAt = (percent: number): string => {
     const frame = clipRange.start + (percent / 100) * totalLength
     const isMissing = missingRanges.some(({ start, end }) => frame >= start && frame < end + 1)
-    if (isMissing) return 'var(--controls-slider-missing, #6b6b6b)'
-    if (frame < clipFrame) return 'var(--controls-slider-progress, red)'
+    if (isMissing) return `var(--controls-slider-missing, ${SLIDER_COLORS.missing})`
+    if (frame < clipFrame) return `var(--controls-slider-progress, ${SLIDER_COLORS.played})`
     const isCached = cachedRanges.some(({ start, end }) => frame >= start && frame < end + 1)
-    if (isCached) return 'var(--controls-slider-cached, darkgray)'
-    return 'var(--controls-slider-track, lightgray)'
+    if (isCached) return `var(--controls-slider-cached, ${SLIDER_COLORS.loaded})`
+    return `var(--controls-slider-track, ${SLIDER_COLORS.loading})`
   }
 
   const stops: string[] = []

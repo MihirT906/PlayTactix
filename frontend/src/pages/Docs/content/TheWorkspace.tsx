@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { APP_CONFIG } from '../../../config'
 import { docsPagePath } from '../docsNav'
+import Legend from './Legend'
 
 const { events } = APP_CONFIG
 
@@ -28,14 +29,7 @@ export default function TheWorkspace() {
         A match opens on its first two minutes. Press play and watch for a while to get a feel for it. As the play
         unfolds, markers show what the players are doing:
       </p>
-      <ul className="docs-legend">
-        {PITCH_MARKERS.map((marker) => (
-          <li key={marker.name}>
-            <span className="docs-swatch" style={{ background: marker.color }} aria-hidden="true" />
-            <strong>{marker.name}</strong>: {marker.meaning}
-          </li>
-        ))}
-      </ul>
+      <Legend items={PITCH_MARKERS} />
       <p>
         Change their colours or hide them in <strong>Settings</strong>.
       </p>

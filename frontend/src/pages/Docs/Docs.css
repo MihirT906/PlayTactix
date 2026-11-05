@@ -54,3 +54,16 @@
 .docs-cta { display: inline-flex; align-items: center; gap: 0.6rem; padding: 0.7rem 1.3rem; background: var(--color-accent); color: var(--color-text-inverse); font-size: 1.05rem; font-weight: 600; text-decoration: none; transition: background 0.2s ease; }
 .docs-cta:hover { background: color-mix(in srgb, var(--color-accent) 85%, white); }
 .docs-cta:focus-visible { outline: 2px solid var(--focus-outline-color); outline-offset: 4px; }
+.docs-cta-secondary { display: inline-flex; align-items: center; padding: 0.7rem 0.5rem; color: var(--color-text-primary); font-size: 1.05rem; font-weight: 600; text-decoration: none; }
+.docs-cta-secondary:hover { color: var(--color-accent); }
+.docs-cta-secondary:focus-visible { outline: 2px solid var(--focus-outline-color); outline-offset: 4px; }
+
+/* Quick links on the docs home: two across, one on narrow screens. */
+.docs-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; list-style: none; margin: 0; padding: 0; }
+@media (max-width: 40rem) { .docs-cards { grid-template-columns: 1fr; } }
+.docs-card { display: flex; flex-direction: column; gap: 0.5rem; height: 100%; box-sizing: border-box; padding: 1.25rem 1.4rem; background: var(--surface-subtle-background); border: 1px solid var(--surface-subtle-border); text-decoration: none; transition: background 0.2s ease, border-color 0.2s ease; }
+.docs-card:hover { background: var(--surface-subtle-background-hover); border-color: var(--surface-subtle-border-hover); }
+.docs-card:focus-visible { outline: 2px solid var(--focus-outline-color); outline-offset: 2px; }
+.docs-card-title { display: flex; align-items: center; gap: 0.6rem; color: var(--color-text-primary); font-size: 1.1rem; font-weight: 600; }
+.docs-card-title svg { color: var(--color-accent); flex-shrink: 0; }
+.docs-card-blurb { color: var(--color-text-muted); line-height: 1.5; }

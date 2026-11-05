@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { FaArrowRight } from 'react-icons/fa'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { APP_CONFIG } from '../../config'
+import DocsHomeCards from './DocsHomeCards'
 import DocsPager from './DocsPager'
 import DocsSidebar from './DocsSidebar'
 import { DOCS_CONTENT } from './content'
@@ -34,7 +35,11 @@ export default function DocsPage() {
               <Link to={docsPagePath('choosing-a-match')} className="docs-cta">
                 Take the tour <FaArrowRight aria-hidden="true" />
               </Link>
+              <Link to={docsPagePath('what-is-tappd')} className="docs-cta-secondary">
+                What is {APP_CONFIG.brand.title}?
+              </Link>
             </div>
+            <DocsHomeCards />
           </>
         )}
         {Content ? (

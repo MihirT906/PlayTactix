@@ -50,8 +50,8 @@ function WorkspaceSidebar({
   return (
     <aside className={`left-panel settings-sidebar ${isSidebarPanelOpen ? 'is-open' : ''}`} aria-label="Settings sidebar">
       <div className="settings-sidebar-rail">
-        <span className="app-kicker workspace-sidebar-kicker">Navigation</span>
-        <nav className="settings-sidebar-nav" aria-label="Navigation">
+        <span className="app-kicker workspace-sidebar-kicker">Tools</span>
+        <nav className="settings-sidebar-nav" aria-label="Tools">
           <button
             type="button"
             className={`app-header-action workspace-sidebar-action ${isSettingsPanelOpen ? 'is-active' : ''}`}
@@ -63,9 +63,6 @@ function WorkspaceSidebar({
             <FaCog aria-hidden="true" />
             <span>Settings</span>
           </button>
-        </nav>
-        <span className="app-kicker workspace-sidebar-kicker">Match</span>
-        <nav className="settings-sidebar-nav" aria-label="Match">
           <button
             type="button"
             className={`app-header-action workspace-sidebar-action ${isSearchPanelOpen ? 'is-active' : ''}`}
@@ -88,9 +85,6 @@ function WorkspaceSidebar({
             <FaStream aria-hidden="true" />
             <span>Insights</span>
           </button>
-        </nav>
-        <span className="app-kicker workspace-sidebar-kicker">Layers</span>
-        <nav className="settings-sidebar-nav" aria-label="Layers">
           <button
             type="button"
             className={`app-header-action workspace-sidebar-action ${isOverlaysPanelOpen ? 'is-active' : ''}`}
@@ -104,7 +98,8 @@ function WorkspaceSidebar({
           </button>
         </nav>
         <span className="app-kicker workspace-sidebar-kicker">Annotations</span>
-        {areToolsLocked ? <span className="workspace-sidebar-note" role="status">Pause to use tools</span> : null}
+        {areToolsLocked ? <span className="workspace-sidebar-note" role="status">Pause to annotate</span> : null}
+        <nav className="settings-sidebar-nav workspace-sidebar-nav--annotations" aria-label="Annotations">
           <button
             type="button"
             disabled={areToolsLocked}
@@ -188,6 +183,7 @@ function WorkspaceSidebar({
             <FaEraser aria-hidden="true" />
             <span>Erase</span>
           </button>
+        </nav>
       </div>
       {isSettingsPanelOpen ? (
         <div id="settings-sidebar-panel" className="settings-sidebar-panel">

@@ -43,6 +43,25 @@
   gap: 10px;
 }
 
+.workspace-sidebar-nav--annotations {
+  gap: 6px;
+}
+
+.workspace-sidebar-nav--annotations .workspace-sidebar-action {
+  gap: 8px;
+}
+
+.workspace-sidebar-nav--annotations .workspace-sidebar-action svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* Right padding matches the icon plus gap, so the label centers on the button, not the space after the icon. */
+.workspace-sidebar-nav--annotations .workspace-sidebar-action span {
+  text-align: center;
+  padding-right: 23px;
+}
+
 .workspace-sidebar-action {
   display: inline-flex;
   align-items: center;
@@ -73,12 +92,12 @@
   --pf-color: #C43568;
   --pf-color-glow: rgba(196, 53, 104, 0.4);
 
-  padding: 7px 12px;
+  padding: 4px 10px;
   border-radius: 0;
   border: 1px solid #C43568;
   background: transparent;
   color: #C43568;
-  font-size: 1rem;
+  font-size: 0.85rem;
   font-weight: 600;
   letter-spacing: 0.01em;
   transition:
@@ -116,12 +135,12 @@
   --dl-color: #E8702F;
   --dl-color-glow: rgba(232, 112, 47, 0.4);
 
-  padding: 7px 12px;
+  padding: 4px 10px;
   border-radius: 0;
   border: 1px solid #E8702F;
   background: transparent;
   color: #E8702F;
-  font-size: 1rem;
+  font-size: 0.85rem;
   font-weight: 600;
   letter-spacing: 0.01em;
   transition:
@@ -159,12 +178,12 @@
   --dr-color: #3F8CE8;
   --dr-color-glow: rgba(63, 140, 232, 0.4);
 
-  padding: 7px 12px;
+  padding: 4px 10px;
   border-radius: 0;
   border: 1px solid #3F8CE8;
   background: transparent;
   color: #3F8CE8;
-  font-size: 1rem;
+  font-size: 0.85rem;
   font-weight: 600;
   letter-spacing: 0.01em;
   transition:
@@ -202,12 +221,12 @@
   --dls-color: #4CAF50;
   --dls-color-glow: rgba(76, 175, 80, 0.4);
 
-  padding: 7px 12px;
+  padding: 4px 10px;
   border-radius: 0;
   border: 1px solid #4CAF50;
   background: transparent;
   color: #4CAF50;
-  font-size: 1rem;
+  font-size: 0.85rem;
   font-weight: 600;
   letter-spacing: 0.01em;
   transition:
@@ -245,12 +264,12 @@
   --da-color: #B388FF;
   --da-color-glow: rgba(179, 136, 255, 0.4);
 
-  padding: 7px 12px;
+  padding: 4px 10px;
   border-radius: 0;
   border: 1px solid #B388FF;
   background: transparent;
   color: #B388FF;
-  font-size: 1rem;
+  font-size: 0.85rem;
   font-weight: 600;
   letter-spacing: 0.01em;
   transition:
@@ -288,12 +307,12 @@
   --ts-color: #4DD0E1;
   --ts-color-glow: rgba(77, 208, 225, 0.4);
 
-  padding: 7px 12px;
+  padding: 4px 10px;
   border-radius: 0;
   border: 1px solid #4DD0E1;
   background: transparent;
   color: #4DD0E1;
-  font-size: 1rem;
+  font-size: 0.85rem;
   font-weight: 600;
   letter-spacing: 0.01em;
   transition:
@@ -331,12 +350,12 @@
   --es-color: #FFFFFF;
   --es-color-glow: rgba(255, 255, 255, 0.4);
 
-  padding: 7px 12px;
+  padding: 4px 10px;
   border-radius: 0;
   border: 1px solid #FFFFFF;
   background: transparent;
   color: #FFFFFF;
-  font-size: 1rem;
+  font-size: 0.85rem;
   font-weight: 600;
   letter-spacing: 0.01em;
   transition:

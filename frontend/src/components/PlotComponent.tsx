@@ -5,7 +5,6 @@ import AnnotationStore from '../services/AnnotationStore-optimized'
 import type { Event, FrameData } from '../types/FrameDataInterfaces'
 import { APP_CONFIG, SELECTED_POINTS_OPACITY } from '../config'
 // Import the background image
-import backgroundImage from '../assets/background_image.png';
 import type { MatchData } from '../types/MatchDataInterfaces'
 import { useStyleConfig } from '../context/StyleConfigContext'
 import { useMatchSession } from '../context/MatchSessionContext'
@@ -74,7 +73,7 @@ const PITCHKIT_STYLE = {
   '--pitch-line-width': '1.5',
 } as React.CSSProperties
 
-// Layered beneath the Plotly plot when PitchKit draws the pitch.
+// Layered beneath the Plotly plot, with the PitchKit pitch on top.
 const BACKDROP_STYLE: React.CSSProperties = { position: 'absolute', inset: 0, pointerEvents: 'none', background: PLOT_BACKGROUND }
 const BACKDROP_PLOT_AREA_STYLE: React.CSSProperties = { position: 'absolute', inset: PLOT_MARGIN, background: PLOT_BACKGROUND }
 
@@ -167,7 +166,7 @@ interface PlotComponentProps {
 
 const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, matchData, frameData, matchEvents, annotationStore, onAnnotationUpdate, annotationVersion, highlightedEvent }) => {
   const plotConfig = APP_CONFIG.plot
-  const { homeTeamColor, awayTeamColor, eventStyles, teamVisibility, eventVisibility, pitchRenderer } = useStyleConfig()
+  const { homeTeamColor, awayTeamColor, eventStyles, teamVisibility, eventVisibility } = useStyleConfig()
   const { session, resources } = useMatchSession()
   const [firstPoint, setFirstPoint] = useState<number | null>(null) // First point selected when drawing a line between two players
   // The team shape being built in 'Team Shape' mode: the players clicked so far and, once there are enough to draw, its key in the store
@@ -197,7 +196,6 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
   dragDepsRef.current = { frameData, isPlaying, positionOverrides, editMode: session.ui.editMode, annotationStore, onAnnotationUpdate }
   // What a click on the plot can select, and the mark selected to edit, for the same handlers.
   const selectionRef = useRef<{ targets: HitTarget[]; selectedMark: EditableMark | null }>({ targets: [], selectedMark: null })
-  const image_src = backgroundImage; // Set the background image source
   // A type can have several segments on the clip; it shows when any of them covers this frame.
   const isPitchBackgroundActive = findOverlayAt(session.playback.clip, 'pitch', clipFrame) !== undefined
   const isPitchControlActive = findOverlayAt(session.playback.clip, 'pitch_control', clipFrame) !== undefined
@@ -208,7 +206,6 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
   // Annotation tools only work while paused: the selected tool is suspended during playback and back on pause.
   const selectedTool = session.ui.editMode
   const editMode = isPlaying ? null : selectedTool
-  const usePitchKit = pitchRenderer === 'pitchkit'
 
   // Padding that places the PitchKit pitch exactly where Plotly's axes put the same metres.
   const pitchKitProps = useMemo(() => {
@@ -1022,23 +1019,21 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
   return (
     <div className="plot-container">
       <div style={{ position: 'relative', display: 'flex' }}>
-        {usePitchKit && (
-          // Plotly's own backgrounds are transparent in this mode, so the same tints are painted here, under the pitch.
-          <div style={BACKDROP_STYLE}>
-            <div style={BACKDROP_PLOT_AREA_STYLE} />
-            {isPitchBackgroundActive && (
-              <Pitch
-                type="skillcorner"
-                width={PLOT_WIDTH}
-                height={PLOT_HEIGHT}
-                dimensions={pitchKitProps.dimensions}
-                padding={pitchKitProps.padding}
-                appearance={{ stripes: true }}
-                style={PITCHKIT_STYLE}
-              />
-            )}
-          </div>
-        )}
+        {/* Plotly's own backgrounds are transparent, so the tints are painted here, under the pitch. */}
+        <div style={BACKDROP_STYLE}>
+          <div style={BACKDROP_PLOT_AREA_STYLE} />
+          {isPitchBackgroundActive && (
+            <Pitch
+              type="skillcorner"
+              width={PLOT_WIDTH}
+              height={PLOT_HEIGHT}
+              dimensions={pitchKitProps.dimensions}
+              padding={pitchKitProps.padding}
+              appearance={{ stripes: true }}
+              style={PITCHKIT_STYLE}
+            />
+          )}
+        </div>
         {(voronoiPoints.length > 0 || passNetworkLines.length > 0 || sequenceTrail.carries.length > 0 || sequenceTrail.passes.length > 0 || eventMap.passes.length > 0 || eventMap.movements.length > 0) && (
           // Voronoi cells, the pass network, sequence trails and the event map sit on their own see-through pitch beneath the Plotly plot, so players stay on top.
           <Pitch
@@ -1166,29 +1161,13 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
             width: PLOT_WIDTH,
             height: PLOT_HEIGHT,
             margin: { l: PLOT_MARGIN, r: PLOT_MARGIN, t: PLOT_MARGIN, b: PLOT_MARGIN },
-            paper_bgcolor: usePitchKit ? 'rgba(0, 0, 0, 0)' : PLOT_BACKGROUND,
-            plot_bgcolor: usePitchKit ? 'rgba(0, 0, 0, 0)' : PLOT_BACKGROUND,
+            paper_bgcolor: 'rgba(0, 0, 0, 0)',
+            plot_bgcolor: 'rgba(0, 0, 0, 0)',
             showlegend: false,
             hovermode: 'closest',
             hoverdistance: 1,
             dragmode: 'select',
             annotations: passOptionLabels,
-            images: isPitchBackgroundActive && !usePitchKit
-              ? [
-                  {
-                    source: image_src,
-                    xref: 'x',
-                    yref: 'y',
-                    x: -X_HALF_RANGE,
-                    y: Y_HALF_RANGE,
-                    sizex: 2 * X_HALF_RANGE,
-                    sizey: 2 * Y_HALF_RANGE,
-                    layer: 'below',
-                    opacity: 0.4,
-                    sizing: 'stretch',
-                  },
-                ]
-              : [],
           }}
 
           config={{

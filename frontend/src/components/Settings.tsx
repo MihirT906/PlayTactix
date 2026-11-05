@@ -2,7 +2,7 @@ import React, { useId, useRef } from "react";
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import "./Settings.css";
 import type { MatchData } from '../types/MatchDataInterfaces';
-import { useStyleConfig, type PitchRenderer } from '../context/StyleConfigContext';
+import { useStyleConfig } from '../context/StyleConfigContext';
 
 
 
@@ -58,11 +58,6 @@ const SettingsRow: React.FC<SettingsRowProps> = ({ label, color, visible, onChan
     );
 };
 
-const PITCH_RENDERER_OPTIONS: { value: PitchRenderer; label: string }[] = [
-    { value: 'image', label: 'Image' },
-    { value: 'pitchkit', label: 'PitchKit' },
-];
-
 const Settings: React.FC<{ matchData: MatchData | null }> = ({ matchData }) => {
     const {
         homeTeamColor,
@@ -75,8 +70,6 @@ const Settings: React.FC<{ matchData: MatchData | null }> = ({ matchData }) => {
         setEventStyleColor,
         setTeamVisibility,
         setEventVisibility,
-        pitchRenderer,
-        setPitchRenderer,
     } = useStyleConfig();
 
     return (
@@ -93,25 +86,6 @@ const Settings: React.FC<{ matchData: MatchData | null }> = ({ matchData }) => {
                 <SettingsRow label={'On Ball Engagement'} color={eventStyles.onBallEngagement.color} visible={eventVisibility.onBallEngagement} onChange={(color) => setEventStyleColor('onBallEngagement', color)} onToggleVisibility={(visible) => setEventVisibility('onBallEngagement', visible)}/>
                 <SettingsRow label={'Off Ball Runs'} color={eventStyles.offBallRun.color} visible={eventVisibility.offBallRun} onChange={(color) => setEventStyleColor('offBallRun', color)} onToggleVisibility={(visible) => setEventVisibility('offBallRun', visible)}/>
 
-            </div>
-            <div className="settings-box settings-box--flat">
-                <div className="settings-section-heading">Pitch</div>
-                <div className="settings-row">
-                    <div className="settings-row-label">Pitch Background</div>
-                    <div className="settings-row-control settings-segmented" role="group" aria-label="Pitch background renderer">
-                        {PITCH_RENDERER_OPTIONS.map((option) => (
-                            <button
-                                key={option.value}
-                                type="button"
-                                className="settings-segmented-button"
-                                aria-pressed={pitchRenderer === option.value}
-                                onClick={() => setPitchRenderer(option.value)}
-                            >
-                                {option.label}
-                            </button>
-                        ))}
-                    </div>
-                </div>
             </div>
         </div>
     );

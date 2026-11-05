@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom'
 import { APP_CONFIG } from '../../config'
-import FirstClipSteps from '../../components/FirstClipSteps'
 import { DOCS_HOME_PATH } from '../Docs/docsNav'
 import ChalkboardPlay from './ChalkboardPlay'
 import './LandingPage.css'
@@ -69,7 +68,6 @@ export default function LandingPage({ onChooseGame }: LandingPageProps) {
             <ChalkboardPlay className="landing-art" />
           </div>
         </div>
-        <FirstClipSteps />
       </div>
 
       <section className="landing-section">

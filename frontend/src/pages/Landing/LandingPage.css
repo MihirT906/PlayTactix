@@ -6,7 +6,7 @@
 }
 .landing-main { padding-top: 3rem; }
 .landing-intro { padding-bottom: 3rem; }
-/* Copy on the left, the chalkboard sketch in whatever room is left before the steps column */
+/* Copy on the left, the chalkboard sketch on the right */
 .landing-body { display: grid; grid-template-columns: minmax(0, 1fr) clamp(15rem, 24vw, 30rem); column-gap: 3rem; align-items: center; }
 .landing-art { width: 100%; height: auto; justify-self: center; }
 @media (max-width: 80rem) {
@@ -28,8 +28,6 @@
 .landing-card { background: var(--surface-subtle-background); border-top: 1px solid var(--surface-subtle-border); border-bottom: 1px solid var(--surface-subtle-border); border-radius: 0; box-shadow: var(--surface-subtle-shadow); padding: 0.85rem 1rem; }
 .landing-card h3 { margin: 0 0 0.4rem; font-size: 1.05rem; font-weight: 600; letter-spacing: 0.01em; color: var(--color-text-primary); }
 .landing-card p { margin: 0; font-size: 0.94rem; line-height: 1.5; color: var(--color-text-muted); }
-
-.landing-top { position: relative; --first-clip-steps-offset: calc(3rem + var(--landing-headline-size) * 0.175 - 0.32rem); }
 
 .chalkboard { fill: none; stroke-linecap: round; stroke-linejoin: round; }
 .chalkboard-lines { stroke: rgba(255, 255, 255, 0.78); stroke-width: 3; }

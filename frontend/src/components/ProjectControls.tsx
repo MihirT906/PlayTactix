@@ -102,7 +102,6 @@ export default function ProjectControls({
             eventStyles: style.eventStyles,
             teamVisibility: style.teamVisibility,
             eventVisibility: style.eventVisibility,
-            pitchRenderer: style.pitchRenderer,
           },
           annotationStore,
           timelineStore,

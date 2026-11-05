@@ -1,16 +1,7 @@
 .app-shell {
-  /* Full width, with a right column reserved for the getting-started steps */
   --shell-gutter: clamp(24px, 5vw, 96px);
-  --steps-width: 15rem;
-  --steps-gap: 2.5rem;
   margin: 0 auto;
-  padding: 12px calc(var(--shell-gutter) + var(--steps-width) + var(--steps-gap)) 12px var(--shell-gutter);
-}
-
-@media (max-width: 60rem) {
-  .app-shell {
-    padding-right: var(--shell-gutter);
-  }
+  padding: 12px var(--shell-gutter);
 }
 
 .app-header {
@@ -130,16 +121,9 @@
   width: 100%;
 }
 
-.workspace-content {
-  position: relative;
-  --first-clip-steps-offset: 2.1rem;
-}
-
 .app-picker-shell {
-  position: relative;
   width: 100%;
   margin-top: 22px;
-  --first-clip-steps-offset: 0.53rem;
 }
 
 .app-container--settings-open {

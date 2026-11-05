@@ -19,17 +19,27 @@ export function serializeProject({ session, style, annotationStore, timelineStor
     format: PROJECT_FORMAT,
     schemaVersion: SCHEMA_VERSION,
     savedAt: new Date().toISOString(),
-    match: { id: session.match.id, source: 'skillcorner-github' },
+    // The app only opens SkillCorner soccer matches so far, so the open match is always one.
+    match: { provider: 'skillcorner', sport: 'soccer', id: String(session.match.id) },
     clip: session.playback.clip,
-    eventMap: {
-      filters: session.overlays.eventMapFilters,
-      excludedIds: session.overlays.eventMapExcludedIds,
-    },
-    autoDisappearEvents: session.overlays.autoDisappearEvents,
-    passNetwork: session.overlays.passNetworkConfig,
     annotations: annotationStore.getAllAnnotations(),
-    timelines: timelineStore.getAll(),
-    style,
+    style: {
+      homeTeamColor: style.homeTeamColor,
+      awayTeamColor: style.awayTeamColor,
+      teamVisibility: style.teamVisibility,
+    },
+    analysis: {
+      sport: 'soccer',
+      eventMap: {
+        filters: session.overlays.eventMapFilters,
+        excludedIds: session.overlays.eventMapExcludedIds,
+      },
+      autoDisappearEvents: session.overlays.autoDisappearEvents,
+      passNetwork: session.overlays.passNetworkConfig,
+      timelines: timelineStore.getAll(),
+      eventStyles: style.eventStyles,
+      eventVisibility: style.eventVisibility,
+    },
   }
 }
 
@@ -54,7 +64,7 @@ export function downloadProject(project: SavedProject): void {
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
-  link.download = `playtactix-${project.match.id}-${project.savedAt.slice(0, 10)}.playtactix.json`
+  link.download = `tappd-${project.match.sport}-${project.match.id}-${project.savedAt.slice(0, 10)}.tappd.json`
   document.body.appendChild(link)
   link.click()
   link.remove()

@@ -57,16 +57,17 @@ export default function ProjectControls({
     session.match.metaStatus === 'ready' && session.match.keyMomentStatus === 'ready' && keyMomentsData !== null
 
   const apply = (project: SavedProject) => {
+    const { analysis } = project
     restoreSession({
       clip: project.clip,
-      eventMapFilters: project.eventMap.filters,
-      eventMapExcludedIds: project.eventMap.excludedIds,
-      autoDisappearEvents: project.autoDisappearEvents,
-      passNetworkConfig: project.passNetwork,
+      eventMapFilters: analysis.eventMap.filters,
+      eventMapExcludedIds: analysis.eventMap.excludedIds,
+      autoDisappearEvents: analysis.autoDisappearEvents,
+      passNetworkConfig: analysis.passNetwork,
     })
     annotationStore.load(project.annotations, 0)
-    timelineStore.load(project.timelines)
-    style.setAllStyle(project.style)
+    timelineStore.load(analysis.timelines)
+    style.setAllStyle({ ...project.style, eventStyles: analysis.eventStyles, eventVisibility: analysis.eventVisibility })
     onProjectApplied()
 
     setNotice({ kind: 'info', text: 'Project loaded.' })
@@ -74,7 +75,7 @@ export default function ProjectControls({
 
   // Finishes a load once the referenced match's metadata and key moments have arrived.
   useEffect(() => {
-    if (!pending || session.match.id !== pending.match.id) return
+    if (!pending || String(session.match.id) !== pending.match.id) return
 
     if (session.match.metaStatus === 'error' || session.match.keyMomentStatus === 'error') {
       setPending(null)
@@ -124,20 +125,27 @@ export default function ProjectControls({
       return
     }
 
-    setBusy(true)
-    if (session.match.id === project.match.id && matchReady) {
-      // Same match is already open with its data loaded, so apply directly.
-      apply(project)
-      setBusy(false)
-      onOpenWorkspace(project.match.id)
+    // The rest of the app still identifies a match by SkillCorner's numeric id.
+    const matchId = Number(project.match.id)
+    if (!Number.isInteger(matchId)) {
+      setNotice({ kind: 'error', text: 'This project refers to a match id that could not be read.' })
       return
     }
 
-    await new MatchDataManager().downloadMatchData(project.match.id)
+    setBusy(true)
+    if (session.match.id === matchId && matchReady) {
+      // Same match is already open with its data loaded, so apply directly.
+      apply(project)
+      setBusy(false)
+      onOpenWorkspace(matchId)
+      return
+    }
+
+    await new MatchDataManager().downloadMatchData(matchId)
     onResetMatchData()
-    selectMatch(project.match.id)
+    selectMatch(matchId)
     setPending(project)
-    onOpenWorkspace(project.match.id)
+    onOpenWorkspace(matchId)
   }
 
   return (

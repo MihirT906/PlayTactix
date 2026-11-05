@@ -1,255 +1,169 @@
-import type { Clip } from './ClipInterfaces'
+import { z } from 'zod'
+import { OVERLAY_SEGMENT_LABELS, type Clip, type OverlaySegmentKind } from './ClipInterfaces'
 import type { TimelineOption } from './TimelineOption'
-import { DEFAULT_EVENT_MAP_FILTERS, EVENT_MAP_KINDS, type EventMapFilters } from '../plot/overlays/eventMapOverlay'
-import { DEFAULT_PASS_NETWORK_CONFIG, PASS_NETWORK_WINDOWS, type PassNetworkConfig } from '../plot/overlays/passNetworkOverlay'
-import { CARRY_COLUMNS, getFilterTimelineLabel } from '../services/timelineEvents'
+import { EVENT_MAP_KINDS, type EventMapFilters } from '../plot/overlays/eventMapOverlay'
+import { PASS_NETWORK_WINDOWS, type PassNetworkConfig } from '../plot/overlays/passNetworkOverlay'
+import { APP_CONFIG } from '../config'
+import { getLogger } from '../services/logger'
 
-export const PROJECT_FORMAT = 'playtactix-project'
-export const SCHEMA_VERSION = 7
+const logger = getLogger('SavedProject')
 
-export type SavedAnnotation = {
-  key: string
-  type: string
-  frameStart: number
-  frameEnd: number | null
-  shape: Record<string, unknown>
-}
+// Identifies the file type, independent of the brand's display name so a rename doesn't orphan saved files.
+export const PROJECT_FORMAT = 'tappd.project'
+export const SCHEMA_VERSION = 1
 
-export type SavedStyle = {
-  homeTeamColor: string
-  awayTeamColor: string
-  eventStyles: Record<string, { color: string; width: number }>
-  teamVisibility: Record<string, boolean>
-  eventVisibility: Record<string, boolean>
-}
+// Each schema below is both the runtime check for a section of the file and, through z.infer, its type.
+// A section that mirrors an app type is tied to it with `satisfies`, so changing the app type without
+// the schema fails the build.
+
+// The provider and sport pairs this build can open. Supporting a new one starts with an entry here.
+const MatchSourceSchema = z.union([z.object({ provider: z.literal('skillcorner'), sport: z.literal('soccer') })])
+
+// Which match a project refers to. The transport (GitHub, an API, a cache) is left out: it is how
+// this build fetches the match, not part of which match it is.
+const MatchRefSchema = MatchSourceSchema.and(
+  z.object({
+    id: z.string().min(1), // The provider's own match id, kept as a string whatever form the provider uses
+  })
+)
+
+// The labels are keyed by every overlay kind, so their keys are the full list.
+const OVERLAY_SEGMENT_KINDS = Object.keys(OVERLAY_SEGMENT_LABELS) as OverlaySegmentKind[]
+
+const ClipSchema = z.object({
+  length: z.number(),
+  matchSegments: z.array(
+    z.object({
+      matchId: z.number().nullable(),
+      clipStart: z.number(),
+      clipEnd: z.number(),
+      sourceFrameStart: z.number(),
+      sourceFrameEnd: z.number(),
+      isDefault: z.boolean().optional(),
+    })
+  ),
+  overlaySegments: z.array(
+    z.object({
+      type: z.enum(OVERLAY_SEGMENT_KINDS),
+      clipStart: z.number(),
+      clipEnd: z.number(),
+    })
+  ),
+}) satisfies z.ZodType<Clip>
+
+const EventMapFiltersSchema = z.object({
+  scope: z.enum(['clip', 'match']),
+  kinds: z.array(z.enum(EVENT_MAP_KINDS)),
+  teamId: z.number().nullable(),
+  playerIds: z.array(z.number()),
+  ledTo: z.enum(['any', 'shot', 'goal']),
+  channels: z.array(z.string()),
+  thirds: z.array(z.string()),
+  positions: z.array(z.string()),
+  runTypes: z.array(z.string()),
+  carryStartTypes: z.array(z.string()),
+  carryEndTypes: z.array(z.string()),
+}) satisfies z.ZodType<EventMapFilters>
+
+const PassNetworkSchema = z.object({
+  window: z.enum(PASS_NETWORK_WINDOWS),
+  rangeStartMinute: z.number(),
+  rangeEndMinute: z.number(),
+  build: z.enum(['full', 'progressive']),
+  teamId: z.number().nullable(),
+}) satisfies z.ZodType<PassNetworkConfig>
+
+const AnnotationSchema = z.object({
+  key: z.string(),
+  type: z.string(),
+  frameStart: z.number(),
+  frameEnd: z.number().nullable(),
+  shape: z.record(z.string(), z.unknown()),
+})
+
+const TimelineSchema = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('filter'),
+    id: z.string(),
+    label: z.string(),
+    eventType: z.string(),
+    subtypes: z.array(z.string()),
+    splitBySubtype: z.boolean(),
+    heightBy: z.string().nullable().optional(),
+    teamId: z.number().nullable().optional(),
+    playerIds: z.array(z.number()).optional(),
+    hidden: z.boolean().optional(),
+  }),
+  z.object({
+    kind: z.literal('metric'),
+    id: z.string(),
+    label: z.string(),
+    column: z.string(),
+    hidden: z.boolean().optional(),
+  }),
+]) satisfies z.ZodType<TimelineOption>
+
+// Team colours and visibility apply to any sport.
+const TeamStyleSchema = z.object({
+  homeTeamColor: z.string(),
+  awayTeamColor: z.string(),
+  teamVisibility: z.record(z.string(), z.boolean()),
+})
+
+// Everything that only makes sense for soccer: its overlays' settings, its Insights tracks and the
+// styles of its event types.
+const SoccerAnalysisSchema = z.object({
+  sport: z.literal('soccer'),
+  eventMap: z.object({
+    filters: EventMapFiltersSchema,
+    excludedIds: z.array(z.string()),
+  }),
+  autoDisappearEvents: z.boolean(),
+  passNetwork: PassNetworkSchema,
+  timelines: z.array(TimelineSchema),
+  eventStyles: z.record(z.string(), z.object({ color: z.string(), width: z.number() })),
+  eventVisibility: z.record(z.string(), z.boolean()),
+})
+
+// One entry per sport. Supporting a new sport adds its schema here, leaving the rest of the file as it is.
+const AnalysisSchema = z.discriminatedUnion('sport', [SoccerAnalysisSchema])
 
 // Match data (frames, events, metadata) is deliberately not embedded: the file only
 // references the match, and loading re-downloads it through the normal flow.
-export type SavedProject = {
-  format: typeof PROJECT_FORMAT
-  schemaVersion: number
-  savedAt: string
-  match: {
-    id: number
-    source: 'skillcorner-github'
-  }
-  clip: Clip
-  eventMap: {
-    filters: EventMapFilters
-    excludedIds: string[]
-  }
-  autoDisappearEvents: boolean
-  passNetwork: PassNetworkConfig
-  annotations: SavedAnnotation[]
-  timelines: TimelineOption[]
-  style: SavedStyle
-}
+const ProjectSchema = z
+  .object({
+    format: z.literal(PROJECT_FORMAT),
+    schemaVersion: z.literal(SCHEMA_VERSION),
+    savedAt: z.string(),
+    match: MatchRefSchema,
+    clip: ClipSchema,
+    annotations: z.array(AnnotationSchema),
+    style: TeamStyleSchema,
+    analysis: AnalysisSchema,
+  })
+  .refine((project) => project.analysis.sport === project.match.sport, {
+    message: 'The analysis is for a different sport than the match',
+    path: ['analysis', 'sport'],
+  })
+
+export type SavedMatchRef = z.infer<typeof MatchRefSchema>
+export type SavedAnnotation = z.infer<typeof AnnotationSchema>
+export type SavedSoccerAnalysis = z.infer<typeof SoccerAnalysisSchema>
+export type SavedProject = z.infer<typeof ProjectSchema>
+
+// Everything the style context restores. The file keeps the team part and the event part apart,
+// since only the event part depends on the sport.
+export type SavedStyle = z.infer<typeof TeamStyleSchema> & Pick<SavedSoccerAnalysis, 'eventStyles' | 'eventVisibility'>
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
 
-const isNumber = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value)
-
-function isClip(value: unknown): value is Clip {
-  if (!isObject(value)) return false
-  if (!isNumber(value.length) || !Array.isArray(value.matchSegments) || !Array.isArray(value.overlaySegments)) {
-    return false
-  }
-  return (
-    value.matchSegments.every(
-      (s: unknown) =>
-        isObject(s) &&
-        isNumber(s.clipStart) &&
-        isNumber(s.clipEnd) &&
-        isNumber(s.sourceFrameStart) &&
-        isNumber(s.sourceFrameEnd)
-    ) &&
-    value.overlaySegments.every(
-      (o: unknown) => isObject(o) && typeof o.type === 'string' && isNumber(o.clipStart) && isNumber(o.clipEnd)
-    )
-  )
-}
-
-const isArrayOf = (value: unknown, type: 'string' | 'number'): boolean =>
-  Array.isArray(value) && value.every((entry) => typeof entry === type)
-
-function isEventMap(value: unknown): value is SavedProject['eventMap'] {
-  if (!isObject(value) || !isObject(value.filters) || !isArrayOf(value.excludedIds, 'string')) return false
-  const filters = value.filters
-  return (
-    (filters.scope === 'clip' || filters.scope === 'match') &&
-    Array.isArray(filters.kinds) &&
-    filters.kinds.every((kind: unknown) => (EVENT_MAP_KINDS as unknown[]).includes(kind)) &&
-    (filters.teamId === null || isNumber(filters.teamId)) &&
-    isArrayOf(filters.playerIds, 'number') &&
-    (filters.ledTo === 'any' || filters.ledTo === 'shot' || filters.ledTo === 'goal') &&
-    isArrayOf(filters.channels, 'string') &&
-    isArrayOf(filters.thirds, 'string') &&
-    isArrayOf(filters.positions, 'string') &&
-    isArrayOf(filters.runTypes, 'string') &&
-    isArrayOf(filters.carryStartTypes, 'string') &&
-    isArrayOf(filters.carryEndTypes, 'string')
-  )
-}
-
-function isPassNetwork(value: unknown): value is PassNetworkConfig {
-  return (
-    isObject(value) &&
-    (PASS_NETWORK_WINDOWS as unknown[]).includes(value.window) &&
-    isNumber(value.rangeStartMinute) &&
-    isNumber(value.rangeEndMinute) &&
-    (value.build === 'full' || value.build === 'progressive') &&
-    (value.teamId === null || isNumber(value.teamId))
-  )
-}
-
-function isAnnotation(value: unknown): value is SavedAnnotation {
-  return (
-    isObject(value) &&
-    typeof value.key === 'string' &&
-    typeof value.type === 'string' &&
-    isNumber(value.frameStart) &&
-    (value.frameEnd === null || isNumber(value.frameEnd)) &&
-    isObject(value.shape)
-  )
-}
-
-function isTimeline(value: unknown): value is TimelineOption {
-  return (
-    isObject(value) &&
-    typeof value.id === 'string' &&
-    typeof value.label === 'string' &&
-    (value.kind === 'filter'
-      ? typeof value.eventType === 'string' &&
-        Array.isArray(value.subtypes) &&
-        value.subtypes.every((subtype: unknown) => typeof subtype === 'string') &&
-        typeof value.splitBySubtype === 'boolean' &&
-        (value.teamId == null || isNumber(value.teamId)) &&
-        (value.playerIds === undefined || isArrayOf(value.playerIds, 'number'))
-      : value.kind === 'metric' && typeof value.column === 'string')
-  )
-}
-
-function isStyle(value: unknown): value is SavedStyle {
-  return (
-    isObject(value) &&
-    typeof value.homeTeamColor === 'string' &&
-    typeof value.awayTeamColor === 'string' &&
-    isObject(value.eventStyles) &&
-    isObject(value.teamVisibility) &&
-    isObject(value.eventVisibility)
-  )
-}
-
-// Each entry upgrades a project from version N to N + 1. Add one whenever SCHEMA_VERSION
-// is bumped so files saved by older builds keep loading.
-const MIGRATIONS: Record<number, (raw: Record<string, unknown>) => Record<string, unknown>> = {
-  // v1 filter timelines held a single `column equals value` condition.
-  1: (raw) => ({
-    ...raw,
-    timelines: Array.isArray(raw.timelines) ? raw.timelines.map(migrateV1Timeline) : raw.timelines,
-  }),
-  // v2 held a hand-ticked list of events. The Event Map is now driven by filters, which a list of
-  // ids cannot be turned back into, so an upgraded project opens with an empty map.
-  2: (raw) => {
-    const upgraded: Record<string, unknown> = { ...raw, eventMap: { filters: DEFAULT_EVENT_MAP_FILTERS, excludedIds: [] } }
-    delete upgraded.selectedEventIds
-    return upgraded
-  },
-  // v3 metric tracks charted an event column with a chosen aggregation. None of those graphs is
-  // offered any more (momentum replaced them), so their tracks are dropped.
-  3: (raw) => ({
-    ...raw,
-    timelines: Array.isArray(raw.timelines)
-      ? raw.timelines.filter((timeline) => !isObject(timeline) || timeline.kind !== 'metric')
-      : raw.timelines,
-  }),
-  // v4 could hold a phases of play track, which Insights no longer has, so it is dropped.
-  4: (raw) => ({
-    ...raw,
-    timelines: Array.isArray(raw.timelines)
-      ? raw.timelines.filter((timeline) => !isObject(timeline) || timeline.kind !== 'phases')
-      : raw.timelines,
-  }),
-  // v5 had no pass network, so an upgraded project opens with the default one.
-  5: (raw) => ({ ...raw, passNetwork: DEFAULT_PASS_NETWORK_CONFIG }),
-  // v6 event tracks showed SkillCorner's event types; Insights now shows carries, pass options,
-  // presses and runs.
-  6: (raw) => ({
-    ...raw,
-    timelines: Array.isArray(raw.timelines) ? raw.timelines.map(migrateV6Timeline) : raw.timelines,
-  }),
-}
-
-const V1_ENGAGEMENT_SUBTYPES = ['pressing', 'pressure', 'counter_press', 'recovery_press', 'other']
-
-function migrateV1Timeline(timeline: unknown): unknown {
-  if (!isObject(timeline) || timeline.kind !== 'filter' || !isObject(timeline.condition)) {
-    return timeline
-  }
-
-  const { condition, ...rest } = timeline
-  const value = String(condition.value)
-
-  if (condition.column === 'event_subtype') {
-    // v1 did not record the event type, so it is inferred from the subtype.
-    const eventType = V1_ENGAGEMENT_SUBTYPES.includes(value) ? 'on_ball_engagement' : 'passing_option'
-    return { ...rest, eventType, subtypes: [value], splitBySubtype: false }
-  }
-
-  return { ...rest, eventType: value, subtypes: [], splitBySubtype: false }
-}
-
-const V6_EVENT_TYPES: Record<string, string> = {
-  player_possession: 'carry',
-  passing_option: 'pass_option',
-  on_ball_engagement: 'press',
-  off_ball_run: 'run',
-}
-
-// Each SkillCorner event type becomes its Insights kind, keeping its subtypes. A player possession
-// track becomes a carry track: possessions had no subtypes, and a carry is not sized by the values
-// of the pass it ended with.
-function migrateV6Timeline(timeline: unknown): unknown {
-  if (!isObject(timeline) || timeline.kind !== 'filter' || typeof timeline.eventType !== 'string') return timeline
-
-  const eventType = V6_EVENT_TYPES[timeline.eventType]
-  if (!eventType) return timeline
-
-  const isCarry = eventType === 'carry'
-  const subtypes = isCarry || !Array.isArray(timeline.subtypes) ? [] : (timeline.subtypes as string[])
-  const keepsHeight = !isCarry || (typeof timeline.heightBy === 'string' && CARRY_COLUMNS.includes(timeline.heightBy))
-  return {
-    ...timeline,
-    eventType,
-    subtypes,
-    heightBy: keepsHeight ? timeline.heightBy : null,
-    label: getFilterTimelineLabel(eventType, subtypes),
-  }
-}
-
-export function isSavedProject(value: unknown): value is SavedProject {
-  return (
-    isObject(value) &&
-    value.format === PROJECT_FORMAT &&
-    value.schemaVersion === SCHEMA_VERSION &&
-    isObject(value.match) &&
-    isNumber(value.match.id) &&
-    isClip(value.clip) &&
-    isEventMap(value.eventMap) &&
-    typeof value.autoDisappearEvents === 'boolean' &&
-    isPassNetwork(value.passNetwork) &&
-    Array.isArray(value.annotations) &&
-    value.annotations.every(isAnnotation) &&
-    Array.isArray(value.timelines) &&
-    value.timelines.every(isTimeline) &&
-    isStyle(value.style)
-  )
-}
-
-// Parses untrusted JSON text into a SavedProject, upgrading older versions.
+// Parses untrusted JSON text into a SavedProject.
 // Throws an Error with a user-presentable message on any problem.
+// Only the current version loads: older files are not upgraded while the format is still being refined.
 export function parseProject(text: string): SavedProject {
+  const brand = APP_CONFIG.brand.title
+
   let raw: unknown
   try {
     raw = JSON.parse(text)
@@ -257,25 +171,21 @@ export function parseProject(text: string): SavedProject {
     throw new Error('This file is not valid JSON.')
   }
 
+  // These come ahead of the full check so the commonest mismatches get their own message.
   if (!isObject(raw) || raw.format !== PROJECT_FORMAT) {
-    throw new Error('This file is not a PlayTactix project.')
+    throw new Error(`This file is not a ${brand} project.`)
   }
-  if (!isNumber(raw.schemaVersion)) {
-    throw new Error('This project file has no version.')
+  if (raw.schemaVersion !== SCHEMA_VERSION) {
+    throw new Error(`This project was saved by a different version of ${brand} and can't be opened.`)
   }
-  if (raw.schemaVersion > SCHEMA_VERSION) {
-    throw new Error('This project was saved by a newer version of PlayTactix.')
-  }
-
-  let migrated: Record<string, unknown> = raw
-  for (let version = raw.schemaVersion; version < SCHEMA_VERSION; version++) {
-    const step = MIGRATIONS[version]
-    if (!step) throw new Error(`Cannot upgrade project from version ${version}.`)
-    migrated = { ...step(migrated), schemaVersion: version + 1 }
+  if (isObject(raw.match) && !MatchSourceSchema.safeParse(raw.match).success) {
+    throw new Error(`This project is for a ${String(raw.match.sport)} match from ${String(raw.match.provider)}, which ${brand} can't open yet.`)
   }
 
-  if (!isSavedProject(migrated)) {
+  const result = ProjectSchema.safeParse(raw)
+  if (!result.success) {
+    logger.warn('Project file failed validation', result.error.issues)
     throw new Error('This project file is incomplete or corrupted.')
   }
-  return migrated
+  return result.data
 }

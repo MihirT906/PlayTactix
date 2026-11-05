@@ -4,9 +4,10 @@ import { useStyleConfig } from '../context/StyleConfigContext'
 import type AnnotationStore from '../services/AnnotationStore-optimized'
 import type TimelineStore from '../services/TimelineStore'
 import MatchDataManager from '../services/MatchDataManager'
-import { downloadProject, serializeProject } from '../services/projectSerializer'
-import { parseProject, type SavedProject } from '../types/SavedProject'
+import { downloadProject, restoreProject, serializeProject, type RestoredProject } from '../services/projectSerializer'
+import { parseProject } from '../types/SavedProject'
 import type { KeyMomentsData } from '../types/KeyMomentsDataInterfaces'
+import type { MatchData } from '../types/MatchDataInterfaces'
 import { getLogger } from '../services/logger'
 
 const logger = getLogger('ProjectControls')
@@ -15,6 +16,8 @@ type ProjectControlsProps = {
   annotationStore: AnnotationStore
   timelineStore: TimelineStore
   keyMomentsData: KeyMomentsData | null
+  // The open match's metadata, which names the match in a saved project.
+  matchData: MatchData | null
   // Save only makes sense on the open match's workspace; Load stays available everywhere.
   showSave: boolean
   // Clears the match data App holds locally (metadata, key moments, frames) before a different match loads.
@@ -33,6 +36,7 @@ export default function ProjectControls({
   annotationStore,
   timelineStore,
   keyMomentsData,
+  matchData,
   showSave,
   onResetMatchData,
   onOpenWorkspace,
@@ -43,7 +47,7 @@ export default function ProjectControls({
   const { session, selectMatch, restoreSession } = useMatchSession()
   const style = useStyleConfig()
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [pending, setPending] = useState<SavedProject | null>(null)
+  const [pending, setPending] = useState<RestoredProject | null>(null)
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState<{ kind: 'info' | 'error'; text: string } | null>(null)
 
@@ -56,18 +60,11 @@ export default function ProjectControls({
   const matchReady =
     session.match.metaStatus === 'ready' && session.match.keyMomentStatus === 'ready' && keyMomentsData !== null
 
-  const apply = (project: SavedProject) => {
-    const { analysis } = project
-    restoreSession({
-      clip: project.clip,
-      eventMapFilters: analysis.eventMap.filters,
-      eventMapExcludedIds: analysis.eventMap.excludedIds,
-      autoDisappearEvents: analysis.autoDisappearEvents,
-      passNetworkConfig: analysis.passNetwork,
-    })
+  const apply = (project: RestoredProject) => {
+    restoreSession(project.session)
     annotationStore.load(project.annotations, 0)
-    timelineStore.load(analysis.timelines)
-    style.setAllStyle({ ...project.style, eventStyles: analysis.eventStyles, eventVisibility: analysis.eventVisibility })
+    timelineStore.load(project.timelines)
+    style.setAllStyle(project.style)
     onProjectApplied()
 
     setNotice({ kind: 'info', text: 'Project loaded.' })
@@ -75,12 +72,12 @@ export default function ProjectControls({
 
   // Finishes a load once the referenced match's metadata and key moments have arrived.
   useEffect(() => {
-    if (!pending || String(session.match.id) !== pending.match.id) return
+    if (!pending || session.match.id !== pending.matchId) return
 
     if (session.match.metaStatus === 'error' || session.match.keyMomentStatus === 'error') {
       setPending(null)
       setBusy(false)
-      setNotice({ kind: 'error', text: 'Could not load the match this project refers to.' })
+      setNotice({ kind: 'error', text: `Could not load ${pending.matchLabel ?? 'the match this project refers to'}.` })
       return
     }
 
@@ -97,13 +94,8 @@ export default function ProjectControls({
       downloadProject(
         serializeProject({
           session,
-          style: {
-            homeTeamColor: style.homeTeamColor,
-            awayTeamColor: style.awayTeamColor,
-            eventStyles: style.eventStyles,
-            teamVisibility: style.teamVisibility,
-            eventVisibility: style.eventVisibility,
-          },
+          style,
+          matchData,
           annotationStore,
           timelineStore,
         })
@@ -117,21 +109,15 @@ export default function ProjectControls({
   }
 
   const handleFile = async (file: File) => {
-    let project: SavedProject
+    let project: RestoredProject
     try {
-      project = parseProject(await file.text())
+      project = restoreProject(parseProject(await file.text()))
     } catch (error) {
       setNotice({ kind: 'error', text: error instanceof Error ? error.message : 'Could not read the file.' })
       return
     }
 
-    // The rest of the app still identifies a match by SkillCorner's numeric id.
-    const matchId = Number(project.match.id)
-    if (!Number.isInteger(matchId)) {
-      setNotice({ kind: 'error', text: 'This project refers to a match id that could not be read.' })
-      return
-    }
-
+    const { matchId } = project
     setBusy(true)
     if (session.match.id === matchId && matchReady) {
       // Same match is already open with its data loaded, so apply directly.

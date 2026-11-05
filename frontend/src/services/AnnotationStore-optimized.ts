@@ -37,7 +37,7 @@ function newPlayerFocusKey(): string {
 }
 
 // A team shape needs a triangle at least; fewer players enclose no area.
-const MIN_TEAM_SHAPE_PLAYERS = 3;
+export const MIN_TEAM_SHAPE_PLAYERS = 3;
 
 function samePair(a: number[], b: number[]): boolean {
     const norm = (p: number[]) => [...p].sort((x, y) => x - y).join(',');

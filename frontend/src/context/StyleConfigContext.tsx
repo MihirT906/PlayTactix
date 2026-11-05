@@ -27,6 +27,8 @@ type StyleConfigContextValue = {
 	eventStyles: Record<EventStyleKey, EventStyle>;
 	teamVisibility: VisibilityState<TeamVisibilityKey>;
 	eventVisibility: VisibilityState<EventStyleKey>;
+	// The colours each team follows until the user picks its own: its kit's, or the default without one.
+	kitColors: Record<TeamVisibilityKey, string>;
 	// overlayVisibility: VisibilityState<OverlayVisibilityKey>;
 	setAllStyle: (style: SavedStyle) => void;
 	setHomeTeamColor: (color: string) => void;
@@ -43,6 +45,9 @@ type StyleConfigProviderProps = {
 };
 
 const normalizeColor = (color: string) => color.toUpperCase();
+
+const kitColor = (color: unknown, fallback: string) =>
+	normalizeColor(typeof color === 'string' && color.length > 0 ? color : fallback);
 
 const DEFAULT_STYLE_CONFIG = {
 	homeTeamColor: APP_CONFIG.theme.defaultTeamColors.home,
@@ -90,6 +95,11 @@ export const StyleConfigProvider = ({ children, matchData }: StyleConfigProvider
 	// metadata effect below doesn't clobber restored colours (effect order vs. restore is not guaranteed).
 	const restoredForMatchData = useRef<MatchData | null>(null);
 
+	const kitColors = {
+		home: kitColor(matchData?.home_team_kit?.jersey_color, DEFAULT_STYLE_CONFIG.homeTeamColor),
+		away: kitColor(matchData?.away_team_kit?.jersey_color, DEFAULT_STYLE_CONFIG.awayTeamColor),
+	};
+
 	useEffect(() => {
 		if (matchData !== null && restoredForMatchData.current === matchData) return;
 
@@ -113,11 +123,13 @@ export const StyleConfigProvider = ({ children, matchData }: StyleConfigProvider
 				eventStyles,
 				teamVisibility,
 				eventVisibility,
+				kitColors,
 				// overlayVisibility,
 				setAllStyle: (style) => {
 					restoredForMatchData.current = matchData;
-					setHomeTeamColor(normalizeColor(style.homeTeamColor));
-					setAwayTeamColor(normalizeColor(style.awayTeamColor));
+					// A colour left null follows the kit.
+					setHomeTeamColor(style.homeTeamColor === null ? kitColors.home : normalizeColor(style.homeTeamColor));
+					setAwayTeamColor(style.awayTeamColor === null ? kitColors.away : normalizeColor(style.awayTeamColor));
 					// Merge over defaults so a file missing a key (e.g. a style added later) still works.
 					setEventStyles((current) => {
 						const next: Record<EventStyleKey, EventStyle> = { ...current };

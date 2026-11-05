@@ -406,6 +406,7 @@ function AppContent({
                 annotationStore={annotationStore}
                 timelineStore={timelineStore}
                 keyMomentsData={keyMomentsData}
+                matchData={matchMetaData}
                 showSave={urlMatchId !== null && urlMatchId === selectedMatchId}
                 onResetMatchData={resetMatchData}
                 onOpenWorkspace={openWorkspace}

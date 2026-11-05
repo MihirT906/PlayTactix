@@ -26,7 +26,7 @@ export const DOCS_SECTIONS: DocsNavSection[] = [
     ],
   },
   {
-    title: `Using ${brand}`,
+    title: `${brand} tour`,
     pages: [
       { slug: 'choosing-a-match', title: 'Choosing a match' },
       { slug: 'the-workspace', title: 'The workspace' },
@@ -56,5 +56,16 @@ export const DOCS_SECTIONS: DocsNavSection[] = [
   },
 ]
 
-export const findDocsPage = (slug: string) =>
-  DOCS_SECTIONS.flatMap((section) => section.pages).find((page) => page.slug === slug) ?? null
+// Every page in sidebar order, across sections.
+const DOCS_PAGES = DOCS_SECTIONS.flatMap((section) => section.pages)
+
+export const findDocsPage = (slug: string) => DOCS_PAGES.find((page) => page.slug === slug) ?? null
+
+// The pages either side of this one in sidebar order; null at either end.
+export const adjacentDocsPages = (slug: string) => {
+  const index = DOCS_PAGES.findIndex((page) => page.slug === slug)
+  return {
+    previous: index > 0 ? DOCS_PAGES[index - 1] : null,
+    next: index >= 0 && index < DOCS_PAGES.length - 1 ? DOCS_PAGES[index + 1] : null,
+  }
+}

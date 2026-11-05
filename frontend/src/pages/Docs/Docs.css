@@ -1,4 +1,4 @@
-.docs { display: grid; grid-template-columns: 16rem minmax(0, 1fr); column-gap: 3rem; align-items: start; color: var(--color-text-primary); font-family: var(--font-family-sans); padding: 1.5rem 0 4rem; }
+.docs { display: grid; grid-template-columns: 16rem minmax(0, 1fr); column-gap: 3rem; align-items: start; color: var(--color-text-primary); font-family: var(--font-family-sans); padding: 4rem 0 4rem; }
 @media (max-width: 48rem) {
   .docs { display: block; }
   .docs-sidebar { position: static; max-height: none; margin-bottom: 2rem; }
@@ -16,3 +16,35 @@
 
 .docs-article { max-width: 48rem; }
 .docs-title { margin: 0 0 1.5rem; font-size: 2.4rem; font-weight: 700; line-height: 1.15; }
+.docs-title--home { color: var(--color-accent); }
+.docs-lede { margin: 0 0 2rem; font-size: 1.25rem; line-height: 1.6; color: var(--color-text-muted); }
+
+/* Page body: the prose under each page's title */
+.docs-body { font-size: 1.05rem; line-height: 1.7; color: var(--color-text-secondary); }
+.docs-body h2 { margin: 2.5rem 0 0.75rem; font-size: 1.5rem; font-weight: 600; line-height: 1.3; color: var(--color-text-primary); }
+.docs-body p { margin: 0 0 1rem; }
+.docs-body ul { margin: 0 0 1rem; padding-left: 1.25rem; }
+.docs-body li { margin-bottom: 0.4rem; }
+.docs-body strong { color: var(--color-text-primary); font-weight: 600; }
+.docs-body a { color: var(--color-accent); }
+.docs-body code { padding: 0.1rem 0.35rem; background: var(--surface-subtle-background); border: 1px solid var(--surface-subtle-border); font-size: 0.9em; }
+.docs-screenshot { display: grid; place-items: center; min-height: 12rem; margin: 1.5rem 0; border: 1px dashed var(--surface-subtle-border-hover); background: var(--surface-subtle-background); }
+.docs-screenshot figcaption { font-size: 0.9rem; color: var(--color-text-subtle); }
+
+/* Previous / next at the foot of each page; the empty span keeps Next on the right when there is no Previous */
+.docs-pager { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--surface-subtle-border); }
+.docs-pager-link { display: flex; flex-direction: column; gap: 0.25rem; padding: 1rem 1.25rem; border: 1px solid var(--surface-subtle-border); background: var(--surface-subtle-background); text-decoration: none; transition: border-color 0.2s ease, background 0.2s ease; }
+.docs-pager-link:hover { border-color: var(--color-accent); background: var(--surface-subtle-background-hover); }
+.docs-pager-link:focus-visible { outline: 2px solid var(--focus-outline-color); outline-offset: 2px; }
+.docs-pager-link--next { grid-column: 2; text-align: right; }
+.docs-pager-label { font-size: 0.85rem; color: var(--color-text-subtle); }
+.docs-pager-title { font-size: 1.05rem; font-weight: 600; color: var(--color-text-primary); }
+@media (max-width: 48rem) {
+  .docs-pager { grid-template-columns: 1fr; }
+  .docs-pager-link--next { grid-column: 1; }
+}
+
+.docs-actions { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 3rem; }
+.docs-cta { display: inline-flex; align-items: center; gap: 0.6rem; padding: 0.7rem 1.3rem; background: var(--color-accent); color: var(--color-text-inverse); font-size: 1.05rem; font-weight: 600; text-decoration: none; transition: background 0.2s ease; }
+.docs-cta:hover { background: color-mix(in srgb, var(--color-accent) 85%, white); }
+.docs-cta:focus-visible { outline: 2px solid var(--focus-outline-color); outline-offset: 4px; }

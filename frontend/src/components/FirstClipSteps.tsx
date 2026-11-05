@@ -4,7 +4,7 @@ const STEPS = [
   { title: 'Pick a match', body: 'Choose the game you want to dig into from the top bar.' },
   { title: 'Find the moment', body: 'Use key moments and the timeline to land on the passage of play that caught your eye.' },
   { title: 'Tell the story', body: 'Switch on overlays and draw on the play to show what happened and why.' },
-  { title: 'Share the clip', body: 'Export it and send it to whoever you want to convince.' },
+  { title: 'Share the clip', body: 'Save it as a project file and send it to whoever you want to convince.' },
 ]
 
 // Sits in the right column that .app-shell reserves; the parent must be position: relative.

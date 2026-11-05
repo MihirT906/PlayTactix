@@ -1,5 +1,7 @@
+import { Link } from 'react-router-dom'
 import { APP_CONFIG } from '../../config'
 import FirstClipSteps from '../../components/FirstClipSteps'
+import { DOCS_HOME_PATH } from '../Docs/docsNav'
 import ChalkboardPlay from './ChalkboardPlay'
 import './LandingPage.css'
 
@@ -46,14 +48,9 @@ export default function LandingPage({ onChooseGame }: LandingPageProps) {
                   <button type="button" className="landing-cta" onClick={onChooseGame}>
                     Choose Game
                   </button>
-                  <a
-                    className="landing-cta landing-cta-secondary"
-                    href={APP_CONFIG.brand.docsUrl || undefined}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
+                  <Link className="landing-cta landing-cta-secondary" to={DOCS_HOME_PATH}>
                     Read the Docs
-                  </a>
+                  </Link>
                 </div>
               </section>
 

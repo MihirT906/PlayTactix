@@ -13,7 +13,6 @@ const THEME_COLORS = { primary: '#233d4d', accent: '#fe7f2d' } as const; // char
 export const APP_CONFIG = {
 	brand: {
 		title: "Tapp'd",
-		docsUrl: '', // Placeholder until the docs exist; the landing page's Read the Docs link does nothing while empty
 	},
 	timing: {
 		chunkSize: 300,

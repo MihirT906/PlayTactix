@@ -29,10 +29,31 @@ export default function Overlays() {
 
       <h3>Pitch Control</h3>
       <p>
-        Shades the pitch by which team controls each part of it: their colour where they have the upper hand, a blend
-        of both where the space is contested. It weighs where every player is, which way and how fast they are running,
-        and how far they are from the ball, using the model from Fernández and Bornn's <em>Wide Open Spaces</em>{' '}
-        (2018).
+        Shades the pitch by which team would win the ball if it arrived there. The pitch is split into one-metre
+        squares, and each square is coloured by the team more likely to get to it first and take control: their colour
+        where they have the upper hand, a blend of both where it is contested.
+      </p>
+      <p>
+        Every player has an area of influence, strongest where they are and fading with distance. Its shape depends
+        on:
+      </p>
+      <ul>
+        <li>
+          <strong>Where they are heading.</strong> It is centred half a second ahead of them, in the direction they are
+          running.
+        </li>
+        <li>
+          <strong>How fast they are running.</strong> The faster they go, the further it stretches ahead and the
+          narrower it gets either side.
+        </li>
+        <li>
+          <strong>How far they are from the ball.</strong> A player far from the ball covers a wider area, since they
+          have longer to close the gap before the ball gets there.
+        </li>
+      </ul>
+      <p>
+        Each team's influence is added up square by square, and the team with more controls the square. It is worked
+        out again every frame, using the model from Fernández and Bornn's <em>Wide Open Spaces</em> (2018).
       </p>
       <p>
         Pause and drag a player somewhere else, and the shading updates to show what would have changed if they had

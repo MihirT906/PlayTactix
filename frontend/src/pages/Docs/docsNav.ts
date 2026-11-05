@@ -21,8 +21,6 @@ export const DOCS_SECTIONS: DocsNavSection[] = [
     title: 'Getting started',
     pages: [
       { slug: 'what-is-tappd', title: `What is ${brand}` },
-      { slug: 'quick-start', title: 'Quick start' },
-      { slug: 'key-concepts', title: 'Key concepts' },
     ],
   },
   {
@@ -38,8 +36,8 @@ export const DOCS_SECTIONS: DocsNavSection[] = [
     pages: [
       { slug: 'playback-and-the-timeline', title: 'Playback and the timeline' },
       { slug: 'key-moments', title: 'Search for key moments' },
-      { slug: 'overlays', title: 'Overlays' },
       { slug: 'clips-and-segments', title: 'Clips and segments' },
+      { slug: 'overlays', title: 'Overlays' },
       { slug: 'annotations', title: 'Annotations' },
       { slug: 'saving-and-loading-projects', title: 'Saving and loading projects' },
     ],
@@ -48,9 +46,6 @@ export const DOCS_SECTIONS: DocsNavSection[] = [
     title: 'How it works',
     pages: [
       { slug: 'architecture', title: 'Architecture' },
-      { slug: 'match-data-and-the-backend-api', title: 'Match data and the backend API' },
-      { slug: 'frame-data-and-caching', title: 'Frame data and caching' },
-      { slug: 'rendering-the-pitch', title: 'Rendering the pitch' },
     ],
   },
   {

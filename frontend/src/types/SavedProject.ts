@@ -16,8 +16,8 @@ export const SCHEMA_VERSION = 1
 
 // Each schema below is both the runtime check for a section of the file and, through z.infer, its type.
 // A section that mirrors an app type is tied to it with `satisfies`, so changing the app type without
-// the schema fails the build. Values the app can work out again (a track's label, a segment's match)
-// are left out of the file and rebuilt on load.
+// the schema fails the build. A value the app can work out again (a track's label)
+// is left out of the file and rebuilt on load.
 
 // The provider and sport pairs this build can open. Supporting a new one starts with an entry here.
 const MatchSourceSchema = z.union([z.object({ provider: z.literal('skillcorner'), sport: z.literal('soccer') })])
@@ -41,9 +41,9 @@ const SPORT_OVERLAY_KINDS: Record<Sport, OverlaySegmentKind[]> = {
   soccer: ALL_OVERLAY_KINDS,
 }
 
-// A project refers to a single match, so its segments don't repeat which one.
 const ClipSegmentSchema = z
   .object({
+    matchId: z.string().min(1), // The match the footage comes from, in the same form as match.id
     clipStart: z.number().nonnegative(),
     clipEnd: z.number().nonnegative(),
     sourceFrameStart: z.number().nonnegative(),
@@ -52,7 +52,7 @@ const ClipSegmentSchema = z
   })
   .refine((segment) => segment.clipStart <= segment.clipEnd && segment.sourceFrameStart <= segment.sourceFrameEnd, {
     message: 'A segment ends before it starts',
-  }) satisfies z.ZodType<Omit<Segment, 'matchId'>>
+  }) satisfies z.ZodType<Omit<Segment, 'matchId'> & { matchId: string }>
 
 const OverlaySegmentSchema = z
   .object({
@@ -154,9 +154,9 @@ const SoccerAnalysisSchema = z.object({
   sport: z.literal('soccer'),
   eventMap: z.object({
     filters: EventMapFiltersSchema,
-    excludedIds: z.array(z.string()),
+    excludedIds: z.array(z.string()), // Matching events the user unticked
+    autoDisappear: z.boolean(), // Each event leaves the pitch once playback passes its end
   }),
-  autoDisappearEvents: z.boolean(),
   passNetwork: PassNetworkSchema,
   timelines: z.array(TimelineSchema),
   eventStyles: z.record(z.string(), z.object({ color: z.string(), width: z.number() })),
@@ -180,6 +180,11 @@ const ProjectSchema = z
     annotations: z.array(AnnotationSchema),
     style: TeamStyleSchema,
     analysis: AnalysisSchema,
+  })
+  // A project opens a single match so far. A clip built from several matches would drop this check.
+  .refine((project) => project.clip.matchSegments.every((segment) => segment.matchId === project.match.id), {
+    message: 'A segment is from a different match than the project',
+    path: ['clip', 'matchSegments'],
   })
   .refine((project) => project.analysis.sport === project.match.sport, {
     message: 'The analysis is for a different sport than the match',

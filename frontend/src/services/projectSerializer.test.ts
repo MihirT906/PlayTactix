@@ -20,6 +20,7 @@ const style = {
 // One of every annotation type and both kinds of track.
 function buildWork() {
   const session = createInitialMatchSessionState(MATCH_ID)
+  session.overlays.autoDisappearEvents = true // Off by default, so a lost value would show
   const annotationStore = new AnnotationStore()
   annotationStore.addDrawAnnotation({ type: 'rect', x0: -10, y0: -5, x1: 10, y1: 5 }, 0)
   annotationStore.addDrawAnnotation({ type: 'line', x0: 0, y0: 0, x1: 20, y1: 0 }, 5)
@@ -50,6 +51,7 @@ describe('project round trip', () => {
     expect(restored.matchId).toBe(MATCH_ID)
     expect(restored.session.clip).toEqual(work.session.playback.clip)
     expect(restored.session.eventMapFilters).toEqual(work.session.overlays.eventMapFilters)
+    expect(restored.session.autoDisappearEvents).toBe(true)
     expect(restored.session.passNetworkConfig).toEqual(work.session.overlays.passNetworkConfig)
     expect(restored.annotations).toEqual(work.annotationStore.getAllAnnotations())
     expect(restored.timelines).toEqual(work.timelineStore.getAll())
@@ -62,10 +64,15 @@ describe('project round trip', () => {
     })
   })
 
+  it('names the match of every segment', () => {
+    const { saved } = save()
+
+    expect(saved.clip.matchSegments.map((segment) => segment.matchId)).toEqual([String(MATCH_ID)])
+  })
+
   it('leaves out what is rebuilt on load', () => {
     const { saved } = save()
 
-    expect(saved.clip.matchSegments.every((segment) => !('matchId' in segment))).toBe(true)
     expect(saved.analysis.timelines.every((timeline) => !('label' in timeline))).toBe(true)
   })
 })
@@ -94,6 +101,14 @@ describe('parseProject', () => {
     const project = withChange((project) => {
       const teamShape = project.annotations.find((annotation) => annotation.type === 'teamShape')
       if (teamShape) teamShape.shape.players = [1, 2]
+      return project
+    })
+    expect(() => load(project)).toThrow('incomplete or corrupted')
+  })
+
+  it('rejects a segment from a different match', () => {
+    const project = withChange((project) => {
+      project.clip.matchSegments[0].matchId = '999'
       return project
     })
     expect(() => load(project)).toThrow('incomplete or corrupted')

@@ -57,21 +57,26 @@ export type RestoredProject = {
   style: SavedStyle
 }
 
-// The app still identifies a match by SkillCorner's numeric id. These two are the only places that turn it
-// into the file's match reference and back, so identifying matches by provider and sport app-wide starts here.
+// The app still identifies a match by SkillCorner's numeric id; the file keeps the provider's id as a string.
+// These two are the only places that convert between them, so identifying matches by provider and sport
+// app-wide starts here.
+const toFileMatchId = (matchId: number): string => String(matchId)
+
+function toAppMatchId(id: string): number | null {
+  const matchId = Number(id)
+  return Number.isInteger(matchId) ? matchId : null
+}
+
 export function matchRefFor(matchId: number, matchData: MatchData | null): SavedMatchRef {
   const label =
     matchData?.id === matchId
       ? `${matchData.home_team.short_name} v ${matchData.away_team.short_name}, ${matchData.date_time.slice(0, 10)}`
       : undefined
   // The app only opens SkillCorner soccer matches so far, so the open match is always one.
-  return { provider: 'skillcorner', sport: 'soccer', id: String(matchId), label }
+  return { provider: 'skillcorner', sport: 'soccer', id: toFileMatchId(matchId), label }
 }
 
-export function appMatchIdOf(ref: SavedMatchRef): number | null {
-  const matchId = Number(ref.id)
-  return Number.isInteger(matchId) ? matchId : null
-}
+export const appMatchIdOf = (ref: SavedMatchRef): number | null => toAppMatchId(ref.id)
 
 const geometryOf = (shape: { x0: number; y0: number; x1: number; y1: number }) => ({
   x0: shape.x0,
@@ -112,11 +117,14 @@ function toStoredAnnotation(annotation: SavedAnnotation): StoredAnnotation {
   return { key, frameStart, frameEnd, type: annotation.type, shape: annotation.shape }
 }
 
-function toSavedClip(clip: Clip): SavedClip {
+// A segment made before a match was chosen has no match of its own, so it takes the open one.
+function toSavedClip(clip: Clip, openMatchId: number): SavedClip {
   return {
     ...clip,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    matchSegments: clip.matchSegments.map(({ matchId, ...segment }) => segment),
+    matchSegments: clip.matchSegments.map((segment) => ({
+      ...segment,
+      matchId: toFileMatchId(segment.matchId ?? openMatchId),
+    })),
   }
 }
 
@@ -146,7 +154,7 @@ export function serializeProject({ session, style, matchData, annotationStore, t
     savedAt: new Date().toISOString(),
     savedBy: { app: 'tappd', build: __APP_BUILD__ },
     match: matchRefFor(session.match.id, matchData),
-    clip: toSavedClip(session.playback.clip),
+    clip: toSavedClip(session.playback.clip, session.match.id),
     annotations: annotationStore
       .getAllAnnotations()
       .map(toSavedAnnotation)
@@ -161,8 +169,8 @@ export function serializeProject({ session, style, matchData, annotationStore, t
       eventMap: {
         filters: session.overlays.eventMapFilters,
         excludedIds: session.overlays.eventMapExcludedIds,
+        autoDisappear: session.overlays.autoDisappearEvents,
       },
-      autoDisappearEvents: session.overlays.autoDisappearEvents,
       passNetwork: session.overlays.passNetworkConfig,
       timelines: timelineStore.getAll().map(toSavedTimeline),
       eventStyles: style.eventStyles,
@@ -185,11 +193,12 @@ export function restoreProject(project: SavedProject): RestoredProject {
     session: {
       clip: {
         ...project.clip,
-        matchSegments: project.clip.matchSegments.map((segment) => ({ ...segment, matchId })),
+        // The schema has checked each segment's match is the project's, so its id converts as match.id did.
+        matchSegments: project.clip.matchSegments.map((segment) => ({ ...segment, matchId: toAppMatchId(segment.matchId) ?? matchId })),
       },
       eventMapFilters: analysis.eventMap.filters,
       eventMapExcludedIds: analysis.eventMap.excludedIds,
-      autoDisappearEvents: analysis.autoDisappearEvents,
+      autoDisappearEvents: analysis.eventMap.autoDisappear,
       passNetworkConfig: analysis.passNetwork,
     },
     annotations: project.annotations.map(toStoredAnnotation),

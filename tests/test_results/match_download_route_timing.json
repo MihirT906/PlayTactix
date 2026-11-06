@@ -1,10 +1,10 @@
 {
-  "label": "local-run-001",
+  "label": "manual",
   "route": "/data/match/1886347",
   "match_id": 1886347,
-  "elapsed_seconds": 16.3472,
+  "elapsed_seconds": 0.0139,
   "max_seconds": 30,
   "passed": true,
   "status_code": 200,
-  "payload_size_bytes": 78
+  "payload_size_bytes": 66
 }

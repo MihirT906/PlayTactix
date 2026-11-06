@@ -127,7 +127,15 @@ export default function ProjectControls({
       return
     }
 
-    await new MatchDataManager().downloadMatchData(matchId)
+    try {
+      await new MatchDataManager().downloadMatchData(matchId)
+    } catch (error) {
+      // Nothing has changed yet, so the open match and its work stay as they were.
+      logger.error('Failed to download match data for project', error)
+      setBusy(false)
+      setNotice({ kind: 'error', text: `Could not load ${project.matchLabel ?? 'the match this project refers to'}.` })
+      return
+    }
     onResetMatchData()
     selectMatch(matchId)
     setPending(project)

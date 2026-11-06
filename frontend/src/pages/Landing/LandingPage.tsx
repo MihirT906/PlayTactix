@@ -41,7 +41,7 @@ export default function LandingPage({ onChooseGame }: LandingPageProps) {
                   want to go back to: the run nobody picked up, the pass that was on and never played.{' '}
                   {APP_CONFIG.brand.title} puts that moment back on the pitch and hands you the pen. The players move exactly as they did, rebuilt from tracking data. Replay it,
                   switch on the built-in analysis overlays, draw on it to make your point, and save the clip for your
-                  squad, or for the buddy who still thinks they know better. Pick a match and see what you find.
+                  squad, or share it with your mates and get a proper debate going. Pick a match and see what you find.
                 </p>
                 <div className="landing-actions">
                   <button type="button" className="landing-cta" onClick={onChooseGame}>

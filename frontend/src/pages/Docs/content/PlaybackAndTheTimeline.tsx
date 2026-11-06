@@ -31,9 +31,11 @@ export default function PlaybackAndTheTimeline() {
 
       <h2>The timeline</h2>
       <p>
-        The rows under the pitch lay your clip out in time: <strong>Match Segments</strong>, <strong>Overlays</strong>,{' '}
-        <strong>Annotations</strong>, and any <strong>Insights</strong> tracks you've added. The vertical line marks
-        where you are; click or drag along an empty part of a row to move it.
+        The rows under the pitch lay your clip out in time, in two sections. <strong>Insights</strong>, on top, holds
+        the tracks you've added to read the game. <strong>Clip</strong> holds what you build:{' '}
+        <strong>Match Segments</strong>, <strong>Overlays</strong> and <strong>Annotations</strong>. Click a section's
+        title to fold it away. The vertical line marks where you are; click or drag along an empty part of a row to
+        move it.
       </p>
       <p>
         Drag a bar to move it and drag its ends to trim it. To remove one, hover it and press ✕, or right-click it and

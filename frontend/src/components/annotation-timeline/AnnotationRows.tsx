@@ -155,9 +155,15 @@ export function AnnotationRows({
               className={annotation.isOngoing ? 'annotation-timeline__annotation--ongoing' : 'annotation-timeline__annotation--minimal'}
               style={{ top: `${annotation.laneIndex * LANE_HEIGHT + 2}px` }}
               onRangeChange={(frameStart, frameEnd) => {
-                // Dragging an "ongoing" annotation gives it a concrete end - same
-                // trade-off Segments/Overlays make, they have no open-ended state either.
-                annotationStore.updateAnnotationRange(annotation.key, frameStart, frameEnd, clipFrame)
+                // Moving an "ongoing" annotation or pulling its end gives it a concrete end - same trade-off
+                // Segments/Overlays make, they have no open-ended state either. Changing only its start keeps it ongoing.
+                const keepsOngoing = annotation.isOngoing && frameEnd === annotation.effectiveEnd
+                annotationStore.updateAnnotationRange(annotation.key, frameStart, keepsOngoing ? null : frameEnd, clipFrame)
+                onAnnotationUpdate()
+              }}
+              playheadFrame={clipFrame}
+              onSplit={(frame) => {
+                annotationStore.splitAnnotation(annotation.key, frame, clipFrame)
                 onAnnotationUpdate()
               }}
               onDelete={() => onDelete(annotation.key)}

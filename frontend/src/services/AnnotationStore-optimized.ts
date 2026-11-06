@@ -39,6 +39,17 @@ function newPlayerFocusKey(): string {
 // A team shape needs a triangle at least; fewer players enclose no area.
 export const MIN_TEAM_SHAPE_PLAYERS = 3;
 
+// A fresh key for another annotation like this one, made the way its type's keys are.
+function newKeyLike(annotation: Annotation): string {
+    switch (annotation.type) {
+        case 'playerLine': return newPlayerLineKey();
+        case 'arrow': return newArrowKey();
+        case 'teamShape': return newTeamShapeKey();
+        case 'playerFocus': return newPlayerFocusKey();
+        default: return newDrawKey(annotation.shape?.type ?? annotation.type);
+    }
+}
+
 function samePair(a: number[], b: number[]): boolean {
     const norm = (p: number[]) => [...p].sort((x, y) => x - y).join(',');
     return norm(a) === norm(b);
@@ -220,6 +231,26 @@ export default class AnnotationStore {
         annotation.frameEnd = frameEnd ?? undefined;
 
         logger.info("Updated annotation range", key, frameStart, frameEnd);
+        this.reconstruct_active_annotations(currentFrame);
+    }
+
+    splitAnnotation(key: string, frame: number, currentFrame: number) {
+        // Cuts an annotation in two at `frame` (the timeline's right-click split): it now ends there and a copy
+        // under a new key runs on from it, open-ended if the original was. Nothing happens unless frame is inside it.
+        const annotation = this.annotations.get(key);
+        if (!annotation) return;
+        const start = annotation.frameStart ?? 0;
+        if (frame <= start || (annotation.frameEnd !== undefined && frame >= annotation.frameEnd)) return;
+
+        this.annotations.set(newKeyLike(annotation), {
+            type: annotation.type,
+            frameStart: frame,
+            frameEnd: annotation.frameEnd,
+            shape: structuredClone(annotation.shape),
+        });
+        annotation.frameEnd = frame;
+
+        logger.info("Split annotation", key, "at frame:", frame);
         this.reconstruct_active_annotations(currentFrame);
     }
 

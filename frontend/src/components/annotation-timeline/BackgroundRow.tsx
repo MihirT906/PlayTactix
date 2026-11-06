@@ -30,7 +30,10 @@ type BackgroundRowProps = {
   trackWidth: number
   currentFrameOffsetPercent: number
   onRangeChange: (index: number, clipStart: number, clipEnd: number) => void
+  onSplit: (index: number, clipFrame: number) => void
   onDelete: (index: number) => void
+  /** The playhead's clip frame, where a bar is split or trimmed from its right-click menu. */
+  clipFrame: number
   barStyle?: CSSProperties
 }
 
@@ -50,7 +53,9 @@ export function BackgroundRow({
   trackWidth,
   currentFrameOffsetPercent,
   onRangeChange,
+  onSplit,
   onDelete,
+  clipFrame,
   barStyle,
 }: BackgroundRowProps) {
   const label = OVERLAY_SEGMENT_LABELS[type]
@@ -78,6 +83,8 @@ export function BackgroundRow({
           className={OVERLAY_BAR_CLASS_NAMES[type]}
           style={barStyle}
           onRangeChange={(clipStart, clipEnd) => onRangeChange(index, clipStart, clipEnd)}
+          playheadFrame={clipFrame}
+          onSplit={(frame) => onSplit(index, frame)}
           onDelete={() => onDelete(index)}
         />
       ))}

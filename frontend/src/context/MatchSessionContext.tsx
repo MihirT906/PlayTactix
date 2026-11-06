@@ -83,6 +83,7 @@ type MatchSessionContextValue = {
   addSegment: (sourceFrameStart: number, sourceFrameEnd: number) => void
   appendSegment: (sourceFrameStart: number, sourceFrameEnd: number) => void
   removeSegment: (index: number) => void
+  splitSegment: (index: number, clipFrame: number) => void
   setSegmentRange: (index: number, clipStart: number, clipEnd: number, kind: 'move' | 'resize') => void
   togglePlayback: () => void
   stopPlayback: () => void
@@ -103,6 +104,7 @@ type MatchSessionContextValue = {
   addOverlaySegmentFrom: (kind: OverlaySegmentKind, clipFrame: number) => void
   endOverlaySegmentAt: (kind: OverlaySegmentKind, clipFrame: number) => void
   removeOverlaySegment: (index: number) => void
+  splitOverlaySegment: (index: number, clipFrame: number) => void
   setOverlaySegmentRange: (index: number, clipStart: number, clipEnd: number) => void
 
   setFrameLoading: (isLoading: boolean) => void
@@ -307,6 +309,20 @@ export function MatchSessionProvider({
             })
         },
 
+        splitSegment: (index: number, clipFrame: number) => {
+            setSession((prev) => {
+                logger.info('Clip segment split', { index, clipFrame })
+
+                return {
+                    ...prev,
+                    playback: {
+                        ...prev.playback,
+                        clip: clipManager.splitSegmentAt(prev.playback.clip, index, clipFrame),
+                    },
+                }
+            })
+        },
+
         setSegmentRange: (index: number, clipStart: number, clipEnd: number, kind: 'move' | 'resize') => {
             setSession((prev) => {
                 const clip = clipManager.setSegmentRange(prev.playback.clip, index, clipStart, clipEnd, kind)
@@ -487,6 +503,20 @@ export function MatchSessionProvider({
                     playback: {
                         ...prev.playback,
                         clip: clipManager.removeOverlayAt(prev.playback.clip, index),
+                    },
+                }
+            })
+        },
+
+        splitOverlaySegment: (index: number, clipFrame: number) => {
+            setSession((prev) => {
+                logger.info('Clip overlay segment split', { index, clipFrame })
+
+                return {
+                    ...prev,
+                    playback: {
+                        ...prev.playback,
+                        clip: clipManager.splitOverlayAt(prev.playback.clip, index, clipFrame),
                     },
                 }
             })

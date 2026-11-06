@@ -100,6 +100,23 @@ export function removeSegment(clip: Clip, index: number): Clip {
   }
 }
 
+// Cuts the match segment at `index` in two at clipFrame, the source footage cut at the same point, so
+// playback is unchanged but each half can be trimmed, moved or removed on its own. The halves share
+// the cut frame, as appended segments share their boundary. Unchanged unless clipFrame is inside it.
+export function splitSegmentAt(clip: Clip, index: number, clipFrame: number): Clip {
+  const segment = clip.matchSegments[index]
+  if (!segment || clipFrame <= segment.clipStart || clipFrame >= segment.clipEnd) return clip
+
+  const sourceCut = segment.sourceFrameStart + (clipFrame - segment.clipStart)
+  const first = { ...segment, clipEnd: clipFrame, sourceFrameEnd: sourceCut }
+  const second = { ...segment, clipStart: clipFrame, sourceFrameStart: sourceCut }
+
+  return {
+    ...clip,
+    matchSegments: [...clip.matchSegments.slice(0, index), first, second, ...clip.matchSegments.slice(index + 1)],
+  }
+}
+
 // Given a frame on the Clip's own timeline, finds which Segment covers it and
 // translates the frame into a source match frame. Falls back to the first
 // segment when the clip frame falls outside every segment's range (matches
@@ -163,6 +180,23 @@ export function removeOverlayAt(clip: Clip, index: number): Clip {
   return {
     ...clip,
     overlaySegments: clip.overlaySegments.filter((_, i) => i !== index),
+  }
+}
+
+// Cuts the overlay segment at `index` in two at clipFrame: the first half ends on the frame before and the
+// second starts on it, as overlay ranges include both ends. Unchanged unless clipFrame is inside it.
+export function splitOverlayAt(clip: Clip, index: number, clipFrame: number): Clip {
+  const overlay = clip.overlaySegments[index]
+  if (!overlay || clipFrame <= overlay.clipStart || clipFrame >= overlay.clipEnd) return clip
+
+  return {
+    ...clip,
+    overlaySegments: [
+      ...clip.overlaySegments.slice(0, index),
+      { ...overlay, clipEnd: clipFrame - 1 },
+      { ...overlay, clipStart: clipFrame },
+      ...clip.overlaySegments.slice(index + 1),
+    ],
   }
 }
 

@@ -47,15 +47,23 @@
   font-weight: bold;
 }
 
-.annotation-timeline__group-toggle {
+/* The title of a section (Insights, Clip), which hides and shows it. */
+.annotation-timeline__section-toggle {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 0;
   border: none;
   background: none;
+  color: #f8fafc;
   font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: bold;
   cursor: pointer;
+}
+
+.annotation-timeline__section-toggle + .annotation-timeline__scroll {
+  margin-top: 12px;
 }
 
 .annotation-timeline__group-chevron {

@@ -1,4 +1,13 @@
-import { useCallback, useMemo, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
+import {
+  useCallback,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
+  type UIEvent,
+} from 'react'
 import type AnnotationStore from '../../services/AnnotationStore-optimized'
 import type TimelineStore from '../../services/TimelineStore'
 import { useMatchSession } from '../../context/MatchSessionContext'
@@ -9,8 +18,9 @@ import type { MatchData } from '../../types/MatchDataInterfaces'
 import { SegmentRow } from './SegmentRow'
 import { BackgroundRow } from './BackgroundRow'
 import { AnnotationRows } from './AnnotationRows'
-import { InsightGroup } from './InsightGroup'
+import { InsightRows } from './InsightRows'
 import { TimelineGroup } from './TimelineGroup'
+import { TimelineSection } from './TimelineSection'
 import './AnnotationTimeline.css'
 
 const TIMELINE_LABEL_WIDTH = 220
@@ -36,12 +46,13 @@ type AnnotationTimelineProps = {
 }
 
 /**
- * Renders four groups over the same frame scale: Match Segments (the
- * source clip range), Insights (event and metric tracks across the clip),
- * Overlays (one row per active overlay segment - pitch, pitch control, pass
- * probability), and Annotations (lane-packed rows of player lines, drawn
- * shapes). They share one horizontal scroll so their playheads always line
- * up. Segment, overlay and annotation bars are draggable to move/resize; each
+ * Renders two sections over the same frame scale. Insights, on top, reads the
+ * game: event and metric tracks across the clip. Clip builds it: Match
+ * Segments (the source clip range), Overlays (one row per active overlay
+ * segment - pitch, pitch control, pass probability) and Annotations
+ * (lane-packed rows of player lines, drawn shapes). Each section collapses on
+ * its own; their sideways scrolls are kept in step so the playheads always
+ * line up. Segment, overlay and annotation bars are draggable to move/resize; each
  * bar owns its own drag state - see useRangeDrag. Pressing an empty stretch
  * of any track seeks there, and pressing an insight event seeks to its start.
  */
@@ -63,6 +74,8 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
     setSegmentRange,
     removeSegment,
     removeOverlaySegment,
+    splitSegment,
+    splitOverlaySegment,
     setCurrentClipFrame,
     stopPlayback,
   } = useMatchSession()
@@ -93,6 +106,26 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
     setDragScaleEnd((current) => Math.max(current ?? 0, frameEnd))
   }, [])
   const releaseScale = useCallback(() => setDragScaleEnd(null), [])
+
+  const [isInsightsCollapsed, setIsInsightsCollapsed] = useState(false)
+  const [isClipCollapsed, setIsClipCollapsed] = useState(false)
+
+  // The two sections scroll sideways together. A section opened again picks up where the other is.
+  const insightsScrollRef = useRef<HTMLDivElement>(null)
+  const clipScrollRef = useRef<HTMLDivElement>(null)
+  const scrollLeftRef = useRef(0)
+  const syncScroll = (event: UIEvent<HTMLDivElement>) => {
+    const { scrollLeft } = event.currentTarget
+    scrollLeftRef.current = scrollLeft
+    for (const other of [insightsScrollRef.current, clipScrollRef.current]) {
+      if (other && other !== event.currentTarget && other.scrollLeft !== scrollLeft) other.scrollLeft = scrollLeft
+    }
+  }
+  useLayoutEffect(() => {
+    for (const scroller of [insightsScrollRef.current, clipScrollRef.current]) {
+      if (scroller) scroller.scrollLeft = scrollLeftRef.current
+    }
+  }, [isInsightsCollapsed, isClipCollapsed])
 
   const scaleStart = clipRange.start
 
@@ -153,35 +186,18 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
   }
 
   return (
-    <section className="annotation-timeline">
-      <div className="annotation-timeline__scroll">
-        <div
-          className="annotation-timeline__body"
-          style={{ minWidth: `${contentWidth}px` }}
-          onPointerDown={handleTrackPointerDown}
-        >
-          <TimelineGroup title="Match Segments">
-            {matchSegments.length === 0 ? (
-              <div className="annotation-timeline__empty">No match segments</div>
-            ) : (
-              <SegmentRow
-                segments={matchSegments}
-                matchPeriods={matchData?.match_periods ?? null}
-                scaleStart={scaleStart}
-                scaleEnd={scaleEnd}
-                sourceBounds={sourceBounds}
-                labelWidth={TIMELINE_LABEL_WIDTH}
-                trackWidth={trackWidth}
-                currentFrameOffsetPercent={currentFrameOffsetPercent}
-                onRangeChange={setSegmentRange}
-                onDelete={removeSegment}
-                onScaleRequest={requestScaleEnd}
-                onScaleRelease={releaseScale}
-              />
-            )}
-          </TimelineGroup>
-
-          <InsightGroup
+    <>
+      <TimelineSection
+        title="Insights"
+        collapsed={isInsightsCollapsed}
+        onToggleCollapsed={() => setIsInsightsCollapsed((current) => !current)}
+        scrollRef={insightsScrollRef}
+        onScroll={syncScroll}
+        contentWidth={contentWidth}
+        onTrackPointerDown={handleTrackPointerDown}
+      >
+        <div className="annotation-timeline__group">
+          <InsightRows
             timelineStore={timelineStore}
             matchEvents={matchEvents}
             matchData={matchData}
@@ -194,55 +210,90 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
             currentFrameOffsetPercent={currentFrameOffsetPercent}
             onEventHover={onInsightEventHover}
           />
+        </div>
+      </TimelineSection>
 
-          <TimelineGroup title="Overlays">
-            {overlaySegments.length === 0 ? (
-              <div className="annotation-timeline__empty">No overlays</div>
-            ) : (
-              overlayRows.map(({ type, segments }) => (
-                <BackgroundRow
-                  key={type}
-                  type={type}
-                  segments={segments}
-                  scaleStart={scaleStart}
-                  scaleEnd={scaleEnd}
-                  minFrame={clipRange.start}
-                  maxFrame={clipRange.end}
-                  labelWidth={TIMELINE_LABEL_WIDTH}
-                  trackWidth={trackWidth}
-                  currentFrameOffsetPercent={currentFrameOffsetPercent}
-                  onRangeChange={setOverlaySegmentRange}
-                  onDelete={removeOverlaySegment}
-                  barStyle={getOverlayBarStyle(type)}
-                />
-              ))
-            )}
-          </TimelineGroup>
-
-          <TimelineGroup title="Annotations">
-            <AnnotationRows
-              annotationStore={annotationStore}
-              clipEnd={clipRange.end}
-              annotationVersion={annotationVersion}
-              clipFrame={clipFrame}
+      <TimelineSection
+        title="Clip"
+        collapsed={isClipCollapsed}
+        onToggleCollapsed={() => setIsClipCollapsed((current) => !current)}
+        scrollRef={clipScrollRef}
+        onScroll={syncScroll}
+        contentWidth={contentWidth}
+        onTrackPointerDown={handleTrackPointerDown}
+      >
+        <TimelineGroup title="Match Segments">
+          {matchSegments.length === 0 ? (
+            <div className="annotation-timeline__empty">No match segments</div>
+          ) : (
+            <SegmentRow
+              segments={matchSegments}
+              matchPeriods={matchData?.match_periods ?? null}
               scaleStart={scaleStart}
               scaleEnd={scaleEnd}
+              sourceBounds={sourceBounds}
               labelWidth={TIMELINE_LABEL_WIDTH}
               trackWidth={trackWidth}
               currentFrameOffsetPercent={currentFrameOffsetPercent}
-              onDelete={(annotationKey) => {
-                annotationStore.removeAnnotation(annotationKey)
-                onAnnotationUpdate()
-              }}
-              onAnnotationUpdate={onAnnotationUpdate}
-              getPlayerName={(playerId) =>
-                matchData?.players.find((player) => player.id === playerId)?.short_name ?? `Player ${playerId}`
-              }
+              onRangeChange={setSegmentRange}
+              onSplit={splitSegment}
+              onDelete={removeSegment}
+              clipFrame={clipFrame}
+              onScaleRequest={requestScaleEnd}
+              onScaleRelease={releaseScale}
             />
-          </TimelineGroup>
-        </div>
-      </div>
-    </section>
+          )}
+        </TimelineGroup>
+
+        <TimelineGroup title="Overlays">
+          {overlaySegments.length === 0 ? (
+            <div className="annotation-timeline__empty">No overlays</div>
+          ) : (
+            overlayRows.map(({ type, segments }) => (
+              <BackgroundRow
+                key={type}
+                type={type}
+                segments={segments}
+                scaleStart={scaleStart}
+                scaleEnd={scaleEnd}
+                minFrame={clipRange.start}
+                maxFrame={clipRange.end}
+                labelWidth={TIMELINE_LABEL_WIDTH}
+                trackWidth={trackWidth}
+                currentFrameOffsetPercent={currentFrameOffsetPercent}
+                onRangeChange={setOverlaySegmentRange}
+                onSplit={splitOverlaySegment}
+                onDelete={removeOverlaySegment}
+                clipFrame={clipFrame}
+                barStyle={getOverlayBarStyle(type)}
+              />
+            ))
+          )}
+        </TimelineGroup>
+
+        <TimelineGroup title="Annotations">
+          <AnnotationRows
+            annotationStore={annotationStore}
+            clipEnd={clipRange.end}
+            annotationVersion={annotationVersion}
+            clipFrame={clipFrame}
+            scaleStart={scaleStart}
+            scaleEnd={scaleEnd}
+            labelWidth={TIMELINE_LABEL_WIDTH}
+            trackWidth={trackWidth}
+            currentFrameOffsetPercent={currentFrameOffsetPercent}
+            onDelete={(annotationKey) => {
+              annotationStore.removeAnnotation(annotationKey)
+              onAnnotationUpdate()
+            }}
+            onAnnotationUpdate={onAnnotationUpdate}
+            getPlayerName={(playerId) =>
+              matchData?.players.find((player) => player.id === playerId)?.short_name ?? `Player ${playerId}`
+            }
+          />
+        </TimelineGroup>
+      </TimelineSection>
+    </>
   )
 }
 

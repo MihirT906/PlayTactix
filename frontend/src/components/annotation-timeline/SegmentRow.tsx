@@ -50,7 +50,10 @@ type SegmentRowProps = {
   trackWidth: number
   currentFrameOffsetPercent: number
   onRangeChange: (index: number, clipStart: number, clipEnd: number, kind: 'move' | 'resize') => void
+  onSplit: (index: number, clipFrame: number) => void
   onDelete: (index: number) => void
+  /** The playhead's clip frame, where a segment is split or trimmed from its right-click menu. */
+  clipFrame: number
   /** Option B auto-grow while a segment edge is pulled past the visible end. */
   onScaleRequest?: (frameEnd: number) => void
   onScaleRelease?: () => void
@@ -67,7 +70,9 @@ export function SegmentRow({
   trackWidth,
   currentFrameOffsetPercent,
   onRangeChange,
+  onSplit,
   onDelete,
+  clipFrame,
   onScaleRequest,
   onScaleRelease,
 }: SegmentRowProps) {
@@ -115,6 +120,8 @@ export function SegmentRow({
             describe={(range) => describeSegment(label, segment, range, matchPeriods ?? undefined)}
             className="annotation-timeline__annotation--match"
             onRangeChange={(clipStart, clipEnd, kind) => onRangeChange(index, clipStart, clipEnd, kind)}
+            playheadFrame={clipFrame}
+            onSplit={(frame) => onSplit(index, frame)}
             onDelete={() => onDelete(index)}
           />
         )

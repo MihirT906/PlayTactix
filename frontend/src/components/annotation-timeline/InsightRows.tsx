@@ -12,11 +12,10 @@ import LaneTrack from '../event-timeline/LaneTrack'
 import ValueTrack from '../event-timeline/ValueTrack'
 import MomentumTrack from '../event-timeline/MomentumTrack'
 import { getMomentumScale } from '../event-timeline/momentum'
-import { TimelineGroup } from './TimelineGroup'
 import { TimelineRow } from './TimelineRow'
 import '../event-timeline/tracks.css'
 
-type InsightGroupProps = {
+type InsightRowsProps = {
   timelineStore: TimelineStore
   /** Every event of the match; the ones in the clip are found through its match segments. */
   matchEvents: Event[] | null
@@ -33,12 +32,12 @@ type InsightGroupProps = {
 }
 
 /**
- * The Insights tracks: what happened across the clip (event tracks) and how metrics moved (metric
+ * The rows of the Insights section: what happened across the clip (event tracks) and how metrics moved (metric
  * tracks), on the same scale as the rest of the timeline. Pressing an event jumps to its start, and
  * hovering an event picks out its players on the pitch. The tracks, and the team and players each
  * event track is narrowed to, are all set in the sidebar's Insights panel; here they are only shown.
  */
-export function InsightGroup({
+export function InsightRows({
   timelineStore,
   matchEvents,
   matchData,
@@ -50,11 +49,10 @@ export function InsightGroup({
   trackWidth,
   currentFrameOffsetPercent,
   onEventHover,
-}: InsightGroupProps) {
+}: InsightRowsProps) {
   const { session, setCurrentClipFrame, stopPlayback } = useMatchSession()
   const { homeTeamColor, awayTeamColor } = useStyleConfig()
   const [timelines, setTimelines] = useState<TimelineOption[]>(timelineStore.getAll())
-  const [collapsed, setCollapsed] = useState(false)
   const matchSegments = session.playback.clip.matchSegments
 
   useEffect(() => timelineStore.subscribe(setTimelines), [timelineStore])
@@ -120,11 +118,7 @@ export function InsightGroup({
   const hiddenCount = timelines.filter((timeline) => timeline.hidden).length
 
   return (
-    <TimelineGroup
-      title="Insights"
-      collapsed={collapsed}
-      onToggleCollapsed={() => setCollapsed((current) => !current)}
-    >
+    <>
       {timelines.length === 0 ? (
         <div className="annotation-timeline__empty">
           No tracks yet. Add them from <strong>Insights</strong> in the sidebar to see when events happened and how
@@ -178,6 +172,6 @@ export function InsightGroup({
           {hiddenCount} hidden {hiddenCount === 1 ? 'track' : 'tracks'}
         </div>
       ) : null}
-    </TimelineGroup>
+    </>
   )
 }

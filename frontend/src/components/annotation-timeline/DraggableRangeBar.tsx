@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react'
 import { FaTimes } from 'react-icons/fa'
 import { useRangeDrag, type FrameRange } from './useRangeDrag'
-import { ContextMenu } from '../context-menu/ContextMenu'
+import { ContextMenu, type ContextMenuItem } from '../context-menu/ContextMenu'
 import { useContextMenu } from '../context-menu/useContextMenu'
 
 type DraggableRangeBarProps = {
@@ -22,11 +22,18 @@ type DraggableRangeBarProps = {
   /** The drag ended - drop any transient scale widening. */
   onScaleRelease?: () => void
   onRangeChange: (frameStart: number, frameEnd: number, kind: 'move' | 'resize') => void
+  /** The playhead's clip frame, where the right-click menu splits and trims the bar. */
+  playheadFrame: number
+  /** Cuts what the bar stands for in two at the given frame. */
+  onSplit: (frame: number) => void
   /** Removes what the bar stands for, from the ✕ shown on hover or the right-click menu. */
   onDelete: () => void
 }
 
-/** A single croppable bar: drag the body to move it, drag either edge to resize it, hover for ✕ to delete it. */
+/**
+ * A single croppable bar: drag the body to move it, drag either edge to resize it, hover for ✕ to delete it.
+ * Right-click splits it at the playhead, trims either end to the playhead, or deletes it.
+ */
 export function DraggableRangeBar({
   frameStart,
   frameEnd,
@@ -41,6 +48,8 @@ export function DraggableRangeBar({
   onScaleRequest,
   onScaleRelease,
   onRangeChange,
+  playheadFrame,
+  onSplit,
   onDelete,
 }: DraggableRangeBarProps) {
   const visibleFrameSpan = Math.max(scaleEnd - scaleStart, 1)
@@ -62,6 +71,15 @@ export function DraggableRangeBar({
   const leftPercent = ((clampedStart - scaleStart) / visibleFrameSpan) * 100
   const widthPercent = Math.max(((clampedEnd - clampedStart) / visibleFrameSpan) * 100, 0.6)
   const description = describe?.(range) ?? { text: label, title: label }
+
+  // Splitting and trimming need the playhead inside the bar, so neither part is left empty.
+  const playheadInside = playheadFrame > frameStart && playheadFrame < frameEnd
+  const menuItems: ContextMenuItem[] = [
+    { label: 'Split at playhead', disabled: !playheadInside, onSelect: () => onSplit(playheadFrame) },
+    { label: 'Trim start to playhead', disabled: !playheadInside, onSelect: () => onRangeChange(playheadFrame, frameEnd, 'resize') },
+    { label: 'Trim end to playhead', disabled: !playheadInside, onSelect: () => onRangeChange(frameStart, playheadFrame, 'resize') },
+    { label: 'Delete', danger: true, onSelect: onDelete },
+  ]
 
   return (
     <>
@@ -95,7 +113,7 @@ export function DraggableRangeBar({
       </div>
 
       {menu && (
-        <ContextMenu x={menu.x} y={menu.y} items={[{ label: 'Delete', danger: true, onSelect: onDelete }]} onClose={closeMenu} />
+        <ContextMenu x={menu.x} y={menu.y} items={menuItems} onClose={closeMenu} />
       )}
     </>
   )

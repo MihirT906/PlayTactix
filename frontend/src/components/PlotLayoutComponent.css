@@ -92,7 +92,7 @@
   overflow: hidden;
   /* Sizes are divided by the scale so they come out at their stated size on screen. The edge
      is a shadow ring, not a border, so docking leaves the pitch's layout size alone. */
-  border-radius: calc(12px / var(--dock-scale));
+  border-radius: calc(var(--match-section-radius) / var(--dock-scale));
   background: var(--app-shell-background);
   box-shadow:
     0 0 0 calc(1px / var(--dock-scale)) var(--glass-border),

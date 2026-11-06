@@ -105,7 +105,7 @@ type MatchSessionContextValue = {
   endOverlaySegmentAt: (kind: OverlaySegmentKind, clipFrame: number) => void
   removeOverlaySegment: (index: number) => void
   splitOverlaySegment: (index: number, clipFrame: number) => void
-  setOverlaySegmentRange: (index: number, clipStart: number, clipEnd: number) => void
+  setOverlaySegmentRange: (index: number, clipStart: number, clipEnd: number, kind: 'move' | 'resize') => void
 
   setFrameLoading: (isLoading: boolean) => void
   setLoadedFrameRanges: (ranges: { start: number; end: number }[]) => void
@@ -522,15 +522,15 @@ export function MatchSessionProvider({
             })
         },
 
-        setOverlaySegmentRange: (index: number, clipStart: number, clipEnd: number) => {
+        setOverlaySegmentRange: (index: number, clipStart: number, clipEnd: number, kind: 'move' | 'resize') => {
             setSession((prev) => {
-                logger.info('Clip overlay segment range changed', { index, clipStart, clipEnd })
+                logger.info('Clip overlay segment range changed', { index, clipStart, clipEnd, kind })
 
                 return {
                     ...prev,
                     playback: {
                         ...prev.playback,
-                        clip: clipManager.setOverlayRange(prev.playback.clip, index, clipStart, clipEnd),
+                        clip: clipManager.setOverlayRange(prev.playback.clip, index, clipStart, clipEnd, kind),
                     },
                 }
             })

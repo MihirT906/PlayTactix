@@ -29,7 +29,7 @@ type BackgroundRowProps = {
   labelWidth: number
   trackWidth: number
   currentFrameOffsetPercent: number
-  onRangeChange: (index: number, clipStart: number, clipEnd: number) => void
+  onRangeChange: (index: number, clipStart: number, clipEnd: number, kind: 'move' | 'resize') => void
   onSplit: (index: number, clipFrame: number) => void
   onDelete: (index: number) => void
   /** The playhead's clip frame, where a bar is split or trimmed from its right-click menu. */
@@ -39,8 +39,9 @@ type BackgroundRowProps = {
 
 /**
  * One overlay type (pitch, pitch control, pass probability, ...): a bar for each clip range it's shown
- * for. Turning an overlay off and on again leaves several bars on the same row; each can only be
- * dragged up to its neighbours, so two bars of one type never overlap.
+ * for. Turning an overlay off and on again leaves several bars on the same row; an edge can only be
+ * pulled up to its neighbours, and a bar moved past one changes places with it, so two bars of one
+ * type never overlap.
  */
 export function BackgroundRow({
   type,
@@ -78,11 +79,13 @@ export function BackgroundRow({
           scaleEnd={scaleEnd}
           minFrame={position > 0 ? sorted[position - 1].overlay.clipEnd + 1 : minFrame}
           maxFrame={position < sorted.length - 1 ? sorted[position + 1].overlay.clipStart - 1 : maxFrame}
+          moveMinFrame={minFrame}
+          moveMaxFrame={maxFrame}
           label={label}
           describe={describeWithDuration(label)}
           className={OVERLAY_BAR_CLASS_NAMES[type]}
           style={barStyle}
-          onRangeChange={(clipStart, clipEnd) => onRangeChange(index, clipStart, clipEnd)}
+          onRangeChange={(clipStart, clipEnd, kind) => onRangeChange(index, clipStart, clipEnd, kind)}
           playheadFrame={clipFrame}
           onSplit={(frame) => onSplit(index, frame)}
           onDelete={() => onDelete(index)}

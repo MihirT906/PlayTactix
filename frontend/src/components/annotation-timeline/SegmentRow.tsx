@@ -114,6 +114,9 @@ export function SegmentRow({
             scaleEnd={scaleEnd}
             minFrame={minFrame}
             maxFrame={maxFrame}
+            // A move keeps the footage, so only the clip start holds it back; passing a neighbour swaps the two.
+            moveMinFrame={0}
+            moveMaxFrame={Number.POSITIVE_INFINITY}
             onScaleRequest={onScaleRequest}
             onScaleRelease={onScaleRelease}
             label={label}

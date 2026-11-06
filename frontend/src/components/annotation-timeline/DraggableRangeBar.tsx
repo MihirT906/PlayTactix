@@ -17,6 +17,9 @@ type DraggableRangeBarProps = {
   /** Hard clip-frame bounds for a dragged edge (source footage + neighbours). Defaults to the scale. */
   minFrame?: number
   maxFrame?: number
+  /** Bounds for moving the whole bar, when it may pass its neighbours to change places. Default to minFrame/maxFrame. */
+  moveMinFrame?: number
+  moveMaxFrame?: number
   /** Option B auto-grow: widen the visible scale to at least this frame while an edge is pulled past the end. */
   onScaleRequest?: (frameEnd: number) => void
   /** The drag ended - drop any transient scale widening. */
@@ -45,6 +48,8 @@ export function DraggableRangeBar({
   style,
   minFrame,
   maxFrame,
+  moveMinFrame,
+  moveMaxFrame,
   onScaleRequest,
   onScaleRelease,
   onRangeChange,
@@ -59,6 +64,8 @@ export function DraggableRangeBar({
     scaleEnd,
     minFrame,
     maxFrame,
+    moveMinFrame,
+    moveMaxFrame,
     onScaleRequest,
     onScaleRelease,
     onCommit: (range, edge) => onRangeChange(range.frameStart, range.frameEnd, edge === 'move' ? 'move' : 'resize'),

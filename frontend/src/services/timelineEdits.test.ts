@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import AnnotationStore from './AnnotationStore-optimized'
-import { splitOverlayAt, splitSegmentAt } from './clipManager'
+import { arrangeAfterMove, setOverlayRange, setSegmentRange, splitOverlayAt, splitSegmentAt } from './clipManager'
 import type { Clip } from '../types/ClipInterfaces'
 
 const clip: Clip = {
@@ -69,5 +69,72 @@ describe('AnnotationStore.splitAnnotation', () => {
     store.splitAnnotation(original.key, 40, 20)
 
     expect(store.getAllAnnotations()).toHaveLength(1)
+  })
+})
+
+describe('arrangeAfterMove', () => {
+  const spans = [
+    { start: 0, end: 100 },
+    { start: 100, end: 300 },
+    { start: 350, end: 400 },
+  ]
+
+  it('trades places with the bars it passes, keeping their gaps and footprint', () => {
+    // The first bar dropped past the second's centre but not the third's.
+    expect(arrangeAfterMove(spans, 0, 220, 0)).toEqual([
+      { from: 1, start: 0, end: 200 },
+      { from: 0, start: 200, end: 300 },
+      { from: 2, start: 350, end: 400 },
+    ])
+    // The last bar dropped at the very start passes both; the gap that was second stays second.
+    expect(arrangeAfterMove(spans, 2, 0, 0)).toEqual([
+      { from: 2, start: 0, end: 50 },
+      { from: 0, start: 50, end: 150 },
+      { from: 1, start: 200, end: 400 },
+    ])
+  })
+
+  it('lets a long bar pass a short one at the start of the row', () => {
+    // 17s from 0, then 98s from 21s (10 frames a second): the long one's centre can't get past the short one's.
+    const pair = [
+      { start: 0, end: 170 },
+      { start: 210, end: 1190 },
+    ]
+    expect(arrangeAfterMove(pair, 1, 0, 0)).toEqual([
+      { from: 1, start: 0, end: 980 },
+      { from: 0, start: 1020, end: 1190 },
+    ])
+  })
+
+  it('stays between its neighbours when it passes none', () => {
+    expect(arrangeAfterMove(spans, 2, 290, 0)).toContainEqual({ from: 2, start: 300, end: 350 })
+    expect(arrangeAfterMove(spans, 2, 360, 0)).toContainEqual({ from: 2, start: 360, end: 410 })
+  })
+})
+
+describe('moving past a neighbour', () => {
+  it('reorders match segments, keeping their footage and the array in time order', () => {
+    const moved = setSegmentRange(clip, 0, 250, 350, 'move')
+    expect(moved.matchSegments).toEqual([
+      { ...clip.matchSegments[1], clipStart: 0, clipEnd: 200 },
+      { ...clip.matchSegments[0], clipStart: 200, clipEnd: 300 },
+    ])
+    expect(moved.length).toBe(300)
+  })
+
+  it('reorders overlays of one type, a frame apart, leaving other types alone', () => {
+    const withOverlays: Clip = {
+      ...clip,
+      overlaySegments: [
+        { type: 'voronoi', clipStart: 0, clipEnd: 49 },
+        { type: 'pitch', clipStart: 0, clipEnd: 300 },
+        { type: 'voronoi', clipStart: 100, clipEnd: 199 },
+      ],
+    }
+    expect(setOverlayRange(withOverlays, 0, 180, 229, 'move').overlaySegments).toEqual([
+      { type: 'voronoi', clipStart: 150, clipEnd: 199 },
+      { type: 'pitch', clipStart: 0, clipEnd: 300 },
+      { type: 'voronoi', clipStart: 0, clipEnd: 99 },
+    ])
   })
 })

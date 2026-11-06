@@ -200,8 +200,35 @@ export function splitOverlayAt(clip: Clip, index: number, clipFrame: number): Cl
   }
 }
 
-// A type can have several segments, so a segment is addressed by its index.
-export function setOverlayRange(clip: Clip, index: number, clipStart: number, clipEnd: number): Clip {
+// A type can have several segments, so a segment is addressed by its index. A moved segment may pass the
+// others of its type, which reorders them (see arrangeAfterMove); overlay ranges include both ends, so two
+// are always kept a frame apart.
+export function setOverlayRange(
+  clip: Clip,
+  index: number,
+  clipStart: number,
+  clipEnd: number,
+  kind: 'move' | 'resize' = 'resize'
+): Clip {
+  const overlay = clip.overlaySegments[index]
+  if (overlay && kind === 'move') {
+    const sameType = clip.overlaySegments.flatMap((current, i) => (current.type === overlay.type ? [i] : []))
+    const arranged = arrangeAfterMove(
+      sameType.map((i) => ({ start: clip.overlaySegments[i].clipStart, end: clip.overlaySegments[i].clipEnd })),
+      sameType.indexOf(index),
+      clipStart,
+      1
+    )
+    const placed = new Map(arranged.map(({ from, start, end }) => [sameType[from], { start, end }]))
+    return {
+      ...clip,
+      overlaySegments: clip.overlaySegments.map((current, i) => {
+        const range = placed.get(i)
+        return range ? { ...current, clipStart: range.start, clipEnd: range.end } : current
+      }),
+    }
+  }
+
   return {
     ...clip,
     overlaySegments: clip.overlaySegments.map((overlay, i) =>
@@ -210,9 +237,61 @@ export function setOverlayRange(clip: Clip, index: number, clipStart: number, cl
   }
 }
 
+type Span = { start: number; end: number }
+
+// Where every bar of a row lands once the bar at `index` is dropped at `start`, in time order, each with the
+// index it came from. `gap` is the least room kept between two bars (0 when they may share a frame).
+//
+// Dropped with its leading edge (its start moving left, its end moving right) past another bar's centre,
+// the bar trades places with the ones it passed: they
+// are laid out again in the new order over the stretch they took up together, keeping the gaps between
+// them where they were, so nothing else on the row moves. Dropped without passing one, it goes where it
+// was dropped, held to the room between its neighbours.
+export function arrangeAfterMove(spans: Span[], index: number, start: number, gap: number): (Span & { from: number })[] {
+  const ordered = spans.map((span, from) => ({ ...span, from })).sort((a, b) => a.start - b.start)
+  const position = ordered.findIndex((span) => span.from === index)
+  if (position === -1) return ordered
+
+  const moved = ordered[position]
+  const length = moved.end - moved.start
+  // The edge leading the move decides what it passed: a long bar could never get its centre past a short
+  // one at the very start or end of the row, but its leading edge always can.
+  const center = (span: Span) => (span.start + span.end) / 2
+  const leadingEdge = start < moved.start ? start : start + length
+  const target =
+    start === moved.start
+      ? position
+      : ordered.filter((span) => span.from !== index && center(span) < leadingEdge).length
+
+  if (target === position) {
+    const previous = ordered[position - 1]
+    const next = ordered[position + 1]
+    const lo = previous ? previous.end + gap : Number.NEGATIVE_INFINITY
+    const hi = next ? next.start - gap - length : Number.POSITIVE_INFINITY
+    const placed = Math.min(Math.max(start, lo), hi)
+    return ordered.map((span) => (span.from === index ? { ...span, start: placed, end: placed + length } : span))
+  }
+
+  const first = Math.min(position, target)
+  const last = Math.max(position, target)
+  const gaps = ordered.slice(first, last).map((span, i) => ordered[first + i + 1].start - span.end)
+  const reordered = [...ordered]
+  reordered.splice(position, 1)
+  reordered.splice(target, 0, moved)
+
+  let cursor = ordered[first].start
+  for (let i = first; i <= last; i++) {
+    const span = reordered[i]
+    const spanLength = span.end - span.start
+    reordered[i] = { ...span, start: cursor, end: cursor + spanLength }
+    cursor += spanLength + (gaps[i - first] ?? 0)
+  }
+  return reordered
+}
+
 // Moves/resizes the match segment at `index` to the given clip-relative range. A 'move' relocates
 // the same fixed source footage to a different spot on the clip timeline, so the source frame
-// range is left untouched. A 'resize' trims/extends which source footage is included, so the
+// range is left untouched; dropped past another segment, it changes places with it. A 'resize' trims/extends which source footage is included, so the
 // corresponding source edge shifts by the same delta as the clip edge that moved.
 //
 // The clip length is kept exactly fitted to the furthest segment end, so resizing the
@@ -228,20 +307,27 @@ export function setSegmentRange(
   const segment = clip.matchSegments[index]
   if (!segment) return clip
 
-  const startDelta = kind === 'move' ? 0 : clipStart - segment.clipStart
-  const endDelta = kind === 'move' ? 0 : clipEnd - segment.clipEnd
-
-  const matchSegments = clip.matchSegments.map((current, i) =>
-    i === index
-      ? {
-          ...current,
+  // A moved segment keeps its footage and may pass the others, which reorders them (see arrangeAfterMove);
+  // the array stays in time order, as the timeline reads neighbours by index.
+  const matchSegments =
+    kind === 'move'
+      ? arrangeAfterMove(
+          clip.matchSegments.map((current) => ({ start: current.clipStart, end: current.clipEnd })),
+          index,
           clipStart,
-          clipEnd,
-          sourceFrameStart: current.sourceFrameStart + startDelta,
-          sourceFrameEnd: current.sourceFrameEnd + endDelta,
-        }
-      : current
-  )
+          0
+        ).map(({ from, start, end }) => ({ ...clip.matchSegments[from], clipStart: start, clipEnd: end }))
+      : clip.matchSegments.map((current, i) =>
+          i === index
+            ? {
+                ...current,
+                clipStart,
+                clipEnd,
+                sourceFrameStart: current.sourceFrameStart + clipStart - segment.clipStart,
+                sourceFrameEnd: current.sourceFrameEnd + clipEnd - segment.clipEnd,
+              }
+            : current
+        )
 
   const previousLength = clip.length
   const length = Math.max(1, ...matchSegments.map((current) => current.clipEnd))

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
 import { Link, Navigate, Route, Routes, matchPath, useBlocker, useMatch, useNavigate } from 'react-router-dom'
 import './App.css'
 import DataManager from './services/DataManager'
@@ -13,13 +13,13 @@ import type { FrameData } from './types/FrameDataInterfaces'
 import type { KeyMomentsData } from './types/KeyMomentsDataInterfaces'
 import MatchDetailsDisplay from './components/MatchDetailsDisplay'
 import MatchIsland from './components/MatchIsland'
-import { StyleConfigProvider } from './context/StyleConfigContext'
+import { StyleConfigProvider, useStyleConfig } from './context/StyleConfigContext'
 import PlotLayoutComponent from './components/PlotLayoutComponent'
 import MatchPicker from './components/MatchPicker'
 import ProjectControls from './components/ProjectControls'
 import WorkspaceSidebar from './components/WorkspaceSidebar'
 import { MatchSessionProvider, useMatchSession } from './context/MatchSessionContext'
-import { workFingerprint } from './services/projectSerializer'
+import { workFingerprint, type LiveStyle } from './services/projectSerializer'
 
 const DISCARD_WORK_MESSAGE = 'Your clip has changes you have not saved. Discard them?'
 
@@ -37,6 +37,15 @@ const workspacePath = (matchId: number) => `/matches/${matchId}`
 const parseMatchId = (raw: string | undefined) => {
   const matchId = Number(raw)
   return Number.isInteger(matchId) && matchId >= 0 ? matchId : null
+}
+
+// AppContent renders the style provider, so it can't read the style itself; this keeps a copy where it can.
+function StyleReporter({ styleRef }: { styleRef: RefObject<LiveStyle | null> }) {
+  const style = useStyleConfig()
+  useEffect(() => {
+    styleRef.current = style
+  })
+  return null
 }
 
 function App({
@@ -123,16 +132,20 @@ function AppContent({
     // The work as it was last saved, loaded or freshly opened; anything different is unsaved.
     // Recorded in an effect so it reads the session after the change that made it clean has rendered.
     const savedWorkRef = useRef<string | null>(null)
+    const styleRef = useRef<LiveStyle | null>(null)
+    const currentWork = () =>
+      styleRef.current &&
+      workFingerprint({ session, style: styleRef.current, matchData: matchMetaData, annotationStore, timelineStore })
     const [savedWorkRequest, setSavedWorkRequest] = useState(0)
     const markWorkSaved = useCallback(() => setSavedWorkRequest((request) => request + 1), [])
     useEffect(() => {
       if (savedWorkRequest === 0) return
-      savedWorkRef.current = workFingerprint({ session, annotationStore, timelineStore })
+      savedWorkRef.current = currentWork()
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [savedWorkRequest])
 
     const hasUnsavedWork = () =>
-      selectedMatchId !== null && savedWorkRef.current !== workFingerprint({ session, annotationStore, timelineStore })
+      selectedMatchId !== null && savedWorkRef.current !== currentWork()
     const confirmDiscardWork = () => !hasUnsavedWork() || window.confirm(DISCARD_WORK_MESSAGE)
 
     // Warn before a refresh or closed tab throws the clip away.
@@ -367,6 +380,7 @@ function AppContent({
 
     return (
       <StyleConfigProvider matchData={matchMetaData}>
+        <StyleReporter styleRef={styleRef} />
         <div className="app-shell">
           <header className="app-header">
             <div className="app-title-group">

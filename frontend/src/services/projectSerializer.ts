@@ -24,7 +24,7 @@ const logger = getLogger('projectSerializer')
 type StoredAnnotation = ReturnType<AnnotationStore['getAllAnnotations']>[number]
 
 // The style as the style context holds it, with the kit colours each team follows until the user picks its own.
-type LiveStyle = {
+export type LiveStyle = {
   homeTeamColor: string
   awayTeamColor: string
   kitColors: { home: string; away: string }
@@ -207,10 +207,19 @@ export function restoreProject(project: SavedProject): RestoredProject {
   }
 }
 
-// The user's work as a comparable string: what a project file holds, less its timestamp and colours.
-// Colours are left out because they follow the match's kits, so they change without the user doing anything.
-export function workFingerprint({ session, annotationStore, timelineStore }: Omit<SerializeInput, 'style' | 'matchData'>): string {
+// The user's work as a comparable string: what a project file holds, less its timestamp.
+// Colours count as the file keeps them, null while they follow the kit, so the kit arriving isn't an edit.
+// Until the match's metadata is in the kit isn't known, so colours count as following it.
+export function workFingerprint({ session, style, matchData, annotationStore, timelineStore }: SerializeInput): string {
+  const kitKnown = matchData !== null
   return JSON.stringify({
+    style: {
+      homeTeamColor: kitKnown ? ownColor(style.homeTeamColor, style.kitColors.home) : null,
+      awayTeamColor: kitKnown ? ownColor(style.awayTeamColor, style.kitColors.away) : null,
+      teamVisibility: style.teamVisibility,
+      eventStyles: style.eventStyles,
+      eventVisibility: style.eventVisibility,
+    },
     clip: session.playback.clip,
     eventMap: {
       filters: session.overlays.eventMapFilters,

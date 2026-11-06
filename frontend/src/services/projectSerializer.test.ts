@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import AnnotationStore from './AnnotationStore-optimized'
 import TimelineStore from './TimelineStore'
 import { createInitialMatchSessionState } from '../context/MatchSessionContext'
-import { restoreProject, serializeProject } from './projectSerializer'
+import { restoreProject, serializeProject, workFingerprint } from './projectSerializer'
+import type { MatchData } from '../types/MatchDataInterfaces'
 import { parseProject, type SavedProject } from '../types/SavedProject'
 
 const MATCH_ID = 2017461
@@ -74,6 +75,37 @@ describe('project round trip', () => {
     const { saved } = save()
 
     expect(saved.analysis.timelines.every((timeline) => !('label' in timeline))).toBe(true)
+  })
+})
+
+describe('workFingerprint', () => {
+  // Only its presence matters: it says the kit colours are known.
+  const matchData = {} as MatchData
+  // Built once, since annotations get fresh keys each time.
+  const work = buildWork()
+  const fingerprint = (overrides: Partial<typeof style> = {}, data: MatchData | null = matchData) =>
+    workFingerprint({ ...work, style: { ...style, ...overrides }, matchData: data })
+
+  it('counts a style edit as a change', () => {
+    expect(fingerprint({ awayTeamColor: '#ABCDEF' })).not.toBe(fingerprint())
+    expect(fingerprint({ teamVisibility: { home: false, away: false } })).not.toBe(fingerprint())
+    expect(fingerprint({ eventStyles: { offBallRun: { color: '#000000', width: 2 } } })).not.toBe(fingerprint())
+    expect(fingerprint({ eventVisibility: { offBallRun: true } })).not.toBe(fingerprint())
+  })
+
+  it('does not count a colour following its kit as a change', () => {
+    const before = fingerprint({ homeTeamColor: '#3B82F6', kitColors: { home: '#3B82F6', away: '#EF4444' } })
+    const after = fingerprint({ homeTeamColor: '#FFFFFF', kitColors: { home: '#FFFFFF', away: '#EF4444' } })
+
+    expect(after).toBe(before)
+  })
+
+  it('does not count the kit arriving as a change', () => {
+    // Before the metadata is in, the colours are still the previous match's.
+    const opened = fingerprint({ homeTeamColor: '#111111', awayTeamColor: '#222222' }, null)
+    const kitArrived = fingerprint({ awayTeamColor: '#EF4444' })
+
+    expect(kitArrived).toBe(opened)
   })
 })
 

@@ -101,18 +101,11 @@ export const StyleConfigProvider = ({ children, matchData }: StyleConfigProvider
 	};
 
 	useEffect(() => {
-		if (matchData !== null && restoredForMatchData.current === matchData) return;
+		if (matchData === null || restoredForMatchData.current === matchData) return;
 
-		const homeColor = matchData?.home_team_kit?.jersey_color;
-		const awayColor = matchData?.away_team_kit?.jersey_color;
-
-		if (typeof homeColor === 'string' && homeColor.length > 0) {
-			setHomeTeamColor(normalizeColor(homeColor));
-		}
-
-		if (typeof awayColor === 'string' && awayColor.length > 0) {
-			setAwayTeamColor(normalizeColor(awayColor));
-		}
+		// A team without a kit colour takes the default, not the previous match's colour.
+		setHomeTeamColor(kitColor(matchData.home_team_kit?.jersey_color, DEFAULT_STYLE_CONFIG.homeTeamColor));
+		setAwayTeamColor(kitColor(matchData.away_team_kit?.jersey_color, DEFAULT_STYLE_CONFIG.awayTeamColor));
 	}, [matchData]);
 
 	return (

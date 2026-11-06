@@ -18,6 +18,7 @@ import PlotLayoutComponent from './components/PlotLayoutComponent'
 import MatchPicker from './components/MatchPicker'
 import ProjectControls from './components/ProjectControls'
 import WorkspaceSidebar from './components/WorkspaceSidebar'
+import BrandTitle from './components/brand/BrandTitle'
 import { MatchSessionProvider, useMatchSession } from './context/MatchSessionContext'
 import { workFingerprint, type LiveStyle } from './services/projectSerializer'
 
@@ -386,7 +387,7 @@ function AppContent({
             <div className="app-title-group">
               <h1 className="app-title">
                 <Link to={ROUTES.landing} className="app-title-link" onClick={clearSidebarPanel}>
-                  {APP_CONFIG.brand.title}
+                  <BrandTitle title={APP_CONFIG.brand.title} />
                 </Link>
               </h1>
             </div>

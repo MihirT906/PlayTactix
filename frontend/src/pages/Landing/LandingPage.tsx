@@ -37,17 +37,17 @@ export default function LandingPage({ onChooseGame }: LandingPageProps) {
             <div className="landing-copy">
               <section className="landing-intro">
                 <p className="landing-lede">
-                  {APP_CONFIG.brand.title} is a telestrator for football tracking data. You know when a TV analyst freezes
-                  the replay and starts drawing on the screen to show you what really happened? Now you can do that
-                  yourself, with every player and every touch of the match to work from. Find the moments that matter,
-                  lay the analysis over the action, and turn it into a clip that makes your point, whether you're making
-                  it to a squad, a scout, an audience or a mate who thinks they know better. Pick a match to start.
+                  You've watched pundits break down plays at half-time. Now it's your turn. Every match has a moment you
+                  want to go back to: the run nobody picked up, the pass that was on and never played.{' '}
+                  {APP_CONFIG.brand.title} puts that moment back on the pitch and hands you the pen. The players move exactly as they did, rebuilt from tracking data. Replay it,
+                  switch on the built-in analysis overlays, draw on it to make your point, and save the clip for your
+                  squad, or for the mate who still thinks they know better. Pick a match and see what you find.
                 </p>
                 <div className="landing-actions">
                   <button type="button" className="landing-cta" onClick={onChooseGame}>
                     Choose Game
                   </button>
-                  <Link className="landing-cta landing-cta-secondary" to={DOCS_HOME_PATH}>
+                  <Link className="landing-cta landing-cta-secondary" to={DOCS_HOME_PATH} target="_blank" rel="noopener">
                     Read the Docs
                   </Link>
                 </div>

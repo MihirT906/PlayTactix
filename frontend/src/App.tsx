@@ -413,10 +413,7 @@ function AppContent({
               <button
                 type="button"
                 className={`app-header-action ${isDocsRoute ? 'is-active' : ''}`}
-                onClick={() => {
-                  clearSidebarPanel()
-                  navigate(ROUTES.docs)
-                }}
+                onClick={() => window.open(ROUTES.docs, '_blank', 'noopener')}
                 aria-label="Docs"
               >
                 Docs

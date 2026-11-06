@@ -15,7 +15,7 @@ _CHUNK_SIZE = 1024 * 1024
 
 # One lock per match_id, so two concurrent requests for the same not-yet-cached
 # match wait for each other instead of racing to download/write it twice.
-# Matches are namespaced by id (see docs/multi-user-match-caching.md), so a
+# Matches are namespaced by id (see docs/decisions/001-per-match-cache.md), so a
 # lock for one match_id never blocks loading a different one.
 _match_locks: dict[int, threading.Lock] = {}
 _match_locks_guard = threading.Lock()

@@ -174,10 +174,12 @@ PlayTactix/
 
 FastAPI also serves interactive API docs at `http://localhost:8000/docs` while the backend is running.
 
-## Design Notes
+## Documentation
 
-- [Frame data caching](./docs/frame-data-caching.md) — proposed tiered cache architecture for tracking-frame playback, and the multi-segment problems it addresses (proposal, not yet implemented).
-- [Multi-user match caching](./docs/multi-user-match-caching.md) — the per-match backend cache that lets concurrent users load different matches independently (implemented; kept as a decision record).
+Full documentation is in [`docs/`](./docs/README.md): a user guide, how the backend and frontend work, the concepts behind the cache and locking, and the reasons for the main design decisions.
+
+- [System overview](./docs/architecture/system-overview.md): every part on one diagram.
+- [Decisions](./docs/decisions/README.md): why matches are cached per id, why match data is prebuilt, where it is stored, and a proposed frame cache for the browser.
 
 ## License
 

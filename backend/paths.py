@@ -8,7 +8,7 @@ DATA_DIR = REPO_ROOT / "data"
 # Per-match cache paths. Centralized here so the code that writes a match's
 # data (data_ingestor_github.py) and the code that reads it back
 # (frame_data_service.py, key_moments_service.py) can't drift out of sync on
-# filenames. See docs/multi-user-match-caching.md.
+# filenames. See docs/decisions/001-per-match-cache.md.
 def meta_data_path(match_id: int) -> Path:
     return DATA_DIR / f"meta_data_{match_id}.json"
 

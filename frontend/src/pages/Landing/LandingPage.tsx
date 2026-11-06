@@ -6,7 +6,7 @@ import './LandingPage.css'
 
 const FEATURES = [
   {
-    title: 'Find moments in football terms',
+    title: 'Find moments in soccer terms',
     body: "Open a match and filter down to what you're after: the moves that ended in a shot or a goal, what happened in one area of the pitch, what the full-backs were doing. No hunting through 90 minutes.",
   },
   {
@@ -37,11 +37,11 @@ export default function LandingPage({ onChooseGame }: LandingPageProps) {
             <div className="landing-copy">
               <section className="landing-intro">
                 <p className="landing-lede">
-                  You've watched pundits break down plays at half-time. Now it's your turn. Every match has a moment you
+                  You've watched analysts break down plays at half-time. Now it's your turn. Every match has a moment you
                   want to go back to: the run nobody picked up, the pass that was on and never played.{' '}
                   {APP_CONFIG.brand.title} puts that moment back on the pitch and hands you the pen. The players move exactly as they did, rebuilt from tracking data. Replay it,
                   switch on the built-in analysis overlays, draw on it to make your point, and save the clip for your
-                  squad, or for the mate who still thinks they know better. Pick a match and see what you find.
+                  squad, or for the buddy who still thinks they know better. Pick a match and see what you find.
                 </p>
                 <div className="landing-actions">
                   <button type="button" className="landing-cta" onClick={onChooseGame}>

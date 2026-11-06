@@ -8,7 +8,7 @@ export default function WhatIsTappd() {
   return (
     <>
       <p>
-        {brand} is a telestrator for football tracking data. Instead of drawing over a video of the match, you draw on
+        {brand} is a telestrator for soccer tracking data. Instead of drawing over a video of the match, you draw on
         the match itself: real players, in the positions they actually took, frame by frame.
       </p>
 
@@ -25,7 +25,7 @@ export default function WhatIsTappd() {
 
       <h2>Who it's for</h2>
       <p>
-        Anyone who explains football: a coach walking a squad through a move, an analyst making a case to a scout, a
+        Anyone who explains soccer: a coach walking a squad through a move, an analyst making a case to a scout, a
         creator breaking down a goal, or a fan settling an argument.
       </p>
 

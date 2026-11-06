@@ -31,10 +31,11 @@ const MatchPicker = ({ onMatchSelected, currentMatchId, confirmLeaveMatch }: Mat
                 if (!folderResponse.ok) {
                     throw new Error('Failed to fetch folder data');
                 }
-                const folders = await folderResponse.json();
+                // GitHub's contents API lists each entry with its name and whether it is a file or a directory.
+                const folders: Array<{ type: string; name: string }> = await folderResponse.json();
                 const folderNames = folders
-                    .filter((item: any) => item.type === 'dir')
-                    .map((item: any) => item.name);
+                    .filter((item) => item.type === 'dir')
+                    .map((item) => item.name);
 
                 const matchData = await Promise.all(
                     folderNames.map(async (folderName: string) => {

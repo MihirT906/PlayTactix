@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import type AnnotationStore from '../../services/AnnotationStore-optimized'
+import type { StoredAnnotation } from '../../services/AnnotationStore-optimized'
 import { TimelineRow } from './TimelineRow'
 import { describeWithDuration } from './barLabels'
 import { DraggableRangeBar } from './DraggableRangeBar'
@@ -14,27 +15,24 @@ const ROW_LABELS: Record<string, string> = {
   playerFocus: 'Player Focus',
 }
 
-const getAnnotationLabel = (annotation: { type: string; shape: any }, getPlayerName: (playerId: number) => string) => {
-  if (annotation.type === 'playerFocus') return getPlayerName(annotation.shape.playerId)
-
-  if (annotation.type === 'playerLine') {
-    const [player1, player2] = annotation.shape.players ?? []
-    return `P${player1 ?? '?'} ↔ P${player2 ?? '?'}`
+const getAnnotationLabel = (annotation: StoredAnnotation, getPlayerName: (playerId: number) => string) => {
+  switch (annotation.type) {
+    case 'playerFocus':
+      return getPlayerName(annotation.shape.playerId)
+    case 'playerLine': {
+      const [player1, player2] = annotation.shape.players
+      return `P${player1} ↔ P${player2}`
+    }
+    case 'arrow':
+      return 'Arrow'
+    case 'teamShape':
+      return `Shape (${annotation.shape.players.length} players)`
+    case 'draw':
+      return `Draw (${annotation.shape.type})`
   }
-
-  if (annotation.type === 'arrow') return 'Arrow'
-
-  if (annotation.type === 'teamShape') return `Shape (${annotation.shape.players?.length ?? 0} players)`
-
-  return annotation.shape?.type ? `Draw (${annotation.shape.type})` : 'Draw'
 }
 
-type LaidOutAnnotation = {
-  key: string
-  type: string
-  frameStart: number
-  frameEnd: number | null
-  shape: any
+type LaidOutAnnotation = StoredAnnotation & {
   laneIndex: number
   effectiveEnd: number
   isOngoing: boolean

@@ -18,8 +18,9 @@ interface MatchData {
   home_team_kit: TeamKit;
   away_team_kit: TeamKit;
 
-  home_team_coach: any | null;
-  away_team_coach: any | null;
+  // Not read anywhere yet, so left untyped.
+  home_team_coach: unknown;
+  away_team_coach: unknown;
 
   home_team_playing_time: PlayingTimeSummary;
   away_team_playing_time: PlayingTimeSummary;
@@ -46,7 +47,7 @@ interface MatchData {
     potential_overtime: boolean;
   };
 
-  referees: any[];
+  referees: unknown[];
 
   players: Player[];
 

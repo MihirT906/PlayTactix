@@ -1,3 +1,4 @@
+import type { Data } from 'plotly.js'
 import { PITCH_CONTROL_COLS, PITCH_CONTROL_ROWS, PITCH_LENGTH, PITCH_WIDTH } from '../pitchControl'
 import type { MatchData } from '../../types/MatchDataInterfaces'
 
@@ -54,7 +55,7 @@ export function buildPitchControlOverlay(
   pitchControl: number[][] | null,
   matchData: MatchData | null,
   config: PitchControlOverlayConfig,
-) {
+): Data[] | null {
   if (!pitchControl) {
     return null
   }

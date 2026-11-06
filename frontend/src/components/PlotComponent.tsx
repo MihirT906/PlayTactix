@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import Plot from 'react-plotly.js'
+import type { Data, PlotMouseEvent } from 'plotly.js'
 import { Arrows, Comet, Pitch, Voronoi } from '@pitchkit/react'
 import AnnotationStore from '../services/AnnotationStore-optimized'
 import type { Event, FrameData } from '../types/FrameDataInterfaces'
@@ -188,7 +189,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
   // restores the real tracked positions.
   const [positionOverrides, setPositionOverrides] = useState<Map<number, { x: number; y: number }>>(new Map())
   const isPlaying = session.playback.isPlaying
-  const graphDivRef = useRef<any>(null)
+  const graphDivRef = useRef<HTMLElement | null>(null)
   const dragStateRef = useRef<{ playerId: number } | null>(null)
   // Latest values the imperative pointer handlers need, kept in a ref so the
   // handlers can stay referentially stable (bound once to the graph div).
@@ -242,7 +243,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
   const frameEvents = useMemo(() => eventsActiveAt(matchEvents, frameData), [matchEvents, frameData]);
 
   // Trace for off-ball runs
-  const offBallRunTrace = useMemo(() => {
+  const offBallRunTrace = useMemo((): Data | null => {
     if (!eventVisibility.offBallRun) {
       return null;
     }
@@ -350,12 +351,12 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     const visibleTeamMask = getVisibleTeamMask(players.team);
     const applyVisibilityMask = (mask: boolean[]) => mask.map((isVisible, index) => isVisible && visibleTeamMask[index]);
 
-    const build = (mask: boolean[], lineColor: string, lineWidth = 1) => {
+    const build = (mask: boolean[], lineColor: string, lineWidth = 1): Data[] => {
       const visiblePlayerIds = filterByMask(players.player_id, mask)
       const visibleX = filterByMask(overriddenX, mask)
       const visibleY = filterByMask(overriddenY, mask)
 
-      const markerTrace = {
+      const markerTrace: Data = {
         x: visibleX,
         y: visibleY,
         customdata: visiblePlayerIds.map((playerId) => {
@@ -403,7 +404,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
         .map((playerId) => visiblePlayerIds.indexOf(playerId))
         .filter((index) => index !== -1)
 
-      const ringTrace = highlightedIndices.length > 0 ? {
+      const ringTrace: Data | null = highlightedIndices.length > 0 ? {
         x: highlightedIndices.map((index) => visibleX[index]),
         y: highlightedIndices.map((index) => visibleY[index]),
         mode: 'markers',
@@ -443,7 +444,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
   // never lag a frame behind. passOptionLabels holds each passing option's completion chance, written
   // at the middle of its line.
   const { overlayTraces, passOptionLabels } = useMemo(() => {
-    const traces: any[] = [];
+    const traces: Data[] = [];
     const labels: PassOptionProbLabel[] = [];
 
     if (isPassOptionProbActive) {
@@ -522,7 +523,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
   const { links, shapes, arrows, teamShapes, focusPoints } = useMemo(() => {
     annotationStore.reconstruct_active_annotations(clipFrame)
     const links: PlayerLink[] = []
-    for (const { key, players: [firstPoint, secondPoint] } of annotationStore.getPlayerLineAnnotations(clipFrame)) {
+    for (const { key, players: [firstPoint, secondPoint] } of annotationStore.getPlayerLineAnnotations()) {
       if (firstPoint === undefined || secondPoint === undefined) continue
       const { x: x0, y: y0 } = resolvePlayerPos(firstPoint)
       const { x: x1, y: y1 } = resolvePlayerPos(secondPoint)
@@ -532,14 +533,14 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     }
     // A team shape is the hull around its players' positions in this frame. It needs three of them in
     // the frame to enclose an area.
-    const teamShapes = annotationStore.getTeamShapeAnnotations(clipFrame).flatMap(({ key, players }): TeamShapeMark[] => {
+    const teamShapes = annotationStore.getTeamShapeAnnotations().flatMap(({ key, players }): TeamShapeMark[] => {
       const points = teamShapePoints(players)
       return points.length < 3 ? [] : [{ key, players, points, color: teamShapeColor(players) }]
     })
     return {
       links,
-      shapes: annotationStore.getDrawAnnotations(clipFrame),
-      arrows: annotationStore.getArrowAnnotations(clipFrame),
+      shapes: annotationStore.getDrawAnnotations(),
+      arrows: annotationStore.getArrowAnnotations(),
       teamShapes,
       // Focused players, each once even if two focus annotations overlap.
       focusPoints: [...new Set(annotationStore.getPlayerFocusAnnotations().map((focus) => focus.playerId))],
@@ -858,7 +859,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
   }, [DRAG_HIT_RADIUS_PX])
 
   // Bind the imperative pointer handlers once we have the Plotly graph div
-  const handleGraphDiv = useCallback((_figure: unknown, gd: any) => {
+  const handleGraphDiv = useCallback((_figure: unknown, gd: HTMLElement) => {
     if (!gd || graphDivRef.current === gd) return
     graphDivRef.current = gd
     gd.addEventListener('mousedown', onPlotMouseDown, true)
@@ -979,12 +980,14 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
   }
 
   // Allows the user to 'Focus' on a player (Link Players and Team Shape clicks go through handlePickClick instead)
-  const handleClick = (event: any) => {
+  const handleClick = (event: Readonly<PlotMouseEvent>) => {
     if (editMode == 'player_focus') {
       if (!event?.points?.length) return
       console.log(event.points)
-      const clickedPlayerId = event.points[0].customdata?.[0]
-      if (clickedPlayerId === undefined) return
+      // Each player marker carries [playerId, label] (see the player traces).
+      const customdata: unknown = event.points[0].customdata
+      const clickedPlayerId: unknown = Array.isArray(customdata) ? customdata[0] : undefined
+      if (typeof clickedPlayerId !== 'number') return
       // A focus is an annotation with its own range on the timeline: clicking focuses the player from
       // this frame on, and clicking a focused player ends the focus here.
       annotationStore.togglePlayerFocus(clickedPlayerId, clipFrame)
@@ -1140,8 +1143,8 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
             ...playerTraces,
             ...(offBallRunTrace ? [offBallRunTrace] : []),
             {
-              x: [frameData?.ball.ball_x],
-              y: [frameData?.ball.ball_y],
+              x: [frameData?.ball.ball_x ?? null],
+              y: [frameData?.ball.ball_y ?? null],
               mode: 'markers+text',
               type: 'scatter',
               hovertemplate: 'Ball<extra></extra>',
@@ -1153,7 +1156,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
                   width: 1,
                 },
               },
-            } as any,
+            },
           ]}
           layout={{
             // title: { text: plotConfig.title },

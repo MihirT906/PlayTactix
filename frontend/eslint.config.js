@@ -19,5 +19,16 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      // Each context file exports its hook (and the session its initial state) beside its provider.
+      // Editing one reloads the page rather than hot-swapping it, which is the trade for keeping them together.
+      'react-refresh/only-export-components': [
+        'error',
+        {
+          allowConstantExport: true,
+          allowExportNames: ['useMatchSession', 'useStyleConfig', 'createInitialMatchSessionState'],
+        },
+      ],
+    },
   },
 ])

@@ -1,8 +1,6 @@
 import {
 	createContext,
 	useContext,
-	useEffect,
-	useRef,
 	useState,
 	type ReactNode,
 } from 'react';
@@ -91,22 +89,22 @@ export const StyleConfigProvider = ({ children, matchData }: StyleConfigProvider
 	const [eventVisibility, setEventVisibilityState] = useState(DEFAULT_STYLE_CONFIG.eventVisibility);
 	// const [overlayVisibility, setOverlayVisibilityState] = useState<VisibilityState<OverlayVisibilityKey>>(DEFAULT_STYLE_CONFIG.overlayVisibility);
 
-	// The match whose kit colours a loaded project has already overridden, so the
-	// metadata effect below doesn't clobber restored colours (effect order vs. restore is not guaranteed).
-	const restoredForMatchData = useRef<MatchData | null>(null);
-
 	const kitColors = {
 		home: kitColor(matchData?.home_team_kit?.jersey_color, DEFAULT_STYLE_CONFIG.homeTeamColor),
 		away: kitColor(matchData?.away_team_kit?.jersey_color, DEFAULT_STYLE_CONFIG.awayTeamColor),
 	};
 
-	useEffect(() => {
-		if (matchData === null || restoredForMatchData.current === matchData) return;
-
-		// A team without a kit colour takes the default, not the previous match's colour.
-		setHomeTeamColor(kitColor(matchData.home_team_kit?.jersey_color, DEFAULT_STYLE_CONFIG.homeTeamColor));
-		setAwayTeamColor(kitColor(matchData.away_team_kit?.jersey_color, DEFAULT_STYLE_CONFIG.awayTeamColor));
-	}, [matchData]);
+	// The match whose kits the colours were last reset to. Checked during render rather than in an effect,
+	// so the reset lands before any effect of the same commit, like a loaded project restoring its colours.
+	const [kitMatchData, setKitMatchData] = useState<MatchData | null>(null);
+	if (matchData !== kitMatchData) {
+		setKitMatchData(matchData);
+		if (matchData !== null) {
+			// A team without a kit colour takes the default, not the previous match's colour.
+			setHomeTeamColor(kitColors.home);
+			setAwayTeamColor(kitColors.away);
+		}
+	}
 
 	return (
 		<StyleConfigContext.Provider
@@ -119,7 +117,6 @@ export const StyleConfigProvider = ({ children, matchData }: StyleConfigProvider
 				kitColors,
 				// overlayVisibility,
 				setAllStyle: (style) => {
-					restoredForMatchData.current = matchData;
 					// A colour left null follows the kit.
 					setHomeTeamColor(style.homeTeamColor === null ? kitColors.home : normalizeColor(style.homeTeamColor));
 					setAwayTeamColor(style.awayTeamColor === null ? kitColors.away : normalizeColor(style.awayTeamColor));

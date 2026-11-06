@@ -56,7 +56,7 @@ describe('AnnotationStore.splitAnnotation', () => {
     expect(second).toMatchObject({ type: 'arrow', frameStart: 50, frameEnd: null, shape: original.shape })
     expect(second.key).not.toBe(original.key)
     expect(second.shape).not.toBe(first.shape)
-    expect(store.getArrowAnnotations(50).map((arrow) => arrow.key)).toEqual([second.key])
+    expect(store.getArrowAnnotations().map((arrow) => arrow.key)).toEqual([second.key])
   })
 
   it('does nothing when the frame is not inside the annotation', () => {

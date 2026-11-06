@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 export type FrameRange = { frameStart: number; frameEnd: number }
 
@@ -61,7 +61,7 @@ type ScrollDirection = 'left' | 'right'
  *
  * The scale can grow mid-drag (pulling an edge past the visible end asks the
  * owner to widen it - see onScaleRequest), so the pointer handlers read scale,
- * bounds and callbacks through refs kept current on every render rather than
+ * bounds and callbacks through refs kept current after every render rather than
  * closing over stale render-time values.
  */
 export function useRangeDrag({
@@ -86,15 +86,18 @@ export function useRangeDrag({
   const onScaleRequestRef = useRef(onScaleRequest)
   const onScaleReleaseRef = useRef(onScaleRelease)
   const onCommitRef = useRef(onCommit)
-  scaleStartRef.current = scaleStart
-  scaleEndRef.current = scaleEnd
-  minFrameRef.current = minFrame
-  maxFrameRef.current = maxFrame
-  moveMinFrameRef.current = moveMinFrame
-  moveMaxFrameRef.current = moveMaxFrame
-  onScaleRequestRef.current = onScaleRequest
-  onScaleReleaseRef.current = onScaleRelease
-  onCommitRef.current = onCommit
+  // Only the pointer handlers read these, and they run after the render has committed.
+  useLayoutEffect(() => {
+    scaleStartRef.current = scaleStart
+    scaleEndRef.current = scaleEnd
+    minFrameRef.current = minFrame
+    maxFrameRef.current = maxFrame
+    moveMinFrameRef.current = moveMinFrame
+    moveMaxFrameRef.current = moveMaxFrame
+    onScaleRequestRef.current = onScaleRequest
+    onScaleReleaseRef.current = onScaleRelease
+    onCommitRef.current = onCommit
+  })
 
   const dragRef = useRef<ActiveDrag | null>(null)
 

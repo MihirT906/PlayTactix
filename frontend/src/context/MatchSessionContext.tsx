@@ -2,7 +2,6 @@ import {
   createContext,
   useContext,
   useMemo,
-  useRef,
   useState,
   type ReactNode,
 } from 'react'
@@ -159,14 +158,15 @@ export function MatchSessionProvider({
 }: MatchSessionProviderProps) {
   const [session, setSession] = useState<MatchSessionState>(createInitialMatchSessionState)
 
-  const plotActionsRef = useRef<PlotActions>({ eraseActiveShape: null })
+  // One object for the provider's lifetime; the plot sets its handlers on it and the sidebar calls them.
+  const [plotActions] = useState<PlotActions>(() => ({ eraseActiveShape: null }))
 
   const resources = useMemo(
     () => ({
         dataManager,
-        plotActions: plotActionsRef.current,
+        plotActions,
     }),
-    [dataManager]
+    [dataManager, plotActions]
   )
 
   const value = useMemo<MatchSessionContextValue>(() => {

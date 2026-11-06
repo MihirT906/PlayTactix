@@ -3,12 +3,27 @@ import type { DrawShape, Segment } from "../plot/annotationGeometry";
 
 const logger = getLogger("AnnotationStore");
 
-interface Annotation {
-    type: string;
-    frameStart?: number;
-    frameEnd?: number;
-    shape: any;
-}
+// What each type of annotation is drawn from.
+type AnnotationShapes = {
+    draw: DrawShape;
+    arrow: Segment;
+    playerLine: { players: [number, number] };
+    teamShape: { players: number[] };
+    playerFocus: { playerId: number };
+};
+
+export type AnnotationType = keyof AnnotationShapes;
+
+type Annotation = {
+    [T in AnnotationType]: { type: T; frameStart?: number; frameEnd?: number; shape: AnnotationShapes[T] };
+}[AnnotationType];
+
+type AnnotationOfType<T extends AnnotationType> = Extract<Annotation, { type: T }>;
+
+// An annotation as getAllAnnotations lists it and load takes it back.
+export type StoredAnnotation = {
+    [T in AnnotationType]: { key: string; type: T; frameStart: number; frameEnd: number | null; shape: AnnotationShapes[T] };
+}[AnnotationType];
 
 let drawCounter = 0;
 function newDrawKey(type: string): string {
@@ -46,7 +61,7 @@ function newKeyLike(annotation: Annotation): string {
         case 'arrow': return newArrowKey();
         case 'teamShape': return newTeamShapeKey();
         case 'playerFocus': return newPlayerFocusKey();
-        default: return newDrawKey(annotation.shape?.type ?? annotation.type);
+        default: return newDrawKey(annotation.shape.type);
     }
 }
 
@@ -123,8 +138,8 @@ export default class AnnotationStore {
     updateAnnotationGeometry(key: string, geometry: Segment) {
         // Moves or reshapes a drawn shape or an arrow over its whole range, keeping anything else it carries.
         const annotation = this.annotations.get(key);
-        if (!annotation || (annotation.type !== 'draw' && annotation.type !== 'arrow')) return;
-        annotation.shape = { ...annotation.shape, ...geometry };
+        if (annotation?.type === 'draw') annotation.shape = { ...annotation.shape, ...geometry };
+        else if (annotation?.type === 'arrow') annotation.shape = { ...annotation.shape, ...geometry };
     }
 
     addArrowAnnotation(x0: number, y0: number, x1: number, y1: number, currentFrame: number) {
@@ -156,10 +171,14 @@ export default class AnnotationStore {
         this.update_active_annotation(currentFrame)
     }
 
+    private activeOfType<T extends AnnotationType>(type: T): Array<[string, AnnotationOfType<T>]> {
+        return Array.from(this.active_annotations.entries()).filter(
+            (entry): entry is [string, AnnotationOfType<T>] => entry[1].type === type
+        );
+    }
+
     getPlayerFocusAnnotations(): Array<{ key: string; playerId: number }> {
-        return Array.from(this.active_annotations.entries())
-            .filter(([, annotation]) => annotation.type === 'playerFocus')
-            .map(([key, annotation]) => ({ key, playerId: annotation.shape.playerId }));
+        return this.activeOfType('playerFocus').map(([key, annotation]) => ({ key, playerId: annotation.shape.playerId }));
     }
 
     setTeamShapePlayers(key: string | null, players: number[], currentFrame: number): string | null {
@@ -170,7 +189,7 @@ export default class AnnotationStore {
             if (key) this.removeAnnotation(key);
             return null;
         }
-        if (key && existing) {
+        if (key && existing?.type === 'teamShape') {
             existing.shape = { players: [...players] };
             return key;
         }
@@ -186,38 +205,32 @@ export default class AnnotationStore {
         return uniqueKey;
     }
 
-    getTeamShapeAnnotations(_currentFrame: number): Array<{ key: string; players: number[] }> {
-        return Array.from(this.active_annotations.entries())
-            .filter(([, annotation]) => annotation.type === 'teamShape')
-            .map(([key, annotation]) => ({ key, players: annotation.shape.players }));
+    getTeamShapeAnnotations(): Array<{ key: string; players: number[] }> {
+        return this.activeOfType('teamShape').map(([key, annotation]) => ({ key, players: annotation.shape.players }));
     }
 
-    getArrowAnnotations(_currentFrame: number): Array<Segment & { key: string }> {
-        return Array.from(this.active_annotations.entries())
-            .filter(([, annotation]) => annotation.type === 'arrow')
+    getArrowAnnotations(): Array<Segment & { key: string }> {
+        return this.activeOfType('arrow')
             .map(([key, annotation]) => ({ key, x0: annotation.shape.x0, y0: annotation.shape.y0, x1: annotation.shape.x1, y1: annotation.shape.y1 }));
     }
 
-    getPlayerLineAnnotations(_currentFrame: number): Array<{ key: string; players: [number, number] }> {
-        return Array.from(this.active_annotations.entries())
-            .filter(([, annotation]) => annotation.type === 'playerLine')
-            .map(([key, annotation]) => ({ key, players: annotation.shape.players }));
+    getPlayerLineAnnotations(): Array<{ key: string; players: [number, number] }> {
+        return this.activeOfType('playerLine').map(([key, annotation]) => ({ key, players: annotation.shape.players }));
     }
 
-    getDrawAnnotations(_currentFrame: number): Array<{ key: string; shape: DrawShape }> {
-        return Array.from(this.active_annotations.entries())
-            .filter(([, annotation]) => annotation.type === 'draw' && (annotation.shape.type === 'rect' || annotation.shape.type === 'line'))
+    getDrawAnnotations(): Array<{ key: string; shape: DrawShape }> {
+        return this.activeOfType('draw')
+            .filter(([, { shape }]) => shape.type === 'rect' || shape.type === 'line')
             .map(([key, { shape }]) => ({ key, shape: { type: shape.type, x0: shape.x0, y0: shape.y0, x1: shape.x1, y1: shape.y1 } }));
     }
 
-    getAllAnnotations(): Array<{ key: string; type: string; frameStart: number; frameEnd: number | null; shape: any }> {
+    getAllAnnotations(): StoredAnnotation[] {
         // Returns every annotation ever created (not just the ones active at a given frame), for timeline display
         return Array.from(this.annotations.entries()).map(([key, annotation]) => ({
             key,
-            type: annotation.type,
+            ...annotation,
             frameStart: annotation.frameStart ?? 0,
             frameEnd: annotation.frameEnd ?? null,
-            shape: annotation.shape,
         }));
     }
 
@@ -242,12 +255,7 @@ export default class AnnotationStore {
         const start = annotation.frameStart ?? 0;
         if (frame <= start || (annotation.frameEnd !== undefined && frame >= annotation.frameEnd)) return;
 
-        this.annotations.set(newKeyLike(annotation), {
-            type: annotation.type,
-            frameStart: frame,
-            frameEnd: annotation.frameEnd,
-            shape: structuredClone(annotation.shape),
-        });
+        this.annotations.set(newKeyLike(annotation), { ...structuredClone(annotation), frameStart: frame });
         annotation.frameEnd = frame;
 
         logger.info("Split annotation", key, "at frame:", frame);
@@ -281,18 +289,12 @@ export default class AnnotationStore {
         this.annotations.clear();
     }
 
-    load(saved: Array<{ key: string; type: string; frameStart: number; frameEnd: number | null; shape: any }>, currentFrame: number = 0) {
+    load(saved: StoredAnnotation[], currentFrame: number = 0) {
         // Replaces the store's contents with previously saved annotations (see getAllAnnotations),
         // then rebuilding which of them are active at currentFrame.
         this.clear();
-        for (const item of saved) {
-            const annotation: Annotation = {
-                type: item.type,
-                frameStart: item.frameStart,
-                frameEnd: item.frameEnd ?? undefined,
-                shape: item.shape,
-            };
-            this.annotations.set(item.key, annotation);
+        for (const { key, ...item } of saved) {
+            this.annotations.set(key, { ...item, frameEnd: item.frameEnd ?? undefined });
         }
         logger.info("Loaded annotations", saved.length);
         this.reconstruct_active_annotations(currentFrame);

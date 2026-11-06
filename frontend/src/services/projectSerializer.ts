@@ -1,4 +1,5 @@
 import type AnnotationStore from './AnnotationStore-optimized'
+import type { StoredAnnotation } from './AnnotationStore-optimized'
 import type TimelineStore from './TimelineStore'
 import type { MatchSessionState } from '../context/MatchSessionContext'
 import type { Clip } from '../types/ClipInterfaces'
@@ -21,7 +22,6 @@ import {
 
 const logger = getLogger('projectSerializer')
 
-type StoredAnnotation = ReturnType<AnnotationStore['getAllAnnotations']>[number]
 
 // The style as the style context holds it, with the kit colours each team follows until the user picks its own.
 export type LiveStyle = {
@@ -88,21 +88,24 @@ const geometryOf = (shape: { x0: number; y0: number; x1: number; y1: number }) =
 // The store keeps rectangles and lines as one 'draw' type; the file gives each its own. Only the fields a
 // type is drawn from are kept, so nothing else a shape happens to carry ends up in the file.
 function toSavedAnnotation(annotation: StoredAnnotation): SavedAnnotation | null {
-  const { key, frameStart, frameEnd, shape } = annotation
+  const { key, frameStart, frameEnd } = annotation
   const timing = { key, frameStart, frameEnd }
 
   switch (annotation.type) {
-    case 'draw':
+    case 'draw': {
+      // Shapes drawn before PitchKit are Plotly shape objects, whose type may be neither.
+      const { shape } = annotation
       if (shape.type === 'rect' || shape.type === 'line') return { ...timing, type: shape.type, shape: geometryOf(shape) }
       break
+    }
     case 'arrow':
-      return { ...timing, type: 'arrow', shape: geometryOf(shape) }
+      return { ...timing, type: 'arrow', shape: geometryOf(annotation.shape) }
     case 'playerLine':
-      return { ...timing, type: 'playerLine', shape: { players: [shape.players[0], shape.players[1]] } }
+      return { ...timing, type: 'playerLine', shape: { players: [annotation.shape.players[0], annotation.shape.players[1]] } }
     case 'teamShape':
-      return { ...timing, type: 'teamShape', shape: { players: [...shape.players] } }
+      return { ...timing, type: 'teamShape', shape: { players: [...annotation.shape.players] } }
     case 'playerFocus':
-      return { ...timing, type: 'playerFocus', shape: { playerId: shape.playerId } }
+      return { ...timing, type: 'playerFocus', shape: { playerId: annotation.shape.playerId } }
   }
 
   logger.warn('Left an annotation of an unknown type out of the project', annotation.type)
@@ -114,7 +117,7 @@ function toStoredAnnotation(annotation: SavedAnnotation): StoredAnnotation {
   if (annotation.type === 'rect' || annotation.type === 'line') {
     return { key, frameStart, frameEnd, type: 'draw', shape: { type: annotation.type, ...annotation.shape } }
   }
-  return { key, frameStart, frameEnd, type: annotation.type, shape: annotation.shape }
+  return annotation
 }
 
 // A segment made before a match was chosen has no match of its own, so it takes the open one.

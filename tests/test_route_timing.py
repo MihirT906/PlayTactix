@@ -55,11 +55,14 @@ class TestRouteRoutes:
         match_id = 1886347
         max_seconds = 30
         url = "http://localhost:8000/data/frames"
-        
+
+        # Frames are only served for a loaded match; loading it isn't part of what's timed.
+        requests.get(f"http://localhost:8000/data/match/{match_id}").raise_for_status()
+
         started_at = time.perf_counter()
         response = requests.get(
             url,
-            params={"start": start_frame, "end": end_frame},
+            params={"match_id": match_id, "start": start_frame, "end": end_frame},
         )
         elapsed = time.perf_counter() - started_at
         payload_size_bytes = len(response.content)

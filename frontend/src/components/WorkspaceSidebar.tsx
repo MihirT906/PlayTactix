@@ -8,7 +8,7 @@ import type { MatchData } from '../types/MatchDataInterfaces'
 import type { KeyMomentsData } from '../types/KeyMomentsDataInterfaces'
 import TimelineStore from '../services/TimelineStore'
 import KeyMomentFinderComponent from './KeyMomentFinderComponent'
-import { useMatchSession } from '../context/MatchSessionContext'
+import { useMatchSession, type EditMode } from '../context/MatchSessionContext'
 
 export type SidebarPanel = 'settings' | 'timeline' | 'search' | 'overlays' | null
 
@@ -31,7 +31,7 @@ function WorkspaceSidebar({
   onAddSegment,
   keyMomentsData,
 }: WorkspaceSidebarProps) {
-  const { session, resources, setEditMode } = useMatchSession()
+  const { session, resources, setEditMode, stopPlayback } = useMatchSession()
   const isSettingsPanelOpen = activePanel === 'settings'
   const isTimelinePanelOpen = activePanel === 'timeline'
   const isSearchPanelOpen = activePanel === 'search'
@@ -43,9 +43,14 @@ function WorkspaceSidebar({
   const isDrawRectActive = session.ui.editMode === 'draw_rect'
   const isDrawLineActive = session.ui.editMode === 'draw_line'
   const isDrawArrowActive = session.ui.editMode === 'draw_arrow'
-  // Annotation tools only work while paused. The selected one stays highlighted during playback and is back on pause.
-  const areToolsLocked = session.playback.isPlaying
-  const toolLockTitle = areToolsLocked ? 'Pause playback to use annotation tools' : undefined
+  // Annotation tools only work while paused, so using one during playback pauses it first.
+  // The selected tool stays highlighted during playback, so clicking it then keeps it on rather than toggling it off.
+  const withPause = (action: () => void) => () => {
+    if (session.playback.isPlaying) stopPlayback()
+    action()
+  }
+  const toggleTool = (mode: EditMode, isActive: boolean) =>
+    withPause(() => setEditMode(isActive && !session.playback.isPlaying ? null : mode))
 
   return (
     <aside className={`left-panel settings-sidebar ${isSidebarPanelOpen ? 'is-open' : ''}`} aria-label="Settings sidebar">
@@ -110,14 +115,11 @@ function WorkspaceSidebar({
             </button>
           </nav>
           <span className="app-kicker workspace-sidebar-kicker">Annotations</span>
-          {areToolsLocked ? <span className="workspace-sidebar-note" role="status">Pause to annotate</span> : null}
           <nav className="settings-sidebar-nav workspace-sidebar-nav--annotations" aria-label="Annotations">
             <button
               type="button"
-              disabled={areToolsLocked}
-              title={toolLockTitle}
               className={`app-header-action workspace-sidebar-action workspace-sidebar-action--player-focus ${isPlayerFocusActive ? 'is-active' : ''}`}
-              onClick={() => setEditMode(isPlayerFocusActive ? null : 'player_focus')}
+              onClick={toggleTool('player_focus', isPlayerFocusActive)}
               aria-pressed={isPlayerFocusActive}
               aria-label={isPlayerFocusActive ? 'Disable player focus mode' : 'Enable player focus mode'}
             >
@@ -126,10 +128,8 @@ function WorkspaceSidebar({
             </button>
             <button
               type="button"
-              disabled={areToolsLocked}
-              title={toolLockTitle}
               className={`app-header-action workspace-sidebar-action workspace-sidebar-action--draw-line ${isDrawLinePlayersActive ? 'is-active' : ''}`}
-              onClick={() => setEditMode(isDrawLinePlayersActive ? null : 'draw_line_players')}
+              onClick={toggleTool('draw_line_players', isDrawLinePlayersActive)}
               aria-pressed={isDrawLinePlayersActive}
               aria-label={isDrawLinePlayersActive ? 'Disable link players mode' : 'Enable link players mode'}
             >
@@ -138,10 +138,8 @@ function WorkspaceSidebar({
             </button>
             <button
               type="button"
-              disabled={areToolsLocked}
-              title={toolLockTitle}
               className={`app-header-action workspace-sidebar-action workspace-sidebar-action--team-shape ${isTeamShapeActive ? 'is-active' : ''}`}
-              onClick={() => setEditMode(isTeamShapeActive ? null : 'team_shape')}
+              onClick={toggleTool('team_shape', isTeamShapeActive)}
               aria-pressed={isTeamShapeActive}
               aria-label={isTeamShapeActive ? 'Disable team shape mode' : 'Enable team shape mode'}
             >
@@ -150,10 +148,8 @@ function WorkspaceSidebar({
             </button>
             <button
               type="button"
-              disabled={areToolsLocked}
-              title={toolLockTitle}
               className={`app-header-action workspace-sidebar-action workspace-sidebar-action--draw-rect ${isDrawRectActive ? 'is-active' : ''}`}
-              onClick={() => setEditMode(isDrawRectActive ? null : 'draw_rect')}
+              onClick={toggleTool('draw_rect', isDrawRectActive)}
               aria-pressed={isDrawRectActive}
               aria-label={isDrawRectActive ? 'Disable draw rectangle mode' : 'Enable draw rectangle mode'}
             >
@@ -162,10 +158,8 @@ function WorkspaceSidebar({
             </button>
             <button
               type="button"
-              disabled={areToolsLocked}
-              title={toolLockTitle}
               className={`app-header-action workspace-sidebar-action workspace-sidebar-action--draw-line-shape ${isDrawLineActive ? 'is-active' : ''}`}
-              onClick={() => setEditMode(isDrawLineActive ? null : 'draw_line')}
+              onClick={toggleTool('draw_line', isDrawLineActive)}
               aria-pressed={isDrawLineActive}
               aria-label={isDrawLineActive ? 'Disable draw line mode' : 'Enable draw line mode'}
             >
@@ -174,10 +168,8 @@ function WorkspaceSidebar({
             </button>
             <button
               type="button"
-              disabled={areToolsLocked}
-              title={toolLockTitle}
               className={`app-header-action workspace-sidebar-action workspace-sidebar-action--draw-arrow ${isDrawArrowActive ? 'is-active' : ''}`}
-              onClick={() => setEditMode(isDrawArrowActive ? null : 'draw_arrow')}
+              onClick={toggleTool('draw_arrow', isDrawArrowActive)}
               aria-pressed={isDrawArrowActive}
               aria-label={isDrawArrowActive ? 'Disable draw arrow mode' : 'Enable draw arrow mode'}
             >
@@ -186,10 +178,8 @@ function WorkspaceSidebar({
             </button>
             <button
               type="button"
-              disabled={areToolsLocked}
-              title={toolLockTitle}
               className="app-header-action workspace-sidebar-action workspace-sidebar-action--erase-shape"
-              onClick={() => resources.plotActions.eraseActiveShape?.()}
+              onClick={withPause(() => resources.plotActions.eraseActiveShape?.())}
               aria-label="Erase the selected shape on the plot"
             >
               <FaEraser aria-hidden="true" />

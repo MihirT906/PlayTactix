@@ -1,5 +1,8 @@
+import { useState } from 'react'
+
 // Decorative chalkboard sketch of an attacking move for the landing page. The arrows draw in one after
-// another, the way a telestrator line goes down; prefers-reduced-motion shows the finished sketch.
+// another, the way a telestrator line goes down, hold, then wipe away and draw again on a loop;
+// prefers-reduced-motion shows the finished sketch.
 
 // A 105 x 68 m pitch, attacking upwards, at 4.706 units per metre: touchlines at x 20 and 340,
 // goal lines at y 23 and 517, halfway at y 270.
@@ -60,6 +63,9 @@ const ARROWS = [
 const CROSS = 8
 
 export default function ChalkboardPlay({ className }: { className?: string }) {
+  // Bumped each time the arrows' wipe cycle comes round, remounting them so they draw in again.
+  const [drawing, setDrawing] = useState(0)
+
   return (
     <svg className={`chalkboard ${className ?? ''}`} viewBox="-8 -4 376 548" aria-hidden="true">
       <defs>
@@ -104,17 +110,24 @@ export default function ChalkboardPlay({ className }: { className?: string }) {
           ))}
         </g>
 
-        <g className="chalkboard-arrows">
-          {ARROWS.map((a, i) => (
-            <g key={a.d} style={{ '--chalk-delay': `${0.4 + i * 0.7}s` } as React.CSSProperties}>
-              <path className="chalkboard-arrow-line" d={a.d} pathLength={1} />
-              <path
-                className="chalkboard-arrow-head"
-                d="M-11 -7 L0 0 L-11 7"
-                transform={`translate(${a.head[0]} ${a.head[1]}) rotate(${a.angle})`}
-              />
-            </g>
-          ))}
+        <g
+          className="chalkboard-arrows"
+          onAnimationIteration={(event) => {
+            if (event.target === event.currentTarget) setDrawing((n) => n + 1)
+          }}
+        >
+          <g key={drawing}>
+            {ARROWS.map((a, i) => (
+              <g key={a.d} style={{ '--chalk-delay': `${0.4 + i * 0.7}s` } as React.CSSProperties}>
+                <path className="chalkboard-arrow-line" d={a.d} pathLength={1} />
+                <path
+                  className="chalkboard-arrow-head"
+                  d="M-11 -7 L0 0 L-11 7"
+                  transform={`translate(${a.head[0]} ${a.head[1]}) rotate(${a.angle})`}
+                />
+              </g>
+            ))}
+          </g>
         </g>
       </g>
     </svg>

@@ -34,11 +34,15 @@
 .chalkboard-lines .chalkboard-spot { fill: rgba(255, 255, 255, 0.78); }
 .chalkboard-defenders { stroke: rgba(255, 255, 255, 0.55); stroke-width: 3; }
 .chalkboard-attackers { stroke: #7dd3fc; stroke-width: 4; }
-.chalkboard-arrows { stroke: var(--color-accent); stroke-width: 4; }
+/* Each pass of the wipe remounts the arrows to draw again (ChalkboardPlay). The last arrow is down by
+   about 3.5s, so the hold, wipe and blank fit the rest of the 7s cycle. */
+.chalkboard-arrows { stroke: var(--color-accent); stroke-width: 4; animation: chalk-wipe 7s linear infinite; }
 .chalkboard-arrow-line { stroke-dasharray: 1; animation: chalk-draw 0.8s ease-out var(--chalk-delay) both; }
 .chalkboard-arrow-head { animation: chalk-appear 0.2s ease-out calc(var(--chalk-delay) + 0.75s) both; }
-@keyframes chalk-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+/* Hidden until it starts drawing: an undrawn dash still leaves its round cap as a dot at the start. */
+@keyframes chalk-draw { 0% { stroke-dashoffset: 1; opacity: 0; } 1% { opacity: 1; } 100% { stroke-dashoffset: 0; opacity: 1; } }
 @keyframes chalk-appear { from { opacity: 0; } to { opacity: 1; } }
+@keyframes chalk-wipe { 0%, 83% { opacity: 1; } 91%, 100% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) {
-  .chalkboard-arrow-line, .chalkboard-arrow-head { animation: none; }
+  .chalkboard-arrows, .chalkboard-arrow-line, .chalkboard-arrow-head { animation: none; }
 }

@@ -34,3 +34,7 @@ data/
 
 # PitchKit skill (symlink into node_modules)
 frontend/.claude/skills/pitchkit
+
+# Runtime output: the backend log and the route timing benchmarks (pytest -m integration)
+logs/
+tests/test_results/

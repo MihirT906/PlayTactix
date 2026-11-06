@@ -1,8 +1,0 @@
-2026-11-05 21:02:36 | INFO     | playtactix | Log cleared — new data download started
-2026-11-05 21:02:36 | INFO     | playtactix.routes.data_routes | Downloading match data for match_id=1886347
-2026-11-05 21:02:36 | INFO     | playtactix.services.match_cache | match_id=1886347 already cached, skipping download
-2026-11-05 21:02:36 | INFO     | playtactix.routes.data_routes | Fetching frames match_id=1886347 start=10 end=110
-2026-11-05 21:02:36 | INFO     | playtactix.services.frame_data_service | Reading data files for match_id=1886347
-2026-11-05 21:02:36 | INFO     | playtactix.services.frame_data_service | Filtering frames for match_id=1886347 to range 10-110
-2026-11-05 21:02:36 | INFO     | playtactix.services.frame_data_service | Returning frames for match_id=1886347
-NoneType: None

@@ -1,5 +1,6 @@
 import type { Segment } from '../../types/ClipInterfaces'
 import type { Event } from '../../types/FrameDataInterfaces'
+import type { MatchPeriod } from '../../types/MatchDataInterfaces'
 import { buildTrailLinks } from './sequenceTrailsOverlay'
 
 // A carry and an off ball run are a player moving (drawn as arrows); a pass is the ball moving
@@ -117,10 +118,16 @@ export function buildEventMapItems(events: Event[] | null | undefined): EventMap
   return [...links, ...runs].sort((a, b) => a.frameStart - b.frameStart)
 }
 
+// Where the Event Map looks: the clip's match segments, the whole match, or one half.
+export const EVENT_MAP_SCOPES = ['clip', 'match', 'period1', 'period2'] as const
+export type EventMapScope = (typeof EVENT_MAP_SCOPES)[number]
+
+const SCOPE_PERIODS: Partial<Record<EventMapScope, number>> = { period1: 1, period2: 2 }
+
 // What the Event Map shows: everything matching these filters is drawn. An empty list means "any",
 // except for `kinds`, where nothing chosen draws nothing.
 export type EventMapFilters = {
-  scope: 'clip' | 'match' // Only what happens in the clip's match segments, or the whole match
+  scope: EventMapScope
   kinds: EventMapKind[]
   teamId: number | null
   playerIds: number[]
@@ -152,12 +159,18 @@ export const MAX_EVENT_MAP_MARKS = 300
 
 const anyOf = <T,>(wanted: T[], value: T) => wanted.length === 0 || wanted.includes(value)
 
-function matchesFilters(item: EventMapItem, filters: EventMapFilters, matchSegments: Segment[]) {
+function matchesFilters(item: EventMapItem, filters: EventMapFilters, matchSegments: Segment[], matchPeriods: MatchPeriod[]) {
   if (
     filters.scope === 'clip' &&
     !matchSegments.some((s) => item.frameStart <= s.sourceFrameEnd && item.frameEnd >= s.sourceFrameStart)
   ) {
     return false
+  }
+  const scopePeriod = SCOPE_PERIODS[filters.scope]
+  if (scopePeriod !== undefined) {
+    // Until the match periods load there is no telling which half an item is in, so none is drawn.
+    const period = matchPeriods.find((p) => p.period === scopePeriod)
+    if (!period || item.frameStart < period.start_frame || item.frameStart > period.end_frame) return false
   }
   if (filters.teamId !== null && item.teamId !== filters.teamId) return false
   if (filters.ledTo === 'shot' && !item.leadToShot) return false
@@ -184,8 +197,9 @@ export function resolveEventMap(
   filters: EventMapFilters,
   excludedIds: string[],
   matchSegments: Segment[],
+  matchPeriods: MatchPeriod[],
 ) {
-  const candidates = items.filter((item) => matchesFilters(item, filters, matchSegments))
+  const candidates = items.filter((item) => matchesFilters(item, filters, matchSegments, matchPeriods))
   const matched = candidates.filter((item) => filters.kinds.includes(item.kind))
   const excluded = new Set(excludedIds)
   const picked = matched.filter((item) => !excluded.has(item.id))

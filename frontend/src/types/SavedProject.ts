@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { OVERLAY_SEGMENT_LABELS, type OverlaySegment, type OverlaySegmentKind, type Segment } from './ClipInterfaces'
 import type { FilterTimelineOption, MetricTimelineOption } from './TimelineOption'
 import type { Segment as Geometry } from '../plot/annotationGeometry'
-import { EVENT_MAP_KINDS, type EventMapFilters } from '../plot/overlays/eventMapOverlay'
+import { EVENT_MAP_KINDS, EVENT_MAP_SCOPES, type EventMapFilters } from '../plot/overlays/eventMapOverlay'
 import { PASS_NETWORK_WINDOWS, type PassNetworkConfig } from '../plot/overlays/passNetworkOverlay'
 import { MIN_TEAM_SHAPE_PLAYERS } from '../services/AnnotationStore-optimized'
 import { APP_CONFIG } from '../config'
@@ -71,7 +71,7 @@ const ClipSchema = z.object({
 })
 
 const EventMapFiltersSchema = z.object({
-  scope: z.enum(['clip', 'match']),
+  scope: z.enum(EVENT_MAP_SCOPES),
   kinds: z.array(z.enum(EVENT_MAP_KINDS)),
   teamId: z.number().nullable(),
   playerIds: z.array(z.number()),

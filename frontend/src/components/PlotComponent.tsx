@@ -714,8 +714,9 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
         session.overlays.eventMapFilters,
         session.overlays.eventMapExcludedIds,
         session.playback.clip.matchSegments,
+        matchData?.match_periods ?? [],
       ).drawn,
-    [eventMapItems, session.overlays.eventMapFilters, session.overlays.eventMapExcludedIds, session.playback.clip.matchSegments],
+    [eventMapItems, session.overlays.eventMapFilters, session.overlays.eventMapExcludedIds, session.playback.clip.matchSegments, matchData],
   )
   // The Event Map split by how it is drawn: the ball moving (a pass) as a comet, a player moving (a
   // carry or an off ball run) as an arrow.

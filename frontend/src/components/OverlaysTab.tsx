@@ -46,9 +46,14 @@ function OverlaysTab({
   const eventMapItems = useMemo(() => buildEventMapItems(keyMomentsData?.events), [keyMomentsData])
   const eventMapCount = useMemo(
     () =>
-      resolveEventMap(eventMapItems, session.overlays.eventMapFilters, session.overlays.eventMapExcludedIds, clip.matchSegments)
-        .drawn.length,
-    [eventMapItems, session.overlays.eventMapFilters, session.overlays.eventMapExcludedIds, clip.matchSegments],
+      resolveEventMap(
+        eventMapItems,
+        session.overlays.eventMapFilters,
+        session.overlays.eventMapExcludedIds,
+        clip.matchSegments,
+        matchData?.match_periods ?? [],
+      ).drawn.length,
+    [eventMapItems, session.overlays.eventMapFilters, session.overlays.eventMapExcludedIds, clip.matchSegments, matchData],
   )
 
   // Each overlay turns on or off from the current frame: on runs it to the end of the clip (or the next

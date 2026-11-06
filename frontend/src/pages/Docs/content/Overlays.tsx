@@ -84,7 +84,7 @@ export default function Overlays() {
       <p>
         Draws every carry, pass or off-ball run that matches your filters at once, in team colours: passes as comets,
         carries and runs as arrows. Filter by team, player, area of the pitch and whether the move led to a shot or a
-        goal, across your clip or the whole match.
+        goal, across your clip, the whole match or one half.
       </p>
       <p>
         Untick single events under <strong>Pick individually</strong>, and turn on <strong>Auto Disappear</strong> to

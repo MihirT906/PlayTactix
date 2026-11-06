@@ -38,6 +38,8 @@ const KIND_LABELS: Record<EventMapKind, string> = {
 const SCOPE_OPTIONS: Array<{ value: EventMapFilters['scope']; label: string }> = [
   { value: 'clip', label: 'This clip' },
   { value: 'match', label: 'Whole match' },
+  { value: 'period1', label: 'Period 1' },
+  { value: 'period2', label: 'Period 2' },
 ]
 
 const LED_TO_OPTIONS: Array<{ value: EventMapFilters['ledTo']; label: string }> = [
@@ -58,8 +60,8 @@ function EventMapPanel({ keyMomentsData, matchData }: EventMapPanelProps) {
 
   const allEvents = useMemo(() => buildEventMapItems(keyMomentsData?.events), [keyMomentsData])
   const { candidates, matched, drawn, overflow } = useMemo(
-    () => resolveEventMap(allEvents, filters, excludedIds, matchSegments),
-    [allEvents, filters, excludedIds, matchSegments],
+    () => resolveEventMap(allEvents, filters, excludedIds, matchSegments, matchData?.match_periods ?? []),
+    [allEvents, filters, excludedIds, matchSegments, matchData],
   )
 
   const teams = matchData ? [matchData.home_team, matchData.away_team] : []

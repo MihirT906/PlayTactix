@@ -12,6 +12,7 @@ import type { MatchData } from './types/MatchDataInterfaces';
 import type { FrameData } from './types/FrameDataInterfaces'
 import type { KeyMomentsData } from './types/KeyMomentsDataInterfaces'
 import MatchDetailsDisplay from './components/MatchDetailsDisplay'
+import MatchIsland from './components/MatchIsland'
 import { StyleConfigProvider } from './context/StyleConfigContext'
 import PlotLayoutComponent from './components/PlotLayoutComponent'
 import MatchPicker from './components/MatchPicker'
@@ -106,6 +107,9 @@ function AppContent({
     const [missingFrameRanges, setMissingFrameRanges] = useState<{ start: number; end: number }[]>([])
     const [annotationVersion, setAnnotationVersion] = useState(0)
     const handleAnnotationUpdate = useCallback(() => setAnnotationVersion((version) => version + 1), [])
+    // Held in state (not refs) so the match island re-observes them as they mount and unmount.
+    const [matchCardElement, setMatchCardElement] = useState<HTMLDivElement | null>(null)
+    const [controlsElement, setControlsElement] = useState<HTMLDivElement | null>(null)
 
     const navigate = useNavigate()
     const isPickerRoute = useMatch(ROUTES.picker) !== null
@@ -456,8 +460,13 @@ function AppContent({
               ) : metaStatus === 'error' ? (
                 <div className="match-info-error">Failed to load match metadata.</div>
               ) : (
-                <MatchDetailsDisplay matchData={matchMetaData} />
+                <MatchDetailsDisplay matchData={matchMetaData} cardRef={setMatchCardElement} />
               )}
+              <MatchIsland
+                matchData={matchMetaData}
+                cardElement={matchCardElement}
+                controlsElement={controlsElement}
+              />
 
               <div className={`app-container app-container--active ${activeSidebarPanel !== null ? 'app-container--settings-open' : ''}`}>
                 <WorkspaceSidebar
@@ -494,6 +503,7 @@ function AppContent({
                       onAnnotationUpdate={handleAnnotationUpdate}
                       annotationVersion={annotationVersion}
                       isFrameLoading={isFetching}
+                      controlsRef={setControlsElement}
                     />
                   </div>
                 </div>

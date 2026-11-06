@@ -1,0 +1,163 @@
+.match-island {
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  z-index: 50;
+  display: inline-flex;
+  align-items: center;
+  max-width: calc(100vw - 32px);
+  padding: 5px 14px;
+  font-family: var(--font-family-sans);
+  white-space: nowrap;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--app-shell-background) 78%, transparent);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  color: var(--color-text-primary);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -140%) scale(0.6, 0.4);
+  transition:
+    transform 0.42s cubic-bezier(0.34, 1.4, 0.64, 1),
+    opacity 0.2s ease;
+}
+
+.match-island.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, 0) scale(1);
+}
+
+.match-island:hover {
+  border-color: var(--glass-border-strong);
+}
+
+.match-island button {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.match-island button:focus-visible {
+  outline: 2px solid var(--focus-outline-color);
+  outline-offset: 2px;
+  border-radius: 999px;
+}
+
+.match-island-score-button {
+  gap: 10px;
+  min-width: 0;
+}
+
+.match-island-shirt {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  color: var(--home-color);
+}
+
+.match-island-shirt.right {
+  color: var(--away-color);
+}
+
+.match-island-shirt svg {
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+  stroke: rgba(15, 23, 42, 0.92);
+  stroke-width: 3;
+  stroke-linejoin: round;
+}
+
+.match-island-team {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.match-island-score {
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The playback section grows out of the right edge of the score; the 0fr -> 1fr grid
+   column lets it animate to its natural width. */
+.match-island-playback {
+  display: grid;
+  grid-template-columns: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-columns 0.42s cubic-bezier(0.34, 1.2, 0.64, 1),
+    opacity 0.2s ease;
+}
+
+.match-island.has-playback .match-island-playback {
+  grid-template-columns: 1fr;
+  opacity: 1;
+}
+
+.match-island-playback-inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.match-island-divider {
+  width: 1px;
+  height: 16px;
+  margin-left: 12px;
+  background: var(--surface-subtle-border);
+}
+
+.match-island-play {
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  font-size: 0.75rem;
+  border-radius: 999px;
+}
+
+.match-island-play:hover {
+  color: var(--color-accent);
+}
+
+.match-island-clock {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-secondary);
+}
+
+.match-island-clock-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .match-island {
+    transform: translate(-50%, 0);
+    transition: opacity 0.2s ease;
+  }
+
+  .match-island-playback {
+    transition: opacity 0.2s ease;
+  }
+}

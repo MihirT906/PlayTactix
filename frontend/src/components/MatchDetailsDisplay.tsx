@@ -1,10 +1,16 @@
 import type { MatchData } from '../types/MatchDataInterfaces';
 import './MatchDetailsDisplay.css'
-import type { CSSProperties } from 'react';
+import type { CSSProperties, Ref } from 'react';
 import TeamShirt from './TeamShirt.tsx';
 import { useStyleConfig } from '../context/StyleConfigContext';
 
-const MatchDetailsDisplay = ({ matchData }: { matchData: MatchData | null }) => {
+type MatchDetailsDisplayProps = {
+    matchData: MatchData | null
+    // The card's element, for the match island to tell when it scrolls out of view.
+    cardRef?: Ref<HTMLDivElement>
+}
+
+const MatchDetailsDisplay = ({ matchData, cardRef }: MatchDetailsDisplayProps) => {
 	const { homeTeamColor, awayTeamColor } = useStyleConfig();
 
     if (!matchData) {
@@ -49,7 +55,7 @@ const MatchDetailsDisplay = ({ matchData }: { matchData: MatchData | null }) => 
     );
 
     return (
-        <div className="match-info"
+        <div className="match-info" ref={cardRef}
             style={{
                 "--home-color": homeTeamColor,
                 "--away-color": awayTeamColor,

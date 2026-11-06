@@ -1,9 +1,9 @@
-import React from 'react'
+import React, { type Ref } from 'react'
 import './Controls.css'
 import AnnotationStore from '../services/AnnotationStore-optimized'
 import { FaPlay, FaPause } from 'react-icons/fa'
 import { RiSlowDownLine, RiSpeedUpLine } from "react-icons/ri";
-import { formatClock, matchClockSecondsAt } from '../services/matchClock'
+import { formatClipTime, formatMatchTime } from '../services/matchClock'
 import { SLIDER_COLORS } from '../constants/sliderColors'
 import type { MatchData } from '../types/MatchDataInterfaces'
 
@@ -23,9 +23,9 @@ interface ControlsProps {
   annotationStore: AnnotationStore
   // The match's periods, to show the match clock; null until match meta loads.
   matchPeriods: MatchData['match_periods'] | null
+  // The controls' outer element, for the match island to tell when they scroll out of view.
+  containerRef?: Ref<HTMLDivElement>
 }
-
-const FRAME_RATE = 10 // Tracking frames per second
 
 const formatSpeed = (speed: number) => {
   const formatted = Number.isInteger(speed) ? speed.toString() : speed.toFixed(3).replace(/0+$/, '').replace(/\.$/, '')
@@ -74,10 +74,9 @@ const buildTrackGradient = (
   return `linear-gradient(to right, ${stops.join(', ')})`
 }
 
-const Controls: React.FC<ControlsProps> = ({ isPlaying, onPlayPause, playbackSpeed, onDoubleSpeed, onHalveSpeed, currentMatchFrame, clipFrame, clipRange, onClipFrameChange, loadedFrameRanges, segmentStart, missingRanges, annotationStore, matchPeriods }) => {
-  const matchSeconds = matchClockSecondsAt(currentMatchFrame, matchPeriods)
-  const matchTime = matchSeconds === null ? '--:--' : formatClock(matchSeconds)
-  const clipTime = `${formatClock(clipFrame / FRAME_RATE)} / ${formatClock(clipRange.end / FRAME_RATE)}`
+const Controls: React.FC<ControlsProps> = ({ isPlaying, onPlayPause, playbackSpeed, onDoubleSpeed, onHalveSpeed, currentMatchFrame, clipFrame, clipRange, onClipFrameChange, loadedFrameRanges, segmentStart, missingRanges, annotationStore, matchPeriods, containerRef }) => {
+  const matchTime = formatMatchTime(currentMatchFrame, matchPeriods)
+  const clipTime = formatClipTime(clipFrame, clipRange.end)
 
   // The frames in memory on the clip's timeline, drawn as cached bands ahead of the playhead.
   const cachedClipRanges = loadedFrameRanges.map(({ start, end }) => ({ start: start - segmentStart, end: end - segmentStart }))
@@ -94,7 +93,7 @@ const Controls: React.FC<ControlsProps> = ({ isPlaying, onPlayPause, playbackSpe
   }
 
   return (
-    <div className="controls-container">
+    <div className="controls-container" ref={containerRef}>
       <div className="controls-toolbar">
         <div className="playback-speed-group">
           <button className="app-header-action speed-button" onClick={onHalveSpeed} title="Halve speed">

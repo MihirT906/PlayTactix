@@ -22,6 +22,17 @@ export function formatClock(totalSeconds: number): string {
   return `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`
 }
 
+// The match clock at a tracking frame as "MM:SS", or "--:--" outside the periods.
+export function formatMatchTime(frame: number, periods: MatchPeriods | null | undefined): string {
+  const seconds = matchClockSecondsAt(frame, periods)
+  return seconds === null ? '--:--' : formatClock(seconds)
+}
+
+// The playhead against the clip's length, as "MM:SS / MM:SS".
+export function formatClipTime(clipFrame: number, clipEnd: number): string {
+  return `${formatClock(clipFrame / FRAME_RATE)} / ${formatClock(clipEnd / FRAME_RATE)}`
+}
+
 // A length of play from its frame count, as "M:SS": "0:13", "1:05".
 export function formatFrameDuration(frames: number): string {
   const seconds = Math.max(Math.round(frames / FRAME_RATE), 0)

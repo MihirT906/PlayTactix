@@ -68,3 +68,50 @@
     animation-duration: 2.4s;
   }
 }
+
+/* The pitch itself. Scaling from the top left keeps the docked pitch's corner where `left`
+   and `top` put it. */
+.plot-layout__dock {
+  transform-origin: top left;
+}
+
+.plot-layout__dock.is-animating {
+  position: relative;
+  z-index: 50;
+}
+
+/* Docked small beside the match island, as a preview: clicking it scrolls back to the pitch. */
+.plot-layout__dock.is-docked {
+  position: fixed;
+  top: 10px;
+  left: min(
+    calc(50% + var(--match-island-width, 0px) / 2 + 10px),
+    calc(100% - var(--dock-width) - 16px)
+  );
+  z-index: 50;
+  overflow: hidden;
+  /* Sizes are divided by the scale so they come out at their stated size on screen. The edge
+     is a shadow ring, not a border, so docking leaves the pitch's layout size alone. */
+  border-radius: calc(12px / var(--dock-scale));
+  background: var(--app-shell-background);
+  box-shadow:
+    0 0 0 calc(1px / var(--dock-scale)) var(--glass-border),
+    0 calc(18px / var(--dock-scale)) calc(40px / var(--dock-scale)) rgba(0, 0, 0, 0.3);
+  transform: scale(var(--dock-scale));
+  cursor: pointer;
+}
+
+.plot-layout__dock.is-docked:hover {
+  box-shadow:
+    0 0 0 calc(1px / var(--dock-scale)) var(--glass-border-strong),
+    0 calc(18px / var(--dock-scale)) calc(40px / var(--dock-scale)) rgba(0, 0, 0, 0.3);
+}
+
+.plot-layout__dock.is-docked:focus-visible {
+  outline: calc(2px / var(--dock-scale)) solid var(--focus-outline-color);
+  outline-offset: calc(2px / var(--dock-scale));
+}
+
+.plot-layout__dock.is-docked > * {
+  pointer-events: none;
+}

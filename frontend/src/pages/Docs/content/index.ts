@@ -5,6 +5,7 @@ import ClipsAndSegments from './ClipsAndSegments'
 import KeyMoments from './KeyMoments'
 import Overlays from './Overlays'
 import PlaybackAndTheTimeline from './PlaybackAndTheTimeline'
+import SavingAndLoadingProjects from './SavingAndLoadingProjects'
 import TheWorkspace from './TheWorkspace'
 import WhatIsTappd from './WhatIsTappd'
 
@@ -17,5 +18,6 @@ export const DOCS_CONTENT: Partial<Record<string, ComponentType>> = {
   overlays: Overlays,
   'clips-and-segments': ClipsAndSegments,
   annotations: Annotations,
+  'saving-and-loading-projects': SavingAndLoadingProjects,
   'what-is-tappd': WhatIsTappd,
 }

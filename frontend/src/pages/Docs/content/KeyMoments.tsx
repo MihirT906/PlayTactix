@@ -5,7 +5,7 @@ export default function KeyMoments() {
   return (
     <>
       <p>
-        Open <strong>Search</strong> in the left panel to see every passage of play in the match. A passage is a spell
+        Open <strong>Moments</strong> in the left panel to see every passage of play in the match. A passage is a spell
         where one team has the ball and both teams keep the same shape, such as a build-up against a high block. Filter
         the list down, then click a passage to add it to your clip.
       </p>

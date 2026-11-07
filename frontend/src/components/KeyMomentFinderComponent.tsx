@@ -378,9 +378,9 @@ function KeyMomentFinderComponent({ segmentRange, onAddSegment, keyMomentsData, 
     <section className="key-moment-finder-panel" aria-labelledby="key-moment-finder-heading">
       <div className="key-moment-finder-header">
         <h2 id="key-moment-finder-heading" className="key-moment-finder-title">
-          Key Moments Finder
+          Moments
         </h2>
-        <p className="key-moment-finder-description">Click a passage of play to add it to your clip, or add a custom frame range.</p>
+        <p className="key-moment-finder-description">Click a moment to add it to your clip, or add a custom frame range.</p>
       </div>
 
       {keyMomentsData ? (
@@ -463,7 +463,7 @@ function KeyMomentFinderComponent({ segmentRange, onAddSegment, keyMomentsData, 
           {renderMomentGroup('Passages of Play', keyMomentsData.pops)}
         </div>
       ) : (
-        <p className="key-moment-empty">No key moments loaded.</p>
+        <p className="key-moment-empty">No moments loaded.</p>
       )}
 
       <section className="key-moment-custom-section" aria-labelledby="custom-moment-heading">

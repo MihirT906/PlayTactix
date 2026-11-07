@@ -35,7 +35,7 @@ export const DOCS_SECTIONS: DocsNavSection[] = [
     title: 'Deep dive',
     pages: [
       { slug: 'playback-and-the-timeline', title: 'Playback and the timeline' },
-      { slug: 'key-moments', title: 'Search for key moments' },
+      { slug: 'moments', title: 'Moments' },
       { slug: 'clips-and-segments', title: 'Clips and segments' },
       { slug: 'overlays', title: 'Overlays' },
       { slug: 'annotations', title: 'Annotations' },

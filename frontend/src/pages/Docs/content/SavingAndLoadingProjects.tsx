@@ -22,7 +22,7 @@ export default function SavingAndLoadingProjects() {
         names opens with the clip just as it was saved.
       </p>
       <p>
-        Loading replaces the clip you have open. If it has changes you haven't saved, you'll be asked before they're
+        Loading replaces the project you have open. If it has changes you haven't saved, you'll be asked before they're
         thrown away.
       </p>
     </>

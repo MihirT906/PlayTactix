@@ -86,10 +86,10 @@ function WorkspaceSidebar({
               onClick={() => onActivePanelChange(isSearchPanelOpen ? null : 'search')}
               aria-expanded={isSearchPanelOpen}
               aria-controls="search-sidebar-panel"
-              aria-label={isSearchPanelOpen ? 'Close key moments panel' : 'Open key moments panel'}
+              aria-label={isSearchPanelOpen ? 'Close moments panel' : 'Open moments panel'}
             >
               <FaSearch aria-hidden="true" />
-              <span>Search</span>
+              <span>Moments</span>
             </button>
             <button
               type="button"

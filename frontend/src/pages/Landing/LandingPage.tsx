@@ -24,10 +24,10 @@ const FEATURES = [
 ]
 
 type LandingPageProps = {
-  onChooseGame: () => void
+  onChooseMatch: () => void
 }
 
-export default function LandingPage({ onChooseGame }: LandingPageProps) {
+export default function LandingPage({ onChooseMatch }: LandingPageProps) {
   return (
     <div className="landing">
       <div className="landing-top">
@@ -44,8 +44,8 @@ export default function LandingPage({ onChooseGame }: LandingPageProps) {
                   squad, or share it with your mates and get a proper debate going. Pick a match and see what you find.
                 </p>
                 <div className="landing-actions">
-                  <button type="button" className="landing-cta" onClick={onChooseGame}>
-                    Choose Game
+                  <button type="button" className="landing-cta" onClick={onChooseMatch}>
+                    Choose Match
                   </button>
                   <Link className="landing-cta landing-cta-secondary" to={DOCS_HOME_PATH} target="_blank" rel="noopener">
                     Read the Docs

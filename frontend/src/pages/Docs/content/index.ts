@@ -14,7 +14,7 @@ export const DOCS_CONTENT: Partial<Record<string, ComponentType>> = {
   'choosing-a-match': ChoosingAMatch,
   'the-workspace': TheWorkspace,
   'playback-and-the-timeline': PlaybackAndTheTimeline,
-  'key-moments': KeyMoments,
+  moments: KeyMoments,
   overlays: Overlays,
   'clips-and-segments': ClipsAndSegments,
   annotations: Annotations,

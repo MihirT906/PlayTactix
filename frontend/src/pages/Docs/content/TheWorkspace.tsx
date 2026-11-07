@@ -37,9 +37,9 @@ export default function TheWorkspace() {
       <h2>Building a clip</h2>
       <ol>
         <li>
-          <strong>Find a moment.</strong> Open <strong>Search</strong>, filter down to the passage of play you want,
+          <strong>Find a moment.</strong> Open <strong>Moments</strong>, filter down to the passage of play you want,
           and click it. It replaces the opening two minutes and appears under <strong>Match Segments</strong>. Add more
-          moments to build up the clip. <Link to={docsPagePath('key-moments')}>More on Search</Link>
+          moments to build up the clip. <Link to={docsPagePath('moments')}>More on Moments</Link>
         </li>
         <li>
           <strong>Add overlays.</strong> Open <strong>Overlays</strong> and turn on the analysis you want, such as Pitch

@@ -22,7 +22,7 @@ export default function PlaybackAndTheTimeline() {
         double the speed, and the current speed shows above the play button.
       </p>
       <p>
-        To the right are two clocks. <strong>Match Time</strong> is the game clock; <strong>Clip Time</strong> is how
+        To the right are two clocks. <strong>Match Time</strong> is the match clock; <strong>Clip Time</strong> is how
         far you are through your clip. A clip can join moments from across the match, so Clip Time runs straight
         through while Match Time jumps between them. Hover the clocks for the exact frame numbers.
       </p>

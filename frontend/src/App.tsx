@@ -22,7 +22,7 @@ import BrandTitle from './components/brand/BrandTitle'
 import { MatchSessionProvider, useMatchSession } from './context/MatchSessionContext'
 import { workFingerprint, type LiveStyle } from './services/projectSerializer'
 
-const DISCARD_WORK_MESSAGE = 'Your clip has changes you have not saved. Discard them?'
+const DISCARD_WORK_MESSAGE = 'Your project has changes you have not saved. Discard them?'
 
 const ROUTES = {
   landing: '/',
@@ -396,9 +396,9 @@ function AppContent({
                 type="button"
                 className={`app-header-action ${isPickerRoute ? 'is-active' : ''}`}
                 onClick={openMatchPicker}
-                aria-label="Choose game"
+                aria-label="Choose match"
               >
-                Choose Game
+                Choose Match
               </button>
               {isPickerRoute && selectedMatchId !== null ? (
                 <button
@@ -437,7 +437,7 @@ function AppContent({
           </header>
 
           <Routes>
-          <Route path={ROUTES.landing} element={<LandingPage onChooseGame={openMatchPicker} />} />
+          <Route path={ROUTES.landing} element={<LandingPage onChooseMatch={openMatchPicker} />} />
 
           <Route path={ROUTES.picker} element={
             <div className="app-picker-shell">
@@ -461,7 +461,7 @@ function AppContent({
               <Navigate to={ROUTES.picker} replace />
             ) : urlMatchError === urlMatchId ? (
               <div className="match-info-error">
-                Failed to load match {urlMatchId}. <Link to={ROUTES.picker}>Choose another game</Link>
+                Failed to load match {urlMatchId}. <Link to={ROUTES.picker}>Choose another match</Link>
               </div>
             ) : urlMatchId !== selectedMatchId ? (
               <div className="match-info-loading">Loading match...</div>

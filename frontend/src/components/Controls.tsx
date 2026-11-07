@@ -3,7 +3,8 @@ import './Controls.css'
 import AnnotationStore from '../services/AnnotationStore-optimized'
 import { FaPlay, FaPause } from 'react-icons/fa'
 import { MdSpeed } from 'react-icons/md'
-import { formatClipTime, formatMatchTime } from '../services/matchClock'
+import { formatClipTime, formatMatchClockAt, formatMatchTime } from '../services/matchClock'
+import { useMatchSession } from '../context/MatchSessionContext'
 import { SLIDER_COLORS } from '../constants/sliderColors'
 import type { MatchData } from '../types/MatchDataInterfaces'
 
@@ -75,6 +76,24 @@ const Controls: React.FC<ControlsProps> = ({ isPlaying, onPlayPause, playbackSpe
   const matchTime = formatMatchTime(currentMatchFrame, matchPeriods)
   const clipTime = formatClipTime(clipFrame, clipRange.end)
 
+  // Where one moment hands over to the next: a tick on the slider at the start of every moment but the
+  // first, since Match Time jumps there while Clip Time runs on. Named as the timeline names them.
+  const { session } = useMatchSession()
+  const matchSegments = session.playback.clip.matchSegments
+  const clipLength = clipRange.end - clipRange.start || 1
+  const boundaries = matchSegments
+    .map((segment, index) => ({ segment, index }))
+    .filter(({ segment }) => segment.clipStart > clipRange.start && segment.clipStart < clipRange.end)
+    .map(({ segment, index }) => {
+      const name = segment.isDefault ? 'Opening clip' : `Moment ${index + 1}`
+      const clock = formatMatchClockAt(segment.sourceFrameStart, matchPeriods)
+      return {
+        frame: segment.clipStart,
+        percent: ((segment.clipStart - clipRange.start) / clipLength) * 100,
+        label: clock ? `${name} · ${clock}` : name,
+      }
+    })
+
   // The frames in memory on the clip's timeline, drawn as cached bands ahead of the playhead.
   const cachedClipRanges = loadedFrameRanges.map(({ start, end }) => ({ start: start - segmentStart, end: end - segmentStart }))
 
@@ -98,18 +117,31 @@ const Controls: React.FC<ControlsProps> = ({ isPlaying, onPlayPause, playbackSpe
       >
         {isPlaying ? <FaPause /> : <FaPlay />}
       </button>
-      <input
-        className="frame-slider"
-        type="range"
-        min={clipRange.start}
-        max={clipRange.end}
-        value={clipFrame}
-        onChange={handleSliderChange}
-        onMouseUp={handleSliderDragEnd}
-        style={{
-          background: buildTrackGradient(clipRange, clipFrame, cachedClipRanges, missingRanges),
-        }}
-      />
+      <div className="frame-slider-wrap">
+        <input
+          className="frame-slider"
+          type="range"
+          min={clipRange.start}
+          max={clipRange.end}
+          value={clipFrame}
+          onChange={handleSliderChange}
+          onMouseUp={handleSliderDragEnd}
+          style={{
+            background: buildTrackGradient(clipRange, clipFrame, cachedClipRanges, missingRanges),
+          }}
+        />
+        {boundaries.map((boundary) => (
+          <button
+            key={boundary.frame}
+            type="button"
+            className="frame-slider-boundary"
+            style={{ left: `${boundary.percent}%` }}
+            onClick={() => onClipFrameChange(boundary.frame)}
+            title={`${boundary.label}. Click to jump to its start.`}
+            aria-label={`Jump to ${boundary.label}`}
+          />
+        ))}
+      </div>
       {/* Frame numbers stay on hover, for matching a moment against the data. */}
       <span className="frame-label" title={`Match frame ${currentMatchFrame} · Clip frame ${clipFrame}`}>
         Match Time: {matchTime} | Clip Time: {clipTime}

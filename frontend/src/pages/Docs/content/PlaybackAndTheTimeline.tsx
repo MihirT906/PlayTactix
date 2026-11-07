@@ -26,7 +26,10 @@ export default function PlaybackAndTheTimeline() {
         far you are through your clip. A clip can join moments from across the match, so Clip Time runs straight
         through while Match Time jumps between them. Hover the clocks for the exact frame numbers.
       </p>
-      <p>The slider covers the whole clip. Drag it to move through the clip. Its colours show:</p>
+      <p>
+        The slider covers the whole clip. Drag it to move through the clip. A tick marks where one moment ends and the
+        next begins, which is where Match Time jumps; click a tick to go to the start of that moment. Its colours show:
+      </p>
       <Legend items={SLIDER_BANDS} swatch="bar" />
 
       <h2>The timeline</h2>

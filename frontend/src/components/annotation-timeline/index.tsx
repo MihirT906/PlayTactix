@@ -49,7 +49,7 @@ type AnnotationTimelineProps = {
  * Renders two sections over the same frame scale. Insights, on top, reads the
  * game: event and metric tracks across the clip. Clip builds it: Match
  * Segments (the source clip range), Overlays (one row per active overlay
- * segment - pitch, pitch control, pass probability) and Annotations
+ * segment - pitch control, pass probability, ...) and Annotations
  * (lane-packed rows of player lines, drawn shapes). Each section collapses on
  * its own; their sideways scrolls are kept in step so the playheads always
  * line up. Segment, overlay and annotation bars are draggable to move/resize; each

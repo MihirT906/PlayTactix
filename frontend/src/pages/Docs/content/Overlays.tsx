@@ -22,11 +22,6 @@ export default function Overlays() {
 
       <h2>The overlays</h2>
 
-      <h3>Pitch</h3>
-      <p>
-        The pitch markings. It is on for the whole clip to start with; turn it off for a bare background.
-      </p>
-
       <h3>Pitch Control</h3>
       <p>
         Shades the pitch by which team would win the ball if it arrived there. The pitch is split into one-metre

@@ -12,7 +12,7 @@ const logger = getLogger('SavedProject')
 
 // Identifies the file type, independent of the brand's display name so a rename doesn't orphan saved files.
 export const PROJECT_FORMAT = 'tappd.project'
-export const SCHEMA_VERSION = 1
+export const SCHEMA_VERSION = 2
 
 // Each schema below is both the runtime check for a section of the file and, through z.infer, its type.
 // A section that mirrors an app type is tied to it with `satisfies`, so changing the app type without
@@ -207,12 +207,19 @@ export type SavedProject = z.infer<typeof ProjectSchema>
 // since only the event part depends on the sport.
 export type SavedStyle = z.infer<typeof TeamStyleSchema> & Pick<SavedSoccerAnalysis, 'eventStyles' | 'eventVisibility'>
 
-// Each entry upgrades a project from version N to N + 1. Add one whenever SCHEMA_VERSION is bumped
-// so files saved by older builds keep loading.
-const MIGRATIONS: Record<number, (raw: Record<string, unknown>) => Record<string, unknown>> = {}
-
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
+
+// Each entry upgrades a project from version N to N + 1. Add one whenever SCHEMA_VERSION is bumped
+// so files saved by older builds keep loading.
+const MIGRATIONS: Record<number, (raw: Record<string, unknown>) => Record<string, unknown>> = {
+  // The pitch used to be an overlay on the clip; it is now always drawn, so its bars are dropped.
+  1: (raw) => {
+    if (!isObject(raw.clip) || !Array.isArray(raw.clip.overlaySegments)) return raw
+    const overlaySegments = raw.clip.overlaySegments.filter((overlay) => !isObject(overlay) || overlay.type !== 'pitch')
+    return { ...raw, clip: { ...raw.clip, overlaySegments } }
+  },
+}
 
 // Parses untrusted JSON text into a SavedProject, upgrading older versions.
 // Throws an Error with a user-presentable message on any problem.

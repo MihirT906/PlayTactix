@@ -9,7 +9,7 @@ const clip: Clip = {
     { matchId: 1, clipStart: 0, clipEnd: 100, sourceFrameStart: 1000, sourceFrameEnd: 1100 },
     { matchId: 1, clipStart: 100, clipEnd: 300, sourceFrameStart: 5000, sourceFrameEnd: 5200 },
   ],
-  overlaySegments: [{ type: 'pitch', clipStart: 0, clipEnd: 300 }],
+  overlaySegments: [{ type: 'pitch_control', clipStart: 0, clipEnd: 300 }],
 }
 
 describe('splitSegmentAt', () => {
@@ -33,8 +33,8 @@ describe('splitSegmentAt', () => {
 describe('splitOverlayAt', () => {
   it('ends the first half on the frame before the cut', () => {
     expect(splitOverlayAt(clip, 0, 120).overlaySegments).toEqual([
-      { type: 'pitch', clipStart: 0, clipEnd: 119 },
-      { type: 'pitch', clipStart: 120, clipEnd: 300 },
+      { type: 'pitch_control', clipStart: 0, clipEnd: 119 },
+      { type: 'pitch_control', clipStart: 120, clipEnd: 300 },
     ])
   })
 
@@ -127,13 +127,13 @@ describe('moving past a neighbour', () => {
       ...clip,
       overlaySegments: [
         { type: 'voronoi', clipStart: 0, clipEnd: 49 },
-        { type: 'pitch', clipStart: 0, clipEnd: 300 },
+        { type: 'pitch_control', clipStart: 0, clipEnd: 300 },
         { type: 'voronoi', clipStart: 100, clipEnd: 199 },
       ],
     }
     expect(setOverlayRange(withOverlays, 0, 180, 229, 'move').overlaySegments).toEqual([
       { type: 'voronoi', clipStart: 150, clipEnd: 199 },
-      { type: 'pitch', clipStart: 0, clipEnd: 300 },
+      { type: 'pitch_control', clipStart: 0, clipEnd: 300 },
       { type: 'voronoi', clipStart: 0, clipEnd: 99 },
     ])
   })

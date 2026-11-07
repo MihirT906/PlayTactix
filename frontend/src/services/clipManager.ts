@@ -23,7 +23,7 @@ export function createDefaultClip(matchId: number | null): Clip {
         isDefault: true,
       },
     ],
-    overlaySegments: [{ type: 'pitch', clipStart: 0, clipEnd: DEFAULT_CLIP_LENGTH }],
+    overlaySegments: [],
   }
 }
 
@@ -45,8 +45,8 @@ export function addSegment(clip: Clip, matchId: number | null, sourceFrameStart:
   }
 }
 
-// Refits overlays after the clip's length changes: one that spanned the whole clip (e.g. the
-// pitch) follows the new length, any other is clamped so it can't dangle past a shrunk clip.
+// Refits overlays after the clip's length changes: one that spanned the whole clip follows the
+// new length, any other is clamped so it can't dangle past a shrunk clip.
 function fitOverlaysToLength(overlaySegments: OverlaySegment[], previousLength: number, length: number): OverlaySegment[] {
   return overlaySegments.map((overlay) => {
     if (overlay.clipStart === 0 && overlay.clipEnd === previousLength) {
@@ -58,8 +58,7 @@ function fitOverlaysToLength(overlaySegments: OverlaySegment[], previousLength: 
 }
 
 // Places a new segment immediately after the last one on the clip's own timeline,
-// growing the clip (and any overlay that currently spans the whole clip, e.g. the
-// pitch) to fit. Existing segments and their annotations are left untouched.
+// growing the clip (and any overlay that currently spans the whole clip) to fit. Existing segments and their annotations are left untouched.
 //
 // The segment a match opens with is only a placeholder: the first segment added replaces
 // it, and the clip is refitted to the new segment. Every later one is appended.

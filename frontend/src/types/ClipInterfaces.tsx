@@ -10,10 +10,9 @@ export type Segment = {
   isDefault?: boolean
 }
 
-export type OverlaySegmentKind = 'pitch' | 'pitch_control' | 'pass_option_prob' | 'sequence_trails' | 'voronoi' | 'pass_network'
+export type OverlaySegmentKind = 'pitch_control' | 'pass_option_prob' | 'sequence_trails' | 'voronoi' | 'pass_network'
 
 export const OVERLAY_SEGMENT_LABELS: Record<OverlaySegmentKind, string> = {
-  pitch: 'Pitch',
   pitch_control: 'Pitch Control',
   pass_option_prob: 'Pass Probability',
   sequence_trails: 'Sequence Trails',
@@ -21,7 +20,7 @@ export const OVERLAY_SEGMENT_LABELS: Record<OverlaySegmentKind, string> = {
   pass_network: 'Pass Network',
 }
 
-// An overlay (e.g. the pitch background, pitch control, pass probability) placed
+// An overlay (e.g. pitch control, pass probability) placed
 // over a range of the clip's own timeline.
 export type OverlaySegment = {
   type: OverlaySegmentKind

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { IconType } from 'react-icons'
-import { GiAbstract006, GiFlagObjective, GiHoneycomb, GiNodular, GiPathDistance, GiSoccerField, GiTargeting } from 'react-icons/gi'
+import { GiAbstract006, GiFlagObjective, GiHoneycomb, GiNodular, GiPathDistance, GiTargeting } from 'react-icons/gi'
 import { useMatchSession } from '../context/MatchSessionContext'
 import type { KeyMomentsData } from '../types/KeyMomentsDataInterfaces'
 import type { MatchData } from '../types/MatchDataInterfaces'
@@ -17,7 +17,6 @@ type OverlaysTabProps = {
 }
 
 const OVERLAY_OPTIONS: { kind: OverlaySegmentKind; Icon: IconType }[] = [
-  { kind: 'pitch', Icon: GiSoccerField },
   { kind: 'pitch_control', Icon: GiAbstract006 },
   { kind: 'pass_option_prob', Icon: GiTargeting },
   { kind: 'sequence_trails', Icon: GiPathDistance },

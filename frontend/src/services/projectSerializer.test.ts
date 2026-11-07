@@ -124,6 +124,21 @@ describe('parseProject', () => {
     expect(() => load(withChange((project) => ({ ...project, schemaVersion: 99 })))).toThrow('newer version')
   })
 
+  it('drops the pitch overlay from a version 1 project', () => {
+    const versionOne = withChange((project) => ({
+      ...project,
+      schemaVersion: 1,
+      clip: {
+        ...project.clip,
+        overlaySegments: [
+          { type: 'pitch', clipStart: 0, clipEnd: 300 },
+          { type: 'voronoi', clipStart: 10, clipEnd: 20 },
+        ],
+      },
+    }))
+    expect(load(versionOne).session.clip.overlaySegments).toEqual([{ type: 'voronoi', clipStart: 10, clipEnd: 20 }])
+  })
+
   it('names a provider and sport it cannot open', () => {
     const basketball = withChange((project) => ({ ...project, match: { ...project.match, sport: 'basketball' } }))
     expect(() => load(basketball)).toThrow('basketball match from skillcorner')
@@ -148,7 +163,7 @@ describe('parseProject', () => {
 
   it('rejects an overlay that ends before it starts', () => {
     const project = withChange((project) => {
-      project.clip.overlaySegments[0] = { type: 'pitch', clipStart: 50, clipEnd: 10 }
+      project.clip.overlaySegments[0] = { type: 'pitch_control', clipStart: 50, clipEnd: 10 }
       return project
     })
     expect(() => load(project)).toThrow('incomplete or corrupted')

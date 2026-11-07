@@ -198,7 +198,6 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
   // What a click on the plot can select, and the mark selected to edit, for the same handlers.
   const selectionRef = useRef<{ targets: HitTarget[]; selectedMark: EditableMark | null }>({ targets: [], selectedMark: null })
   // A type can have several segments on the clip; it shows when any of them covers this frame.
-  const isPitchBackgroundActive = findOverlayAt(session.playback.clip, 'pitch', clipFrame) !== undefined
   const isPitchControlActive = findOverlayAt(session.playback.clip, 'pitch_control', clipFrame) !== undefined
   const isPassOptionProbActive = findOverlayAt(session.playback.clip, 'pass_option_prob', clipFrame) !== undefined
   const sequenceTrailsOverlay = findOverlayAt(session.playback.clip, 'sequence_trails', clipFrame)
@@ -1026,17 +1025,15 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
         {/* Plotly's own backgrounds are transparent, so the tints are painted here, under the pitch. */}
         <div style={BACKDROP_STYLE}>
           <div style={BACKDROP_PLOT_AREA_STYLE} />
-          {isPitchBackgroundActive && (
-            <Pitch
-              type="skillcorner"
-              width={PLOT_WIDTH}
-              height={PLOT_HEIGHT}
-              dimensions={pitchKitProps.dimensions}
-              padding={pitchKitProps.padding}
-              appearance={{ stripes: true }}
-              style={PITCHKIT_STYLE}
-            />
-          )}
+          <Pitch
+            type="skillcorner"
+            width={PLOT_WIDTH}
+            height={PLOT_HEIGHT}
+            dimensions={pitchKitProps.dimensions}
+            padding={pitchKitProps.padding}
+            appearance={{ stripes: true }}
+            style={PITCHKIT_STYLE}
+          />
         </div>
         {(voronoiPoints.length > 0 || passNetworkLines.length > 0 || sequenceTrail.carries.length > 0 || sequenceTrail.passes.length > 0 || eventMap.passes.length > 0 || eventMap.movements.length > 0) && (
           // Voronoi cells, the pass network, sequence trails and the event map sit on their own see-through pitch beneath the Plotly plot, so players stay on top.

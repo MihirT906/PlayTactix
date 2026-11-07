@@ -67,19 +67,8 @@ function WorkspaceSidebar({
         </button>
       ) : (
         <div className="settings-sidebar-rail">
-          <span className="app-kicker workspace-sidebar-kicker">Tools</span>
-          <nav className="settings-sidebar-nav" aria-label="Tools">
-            <button
-              type="button"
-              className={`app-header-action workspace-sidebar-action ${isSettingsPanelOpen ? 'is-active' : ''}`}
-              onClick={() => onActivePanelChange(isSettingsPanelOpen ? null : 'settings')}
-              aria-expanded={isSettingsPanelOpen}
-              aria-controls="settings-sidebar-panel"
-              aria-label={isSettingsPanelOpen ? 'Close settings panel' : 'Open settings panel'}
-            >
-              <FaCog aria-hidden="true" />
-              <span>Settings</span>
-            </button>
+          <span className="app-kicker workspace-sidebar-kicker">Build</span>
+          <nav className="settings-sidebar-nav" aria-label="Build">
             <button
               type="button"
               className={`app-header-action workspace-sidebar-action ${isSearchPanelOpen ? 'is-active' : ''}`}
@@ -113,9 +102,20 @@ function WorkspaceSidebar({
               <BiAddToQueue aria-hidden="true" />
               <span>Overlays</span>
             </button>
+            <button
+              type="button"
+              className={`app-header-action workspace-sidebar-action ${isSettingsPanelOpen ? 'is-active' : ''}`}
+              onClick={() => onActivePanelChange(isSettingsPanelOpen ? null : 'settings')}
+              aria-expanded={isSettingsPanelOpen}
+              aria-controls="settings-sidebar-panel"
+              aria-label={isSettingsPanelOpen ? 'Close settings panel' : 'Open settings panel'}
+            >
+              <FaCog aria-hidden="true" />
+              <span>Settings</span>
+            </button>
           </nav>
-          <span className="app-kicker workspace-sidebar-kicker">Annotations</span>
-          <nav className="settings-sidebar-nav workspace-sidebar-nav--annotations" aria-label="Annotations">
+          <span className="app-kicker workspace-sidebar-kicker">Draw</span>
+          <nav className="settings-sidebar-nav workspace-sidebar-nav--annotations" aria-label="Draw">
             <button
               type="button"
               className={`app-header-action workspace-sidebar-action workspace-sidebar-action--player-focus ${isPlayerFocusActive ? 'is-active' : ''}`}

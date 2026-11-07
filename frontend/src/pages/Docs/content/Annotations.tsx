@@ -6,7 +6,7 @@ export default function Annotations() {
     <>
       <p>
         Annotations are your own marks on the play: spotlights, links between players, shapes and arrows. The tools are
-        under <strong>Annotations</strong> in the left panel.
+        under <strong>Draw</strong> in the left panel.
       </p>
 
       <h2>Using a tool</h2>

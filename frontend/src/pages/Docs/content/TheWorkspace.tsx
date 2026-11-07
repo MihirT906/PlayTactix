@@ -46,7 +46,7 @@ export default function TheWorkspace() {
           Control. <Link to={docsPagePath('overlays')}>More on overlays</Link>
         </li>
         <li>
-          <strong>Draw on the play.</strong> Pause, pick a tool under <strong>Annotations</strong>, and mark the pitch.{' '}
+          <strong>Draw on the play.</strong> Pause, pick a tool under <strong>Draw</strong>, and mark the pitch.{' '}
           <Link to={docsPagePath('annotations')}>More on annotations</Link>
         </li>
         <li>

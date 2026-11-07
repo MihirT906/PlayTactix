@@ -28,7 +28,7 @@ export default function DocsHomeCards() {
         <li key={slug}>
           <Link to={docsPagePath(slug)} className="docs-card">
             <span className="docs-card-title">
-              <Icon aria-hidden="true" /> {findDocsPage(slug)?.title}
+              <Icon aria-hidden="true" /> {findDocsPage('user', slug)?.title}
             </span>
             <span className="docs-card-blurb">{blurb}</span>
           </Link>

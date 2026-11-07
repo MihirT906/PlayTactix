@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import AnnotationStore from './AnnotationStore-optimized'
-import { arrangeAfterMove, setOverlayRange, setSegmentRange, splitOverlayAt, splitSegmentAt } from './clipManager'
+import {
+  appendSegment,
+  arrangeAfterMove,
+  createDefaultClip,
+  isPlaceholderUntouched,
+  setOverlayRange,
+  setSegmentRange,
+  splitOverlayAt,
+  splitSegmentAt,
+} from './clipManager'
 import type { Clip } from '../types/ClipInterfaces'
 
 const clip: Clip = {
@@ -136,5 +145,37 @@ describe('moving past a neighbour', () => {
       { type: 'pitch_control', clipStart: 0, clipEnd: 300 },
       { type: 'voronoi', clipStart: 0, clipEnd: 99 },
     ])
+  })
+})
+
+describe('appendSegment onto the placeholder', () => {
+  // The clip a match opens with, after an overlay was added to it.
+  const edited: Clip = {
+    ...createDefaultClip(1),
+    overlaySegments: [{ type: 'voronoi', clipStart: 100, clipEnd: 500 }],
+  }
+
+  it('sees a fresh placeholder as untouched and an edited one as changed', () => {
+    expect(isPlaceholderUntouched(createDefaultClip(1))).toBe(true)
+    expect(isPlaceholderUntouched(edited)).toBe(false)
+  })
+
+  it('starts afresh by default, dropping the placeholder and its overlays', () => {
+    expect(appendSegment(edited, 1, 5000, 5200)).toEqual({
+      length: 200,
+      matchSegments: [{ matchId: 1, clipStart: 0, clipEnd: 200, sourceFrameStart: 5000, sourceFrameEnd: 5200 }],
+      overlaySegments: [],
+    })
+  })
+
+  it('keeps the placeholder as an ordinary segment and adds after it', () => {
+    const kept = appendSegment(edited, 1, 5000, 5200, true)
+    const placeholderEnd = edited.matchSegments[0].clipEnd
+    expect(kept.matchSegments).toEqual([
+      { ...edited.matchSegments[0], isDefault: undefined },
+      { matchId: 1, clipStart: placeholderEnd, clipEnd: placeholderEnd + 200, sourceFrameStart: 5000, sourceFrameEnd: 5200 },
+    ])
+    expect(kept.overlaySegments).toEqual(edited.overlaySegments)
+    expect(kept.length).toBe(placeholderEnd + 200)
   })
 })

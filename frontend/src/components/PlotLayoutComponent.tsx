@@ -13,8 +13,7 @@ type PlotLayoutComponentProps = {
   isPlaying: boolean
   onPlayPause: () => void
   playbackSpeed: number
-  onDoubleSpeed: () => void
-  onHalveSpeed: () => void
+  onSpeedChange: (speed: number) => void
   currentMatchFrame: number
   clipFrame: number
   onClipFrameChange: (clipFrame: number) => void
@@ -63,8 +62,7 @@ function PlotLayoutComponent({
   isPlaying,
   onPlayPause,
   playbackSpeed,
-  onDoubleSpeed,
-  onHalveSpeed,
+  onSpeedChange,
   currentMatchFrame,
   clipFrame,
   onClipFrameChange,
@@ -155,8 +153,7 @@ function PlotLayoutComponent({
         isPlaying={isPlaying}
         onPlayPause={onPlayPause}
         playbackSpeed={playbackSpeed}
-        onDoubleSpeed={onDoubleSpeed}
-        onHalveSpeed={onHalveSpeed}
+        onSpeedChange={onSpeedChange}
         currentMatchFrame={currentMatchFrame}
         clipFrame={clipFrame}
         clipRange={clipRange}

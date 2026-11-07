@@ -33,8 +33,7 @@ export default function KeyMoments() {
       <h2>Filters</h2>
       <ul>
         <li>
-          <strong>Attacking team</strong> and <strong>Defending team</strong>: who had the ball and who was defending.
-          Picking one sets the other.
+          <strong>Team in possession</strong>: the team that had the ball.
         </li>
         <li>
           <strong>Attacking phase</strong>: what the team on the ball was doing, such as building up or breaking

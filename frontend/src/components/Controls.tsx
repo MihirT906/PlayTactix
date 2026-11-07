@@ -2,7 +2,7 @@ import React, { type Ref } from 'react'
 import './Controls.css'
 import AnnotationStore from '../services/AnnotationStore-optimized'
 import { FaPlay, FaPause } from 'react-icons/fa'
-import { RiSlowDownLine, RiSpeedUpLine } from "react-icons/ri";
+import { MdSpeed } from 'react-icons/md'
 import { formatClipTime, formatMatchTime } from '../services/matchClock'
 import { SLIDER_COLORS } from '../constants/sliderColors'
 import type { MatchData } from '../types/MatchDataInterfaces'
@@ -11,8 +11,7 @@ interface ControlsProps {
   isPlaying: boolean
   onPlayPause: () => void
   playbackSpeed: number
-  onDoubleSpeed: () => void
-  onHalveSpeed: () => void
+  onSpeedChange: (speed: number) => void
   currentMatchFrame: number
   clipFrame: number
   clipRange: { start: number; end: number }
@@ -27,10 +26,8 @@ interface ControlsProps {
   containerRef?: Ref<HTMLDivElement>
 }
 
-const formatSpeed = (speed: number) => {
-  const formatted = Number.isInteger(speed) ? speed.toString() : speed.toFixed(3).replace(/0+$/, '').replace(/\.$/, '')
-  return `${formatted}x`
-}
+// The speeds the picker offers, as multiples of real time.
+const PLAYBACK_SPEEDS = [0.25, 0.5, 1, 2, 4]
 
 // Builds the slider track background as hard-edged color bands: played progress,
 // cached-but-unplayed, not-yet-loaded, and (overriding all of those) confirmed-missing
@@ -74,7 +71,7 @@ const buildTrackGradient = (
   return `linear-gradient(to right, ${stops.join(', ')})`
 }
 
-const Controls: React.FC<ControlsProps> = ({ isPlaying, onPlayPause, playbackSpeed, onDoubleSpeed, onHalveSpeed, currentMatchFrame, clipFrame, clipRange, onClipFrameChange, loadedFrameRanges, segmentStart, missingRanges, annotationStore, matchPeriods, containerRef }) => {
+const Controls: React.FC<ControlsProps> = ({ isPlaying, onPlayPause, playbackSpeed, onSpeedChange, currentMatchFrame, clipFrame, clipRange, onClipFrameChange, loadedFrameRanges, segmentStart, missingRanges, annotationStore, matchPeriods, containerRef }) => {
   const matchTime = formatMatchTime(currentMatchFrame, matchPeriods)
   const clipTime = formatClipTime(clipFrame, clipRange.end)
 
@@ -94,28 +91,13 @@ const Controls: React.FC<ControlsProps> = ({ isPlaying, onPlayPause, playbackSpe
 
   return (
     <div className="controls-container" ref={containerRef}>
-      <div className="controls-toolbar">
-        <div className="playback-speed-group">
-          <button className="app-header-action speed-button" onClick={onHalveSpeed} title="Halve speed">
-            <RiSlowDownLine />
-            <span className="speed-button-label">0.5x</span>
-          </button>
-          <div className="play-pause-wrapper">
-            <span className="speed-label">{formatSpeed(playbackSpeed)}</span>
-            <button className="app-header-action play-pause-button" onClick={onPlayPause}>
-              {isPlaying ? <FaPause /> : <FaPlay />}
-            </button>
-          </div>
-          <button className="app-header-action speed-button" onClick={onDoubleSpeed} title="Double speed">
-            <RiSpeedUpLine />
-            <span className="speed-button-label">2x</span>
-          </button>
-        </div>
-        {/* Frame numbers stay on hover, for matching a moment against the data. */}
-        <span className="frame-label" title={`Match frame ${currentMatchFrame} · Clip frame ${clipFrame}`}>
-          Match Time: {matchTime} | Clip Time: {clipTime}
-        </span>
-      </div>
+      <button
+        className="app-header-action play-pause-button"
+        onClick={onPlayPause}
+        aria-label={isPlaying ? 'Pause' : 'Play'}
+      >
+        {isPlaying ? <FaPause /> : <FaPlay />}
+      </button>
       <input
         className="frame-slider"
         type="range"
@@ -128,6 +110,26 @@ const Controls: React.FC<ControlsProps> = ({ isPlaying, onPlayPause, playbackSpe
           background: buildTrackGradient(clipRange, clipFrame, cachedClipRanges, missingRanges),
         }}
       />
+      {/* Frame numbers stay on hover, for matching a moment against the data. */}
+      <span className="frame-label" title={`Match frame ${currentMatchFrame} · Clip frame ${clipFrame}`}>
+        Match Time: {matchTime} | Clip Time: {clipTime}
+      </span>
+      {/* The icon is all that shows; the select laid invisibly over it opens the browser's own menu. */}
+      <span className="speed-picker" title={`Playback speed: ${playbackSpeed}x`}>
+        <MdSpeed aria-hidden="true" />
+        <select
+          className="speed-picker__select"
+          value={playbackSpeed}
+          onChange={(event) => onSpeedChange(Number(event.target.value))}
+          aria-label="Playback speed"
+        >
+          {PLAYBACK_SPEEDS.map((speed) => (
+            <option key={speed} value={speed}>
+              {speed}x
+            </option>
+          ))}
+        </select>
+      </span>
     </div>
   )
 }

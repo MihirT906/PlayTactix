@@ -18,11 +18,11 @@ export default function PlaybackAndTheTimeline() {
 
       <h2>Playback</h2>
       <p>
-        Press play to watch the clip. The <strong>0.5x</strong> and <strong>2x</strong> buttons either side halve or
-        double the speed, and the current speed shows above the play button.
+        Press play, left of the slider, to watch the clip. The speed icon on the right picks a speed from{' '}
+        <strong>0.25x</strong> to <strong>4x</strong>.
       </p>
       <p>
-        To the right are two clocks. <strong>Match Time</strong> is the match clock; <strong>Clip Time</strong> is how
+        Under the slider are two clocks. <strong>Match Time</strong> is the match clock; <strong>Clip Time</strong> is how
         far you are through your clip. A clip can join moments from across the match, so Clip Time runs straight
         through while Match Time jumps between them. Hover the clocks for the exact frame numbers.
       </p>

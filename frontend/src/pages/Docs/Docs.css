@@ -7,6 +7,14 @@
 /* Stays in view while the page scrolls, and scrolls itself if the list is taller than the window */
 .docs-sidebar { position: sticky; top: 1.5rem; max-height: calc(100vh - 3rem); overflow-y: auto; }
 .docs-sidebar-section + .docs-sidebar-section { margin-top: 1.75rem; }
+
+/* User guide / Developers, above the open guide's pages */
+.docs-guide-switch { display: flex; gap: 0; margin-bottom: 1.75rem; border: 1px solid var(--surface-subtle-border); }
+.docs-guide-switch-link { flex: 1; padding: 0.45rem 0.5rem; font-size: 0.85rem; font-weight: 600; text-align: center; color: var(--color-text-muted); text-decoration: none; }
+.docs-guide-switch-link + .docs-guide-switch-link { border-left: 1px solid var(--surface-subtle-border); }
+.docs-guide-switch-link:hover { color: var(--color-text-primary); background: var(--surface-subtle-background); }
+.docs-guide-switch-link.is-active { color: var(--color-text-inverse); background: var(--color-accent); }
+.docs-guide-switch-link:focus-visible { outline: 2px solid var(--focus-outline-color); outline-offset: 2px; }
 .docs-sidebar-heading { margin: 0 0 0.5rem; font-size: 0.95rem; font-weight: 600; color: var(--color-text-primary); }
 .docs-sidebar-list { list-style: none; margin: 0; padding: 0; }
 .docs-sidebar-link { display: block; padding: 0.3rem 0; font-size: 0.95rem; color: var(--color-text-muted); text-decoration: none; }

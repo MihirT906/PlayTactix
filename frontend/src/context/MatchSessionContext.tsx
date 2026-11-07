@@ -80,14 +80,14 @@ type MatchSessionContextValue = {
   setCurrentClipFrame: (clipFrame: number) => void
   advanceFrame: () => void
   addSegment: (sourceFrameStart: number, sourceFrameEnd: number) => void
-  appendSegment: (sourceFrameStart: number, sourceFrameEnd: number) => void
+  // keepPlaceholder keeps the segment a match opens with and adds after it, rather than starting afresh.
+  appendSegment: (sourceFrameStart: number, sourceFrameEnd: number, keepPlaceholder?: boolean) => void
   removeSegment: (index: number) => void
   splitSegment: (index: number, clipFrame: number) => void
   setSegmentRange: (index: number, clipStart: number, clipEnd: number, kind: 'move' | 'resize') => void
   togglePlayback: () => void
   stopPlayback: () => void
-  doublePlaybackSpeed: () => void
-  halvePlaybackSpeed: () => void
+  setPlaybackSpeed: (speed: number) => void
 
   setSidebarPanel: (panel: SidebarPanel) => void
   clearSidebarPanel: () => void
@@ -117,9 +117,6 @@ type MatchSessionProviderProps = {
     children: ReactNode
     dataManager: DataManager
 }
-
-const MIN_PLAYBACK_SPEED = 0.125
-const MAX_PLAYBACK_SPEED = 8
 
 export const createInitialMatchSessionState = (matchId: number | null = null): MatchSessionState => ({
   match: {
@@ -273,9 +270,9 @@ export function MatchSessionProvider({
             })
         },
 
-        appendSegment: (sourceFrameStart: number, sourceFrameEnd: number) => {
+        appendSegment: (sourceFrameStart: number, sourceFrameEnd: number, keepPlaceholder = false) => {
             setSession((prev) => {
-                const clip = clipManager.appendSegment(prev.playback.clip, prev.match.id, sourceFrameStart, sourceFrameEnd)
+                const clip = clipManager.appendSegment(prev.playback.clip, prev.match.id, sourceFrameStart, sourceFrameEnd, keepPlaceholder)
                 const appended = clip.matchSegments[clip.matchSegments.length - 1]
 
                 logger.info('Clip segment appended', appended)
@@ -361,22 +358,12 @@ export function MatchSessionProvider({
             }))
         },
 
-        doublePlaybackSpeed: () => {
+        setPlaybackSpeed: (speed: number) => {
             setSession((prev) => ({
                 ...prev,
                 playback: {
                     ...prev.playback,
-                    playbackSpeed: Math.min(prev.playback.playbackSpeed * 2, MAX_PLAYBACK_SPEED),
-                },
-            }))
-        },
-
-        halvePlaybackSpeed: () => {
-            setSession((prev) => ({
-                ...prev,
-                playback: {
-                    ...prev.playback,
-                    playbackSpeed: Math.max(prev.playback.playbackSpeed / 2, MIN_PLAYBACK_SPEED),
+                    playbackSpeed: speed,
                 },
             }))
         },

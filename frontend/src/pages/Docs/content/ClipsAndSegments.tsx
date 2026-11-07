@@ -13,7 +13,7 @@ export default function ClipsAndSegments() {
       <p>
         A match opens with one segment, its first two minutes. The first moment you add from{' '}
         <Link to={docsPagePath('moments')}>Moments</Link> replaces it, and each one after that goes on the end of
-        the clip.
+        the clip. If you've already worked on the opening two minutes, you'll be asked whether to keep them.
       </p>
 
       <h2>Arranging segments</h2>

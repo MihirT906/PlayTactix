@@ -19,6 +19,8 @@ import MatchPicker from './components/MatchPicker'
 import ProjectControls from './components/ProjectControls'
 import WorkspaceSidebar from './components/WorkspaceSidebar'
 import BrandTitle from './components/brand/BrandTitle'
+import ChoiceDialog from './components/ChoiceDialog'
+import { hasPlaceholder, isPlaceholderUntouched } from './services/clipManager'
 import { MatchSessionProvider, useMatchSession } from './context/MatchSessionContext'
 import { workFingerprint, type LiveStyle } from './services/projectSerializer'
 
@@ -30,6 +32,8 @@ const ROUTES = {
   workspace: '/matches/:matchId',
   docs: '/docs',
   docsPage: '/docs/:slug',
+  developerDocs: '/docs/developers',
+  developerDocsPage: '/docs/developers/:slug',
 } as const
 
 const workspacePath = (matchId: number) => `/matches/${matchId}`
@@ -84,8 +88,7 @@ function AppContent({
       appendSegment,
       togglePlayback,
       stopPlayback,
-      doublePlaybackSpeed,
-      halvePlaybackSpeed,
+      setPlaybackSpeed,
       setSidebarPanel,
       clearSidebarPanel,
       setFrameLoading,
@@ -362,11 +365,33 @@ function AppContent({
       stopPlayback() // Pause playback when user manually changes frame
     }
 
-    const handleAddSegment = (start: number, end: number) => {
-      // The first segment added replaces the default clip; later ones append after the
-      // existing setup, so their segments and clip-relative annotations stay valid.
-      appendSegment(start, end)
+    // Starting afresh drops the placeholder a match opens with, and with it the drawings made on it.
+    // Keeping it turns it into an ordinary segment, and the new one goes after it.
+    const addSegment = (start: number, end: number, keepPlaceholder: boolean) => {
+      if (!keepPlaceholder && hasPlaceholder(clip)) {
+        annotationStore.clear()
+        handleAnnotationUpdate()
+      }
+      appendSegment(start, end, keepPlaceholder)
       stopPlayback() // Pause playback when a new segment is added
+    }
+
+    // A segment waiting on the user to say what happens to the placeholder they have worked on.
+    const [pendingSegment, setPendingSegment] = useState<{ start: number; end: number } | null>(null)
+
+    const handleAddSegment = (start: number, end: number) => {
+      const placeholderEdited =
+        hasPlaceholder(clip) && (!isPlaceholderUntouched(clip) || annotationStore.getAllAnnotations().length > 0)
+      if (placeholderEdited) {
+        setPendingSegment({ start, end })
+        return
+      }
+      addSegment(start, end, false)
+    }
+
+    const resolvePendingSegment = (keepPlaceholder: boolean) => {
+      if (pendingSegment) addSegment(pendingSegment.start, pendingSegment.end, keepPlaceholder)
+      setPendingSegment(null)
     }
 
     const openMatchPicker = () => {
@@ -498,8 +523,7 @@ function AppContent({
                       isPlaying={isPlaying}
                       onPlayPause={handlePlayPause}
                       playbackSpeed={playbackSpeed}
-                      onDoubleSpeed={doublePlaybackSpeed}
-                      onHalveSpeed={halvePlaybackSpeed}
+                      onSpeedChange={setPlaybackSpeed}
                       currentMatchFrame={currentMatchFrame}
                       clipFrame={clipFrame}
                       onClipFrameChange={handleClipFrameChange}
@@ -524,11 +548,24 @@ function AppContent({
             )
           } />
 
-          <Route path={ROUTES.docs} element={<DocsPage />} />
-          <Route path={ROUTES.docsPage} element={<DocsPage />} />
+          <Route path={ROUTES.docs} element={<DocsPage guide="user" />} />
+          <Route path={ROUTES.docsPage} element={<DocsPage guide="user" />} />
+          <Route path={ROUTES.developerDocs} element={<DocsPage guide="developers" />} />
+          <Route path={ROUTES.developerDocsPage} element={<DocsPage guide="developers" />} />
 
           <Route path="*" element={<Navigate to={ROUTES.landing} replace />} />
           </Routes>
+          {pendingSegment ? (
+            <ChoiceDialog
+              title="Keep your work on the opening clip?"
+              message="You've made changes to the opening two minutes. Keep them and add this moment after, or start afresh with just this moment."
+              choices={[
+                { label: 'Start afresh', onSelect: () => resolvePendingSegment(false) },
+                { label: 'Keep and add on', onSelect: () => resolvePendingSegment(true), primary: true },
+              ]}
+              onCancel={() => setPendingSegment(null)}
+            />
+          ) : null}
         </div>
       </StyleConfigProvider>
     )

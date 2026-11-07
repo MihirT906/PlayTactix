@@ -57,24 +57,56 @@ function fitOverlaysToLength(overlaySegments: OverlaySegment[], previousLength: 
   })
 }
 
+// Whether the clip still holds the placeholder a match opens with.
+export function hasPlaceholder(clip: Clip): boolean {
+  return clip.matchSegments.some((segment) => segment.isDefault)
+}
+
+// Whether the clip is still the placeholder exactly as it opened: one untrimmed segment and no overlays.
+export function isPlaceholderUntouched(clip: Clip): boolean {
+  const [segment, ...rest] = clip.matchSegments
+  return (
+    rest.length === 0 &&
+    segment?.isDefault === true &&
+    segment.clipStart === 0 &&
+    segment.sourceFrameStart === DEFAULT_SEGMENT_SOURCE_RANGE.start &&
+    segment.sourceFrameEnd === DEFAULT_SEGMENT_SOURCE_RANGE.end &&
+    clip.overlaySegments.length === 0
+  )
+}
+
 // Places a new segment immediately after the last one on the clip's own timeline,
-// growing the clip (and any overlay that currently spans the whole clip) to fit. Existing segments and their annotations are left untouched.
+// growing the clip (and any overlay that currently spans the whole clip) to fit.
+// Existing segments and their annotations are left untouched.
 //
-// The segment a match opens with is only a placeholder: the first segment added replaces
-// it, and the clip is refitted to the new segment. Every later one is appended.
+// The segment a match opens with is only a placeholder. Unless keepPlaceholder is set, the
+// first segment added starts the clip afresh: the placeholder and its overlays are dropped.
+// With keepPlaceholder, the placeholder becomes an ordinary segment and the new one goes after it.
 export function appendSegment(
   clip: Clip,
   matchId: number | null,
   sourceFrameStart: number,
-  sourceFrameEnd: number
+  sourceFrameEnd: number,
+  keepPlaceholder = false
 ): Clip {
-  const keptSegments = clip.matchSegments.filter((segment) => !segment.isDefault)
-  const replacesDefault = keptSegments.length !== clip.matchSegments.length
-
   const span = Math.max(sourceFrameEnd - sourceFrameStart, 1)
+
+  if (hasPlaceholder(clip) && !keepPlaceholder) {
+    return {
+      length: span,
+      matchSegments: [{ matchId, clipStart: 0, clipEnd: span, sourceFrameStart, sourceFrameEnd }],
+      overlaySegments: [],
+    }
+  }
+
+  const keptSegments = clip.matchSegments.map((segment) => {
+    const kept = { ...segment }
+    delete kept.isDefault
+    return kept
+  })
   const clipStart = keptSegments.reduce((end, segment) => Math.max(end, segment.clipEnd), 0)
   const clipEnd = clipStart + span
-  const length = replacesDefault ? clipEnd : Math.max(clip.length, clipEnd)
+  const length = Math.max(clip.length, clipEnd)
 
   return {
     ...clip,
@@ -83,10 +115,7 @@ export function appendSegment(
       ...keptSegments,
       { matchId, clipStart, clipEnd, sourceFrameStart, sourceFrameEnd },
     ],
-    // Replacing the default can shrink the clip; an overlay left with no length is dropped.
-    overlaySegments: fitOverlaysToLength(clip.overlaySegments, clip.length, length).filter(
-      (overlay) => !replacesDefault || overlay.clipEnd > overlay.clipStart
-    ),
+    overlaySegments: fitOverlaysToLength(clip.overlaySegments, clip.length, length),
   }
 }
 

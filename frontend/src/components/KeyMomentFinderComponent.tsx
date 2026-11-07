@@ -25,7 +25,7 @@ type KeyMomentItem = KeyMomentsData['pops'][number]
 type LedTo = 'any' | 'shot' | 'goal'
 
 interface FilterConfig {
-  // The defending team is always the other one, so only the attacking side is stored.
+  // The team in possession; the other one is defending.
   attacking_team_id: number | null
   attacking_phase_types: string[]
   defending_phase_types: string[]
@@ -222,10 +222,6 @@ function KeyMomentFinderComponent({ segmentRange, onAddSegment, keyMomentsData, 
     { value: null, label: 'Any' },
     ...teams.map((team) => ({ value: team.id, label: team.acronym ?? team.short_name, title: team.short_name })),
   ]
-  // Picking one side fixes the other: if a team attacks, the other one defends.
-  const otherTeamId = (teamId: number | null) =>
-    teamId === null ? null : (teams.find((team) => team.id !== teamId)?.id ?? null)
-
   const periodOf = (moment: KeyMomentItem) => {
     // Frame ranges are padded at both ends, so place the passage by its midpoint.
     const midFrame = (moment.frame_start + moment.frame_end) / 2
@@ -397,26 +393,14 @@ function KeyMomentFinderComponent({ segmentRange, onAddSegment, keyMomentsData, 
               ) : null}
             </div>
             {matchData && (
-              <>
-                <FilterRow label="Attacking team">
-                  <SegmentedControl<number | null>
-                    ariaLabel="Attacking team"
-                    options={teamOptions}
-                    value={filters.attacking_team_id}
-                    onChange={(attacking_team_id) => setFilters((f) => ({ ...f, attacking_team_id }))}
-                  />
-                </FilterRow>
-                <FilterRow label="Defending team">
-                  <SegmentedControl<number | null>
-                    ariaLabel="Defending team"
-                    options={teamOptions}
-                    value={otherTeamId(filters.attacking_team_id)}
-                    onChange={(defending_team_id) =>
-                      setFilters((f) => ({ ...f, attacking_team_id: otherTeamId(defending_team_id) }))
-                    }
-                  />
-                </FilterRow>
-              </>
+              <FilterRow label="Team in possession">
+                <SegmentedControl<number | null>
+                  ariaLabel="Team in possession"
+                  options={teamOptions}
+                  value={filters.attacking_team_id}
+                  onChange={(attacking_team_id) => setFilters((f) => ({ ...f, attacking_team_id }))}
+                />
+              </FilterRow>
             )}
             <FilterRow label="Attacking phase">
               <MultiSelectDropdown

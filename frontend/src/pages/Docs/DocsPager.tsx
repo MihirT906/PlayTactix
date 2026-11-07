@@ -1,9 +1,9 @@
 import { Link } from 'react-router-dom'
-import { adjacentDocsPages, docsPagePath } from './docsNav'
+import { adjacentDocsPages, docsPagePath, type DocsGuideId } from './docsNav'
 
-// Previous and next links at the foot of a page, following the sidebar order.
-export default function DocsPager({ slug }: { slug: string }) {
-  const { previous, next } = adjacentDocsPages(slug)
+// Previous and next links at the foot of a page, following its guide's sidebar order.
+export default function DocsPager({ guide, slug }: { guide: DocsGuideId; slug: string }) {
+  const { previous, next } = adjacentDocsPages(guide, slug)
 
   return (
     <nav className="docs-pager" aria-label="Previous and next pages">

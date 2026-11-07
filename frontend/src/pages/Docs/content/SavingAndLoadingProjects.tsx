@@ -12,8 +12,7 @@ export default function SavingAndLoadingProjects() {
       </p>
       <p>
         The file keeps everything you built: the moments, which overlays show and when, your drawings, your Insights
-        tracks, and your colour and visibility settings. It names the match but doesn't hold its footage, so it stays
-        small.
+        tracks, and your colour and visibility settings.
       </p>
 
       <h2>Loading</h2>

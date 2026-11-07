@@ -12,16 +12,6 @@ export default function ChoosingAMatch() {
         </a>
         , who have graciously provided 20 matches from the 2024/25 Australian A-League season.
       </p>
-
-      <h2>Behind the scenes</h2>
-      <p>
-        When you click a match, its tracking and event data are downloaded. Tracking is recorded ten times a second,
-        which adds up to around 50,000 frames and over a million player and ball positions in a single match.
-      </p>
-      <p>
-        That is far too much to load at once, so the platform uses caching to load only the chunks of the match you
-        are about to watch. That is what keeps playback smooth.
-      </p>
     </>
   )
 }

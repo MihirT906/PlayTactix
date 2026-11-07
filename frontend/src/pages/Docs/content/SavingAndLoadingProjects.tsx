@@ -11,7 +11,7 @@ export default function SavingAndLoadingProjects() {
         <code>.tappd.json</code> file.
       </p>
       <p>
-        The file keeps everything you built: the segments, which overlays show and when, your drawings, your Insights
+        The file keeps everything you built: the moments, which overlays show and when, your drawings, your Insights
         tracks, and your colour and visibility settings. It names the match but doesn't hold its footage, so it stays
         small.
       </p>

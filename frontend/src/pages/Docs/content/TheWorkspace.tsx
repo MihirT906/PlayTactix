@@ -38,7 +38,7 @@ export default function TheWorkspace() {
       <ol>
         <li>
           <strong>Find a moment.</strong> Open <strong>Moments</strong>, filter down to the moment you want,
-          and click it. It replaces the opening two minutes and appears under <strong>Match Segments</strong>. Add more
+          and click it. It replaces the opening two minutes and appears in the <strong>Moments</strong> row. Add more
           moments to build up the clip. <Link to={docsPagePath('moments')}>More on Moments</Link>
         </li>
         <li>
@@ -55,7 +55,7 @@ export default function TheWorkspace() {
         </li>
       </ol>
       <p>
-        Every segment, overlay and drawing gets a bar on the timeline. Drag a bar to move it and drag its ends to trim
+        Every moment, overlay and drawing gets a bar on the timeline. Drag a bar to move it and drag its ends to trim
         it; that's how you set when each one shows.
       </p>
     </>

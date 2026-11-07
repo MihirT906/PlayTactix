@@ -5,7 +5,7 @@ type TimelineGroupProps = {
   children: ReactNode
 }
 
-/** One titled group of rows (Match Segments, Overlays, Annotations) inside the Clip section. */
+/** One titled group of rows (Overlays, Annotations) inside the Clip section. */
 export function TimelineGroup({ title, children }: TimelineGroupProps) {
   return (
     <div className="annotation-timeline__group">

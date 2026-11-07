@@ -52,7 +52,7 @@ export const DOCS_GUIDES: Record<DocsGuideId, DocsGuide> = {
         pages: [
           { slug: 'playback-and-the-timeline', title: 'Playback and the timeline' },
           { slug: 'moments', title: 'Moments' },
-          { slug: 'clips-and-segments', title: 'Clips and segments' },
+          { slug: 'clips-and-moments', title: 'Clips and moments' },
           { slug: 'overlays', title: 'Overlays' },
           { slug: 'annotations', title: 'Annotations' },
           { slug: 'saving-and-loading-projects', title: 'Saving and loading projects' },

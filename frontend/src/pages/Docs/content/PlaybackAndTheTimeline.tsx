@@ -33,7 +33,7 @@ export default function PlaybackAndTheTimeline() {
       <p>
         The rows under the pitch lay your clip out in time, in two sections. <strong>Insights</strong>, on top, holds
         the tracks you've added to read the game. <strong>Clip</strong> holds what you build:{' '}
-        <strong>Match Segments</strong>, <strong>Overlays</strong> and <strong>Annotations</strong>. Click a section's
+        <strong>Moments</strong>, <strong>Overlays</strong> and <strong>Annotations</strong>. Click a section's
         title to fold it away. The vertical line marks where you are; click or drag along an empty part of a row to
         move it.
       </p>

@@ -18,7 +18,7 @@ const CARDS: DocsHomeCard[] = [
     icon: FaPen,
     blurb: 'Spotlight players, link them, outline the team shape, or draw your own.',
   },
-  { slug: 'clips-and-segments', icon: FaFilm, blurb: 'Stitch moments from across the match into one clip.' },
+  { slug: 'clips-and-moments', icon: FaFilm, blurb: 'Stitch moments from across the match into one clip.' },
 ]
 
 export default function DocsHomeCards() {

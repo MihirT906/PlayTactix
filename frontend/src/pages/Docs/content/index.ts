@@ -1,7 +1,7 @@
 import type { ComponentType } from 'react'
 import Annotations from './Annotations'
 import ChoosingAMatch from './ChoosingAMatch'
-import ClipsAndSegments from './ClipsAndSegments'
+import ClipsAndMoments from './ClipsAndMoments'
 import KeyMoments from './KeyMoments'
 import Overlays from './Overlays'
 import PlaybackAndTheTimeline from './PlaybackAndTheTimeline'
@@ -16,7 +16,7 @@ export const DOCS_CONTENT: Partial<Record<string, ComponentType>> = {
   'playback-and-the-timeline': PlaybackAndTheTimeline,
   moments: KeyMoments,
   overlays: Overlays,
-  'clips-and-segments': ClipsAndSegments,
+  'clips-and-moments': ClipsAndMoments,
   annotations: Annotations,
   'saving-and-loading-projects': SavingAndLoadingProjects,
   'what-is-tappd': WhatIsTappd,

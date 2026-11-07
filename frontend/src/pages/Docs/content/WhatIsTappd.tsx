@@ -34,7 +34,7 @@ export default function WhatIsTappd() {
         <Link to={docsPagePath('moments')}>Find</Link> the moments that matter,{' '}
         <Link to={docsPagePath('overlays')}>lay analysis</Link> over them,{' '}
         <Link to={docsPagePath('annotations')}>draw</Link> on the play, and{' '}
-        <Link to={docsPagePath('clips-and-segments')}>build a clip</Link> that tells the story. Then{' '}
+        <Link to={docsPagePath('clips-and-moments')}>build a clip</Link> that tells the story. Then{' '}
         <Link to={docsPagePath('saving-and-loading-projects')}>save it</Link> to come back to or share.
       </p>
     </>

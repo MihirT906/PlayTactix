@@ -20,14 +20,17 @@ function sourceRangeFor(segment: Segment, range: FrameRange) {
   }
 }
 
-// The bar reads the match clock it starts at and how long it runs, e.g. "52:00 · 34s"; hovering it
+// The bar reads the match clock it starts at and how long it runs, e.g. "52:00 · 34s"; the opening
+// placeholder reads "Opening clip" instead, so it is not taken for a moment the user chose. Hovering
 // adds the half and the clock it ends at. Until the match periods load it can only give the length.
 function describeSegment(name: string, segment: Segment, range: FrameRange, periods: MatchData['match_periods'] | undefined) {
   const source = sourceRangeFor(segment, range)
   const duration = formatFrameDuration(source.end - source.start)
   const start = formatMatchClockAt(source.start, periods)
   const end = formatMatchClockAt(source.end, periods)
-  if (start === null) return { text: `${name} · ${duration}`, title: `${name} · ${duration}` }
+  if (start === null || segment.isDefault) {
+    return { text: `${name} · ${duration}`, title: [name, start, duration].filter(Boolean).join(' · ') }
+  }
 
   const period = periods?.find((p) => source.start >= p.start_frame && source.start <= p.end_frame)?.period
   const halfName = period ? PERIOD_NAMES[period] ?? `Period ${period}` : null
@@ -59,7 +62,7 @@ type SegmentRowProps = {
   onScaleRelease?: () => void
 }
 
-/** The match segments placed on the clip timeline - the source footage played back. */
+/** The Moments row: the match footage placed on the clip timeline, as the user sees it. */
 export function SegmentRow({
   segments,
   matchPeriods,
@@ -80,14 +83,14 @@ export function SegmentRow({
 
   return (
     <TimelineRow
-      label={multiple ? `Segments (${segments.length})` : 'Segment'}
+      label={multiple ? `Moments (${segments.length})` : 'Moments'}
       labelWidth={labelWidth}
       trackWidth={trackWidth}
       trackHeight={LANE_HEIGHT}
       currentFrameOffsetPercent={currentFrameOffsetPercent}
     >
       {segments.map((segment, index) => {
-        const label = multiple ? `Segment ${index + 1}` : 'Segment'
+        const label = segment.isDefault ? 'Opening clip' : multiple ? `Moment ${index + 1}` : 'Moment'
         const previous = segments[index - 1]
         const next = segments[index + 1]
 

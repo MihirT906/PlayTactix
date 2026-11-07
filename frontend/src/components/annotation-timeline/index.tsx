@@ -47,8 +47,8 @@ type AnnotationTimelineProps = {
 
 /**
  * Renders two sections over the same frame scale. Insights, on top, reads the
- * game: event and metric tracks across the clip. Clip builds it: Match
- * Segments (the source clip range), Overlays (one row per active overlay
+ * game: event and metric tracks across the clip. Clip builds it: Moments
+ * (the match footage placed on the clip), Overlays (one row per active overlay
  * segment - pitch control, pass probability, ...) and Annotations
  * (lane-packed rows of player lines, drawn shapes). Each section collapses on
  * its own; their sideways scrolls are kept in step so the playheads always
@@ -222,28 +222,25 @@ const AnnotationTimeline: React.FC<AnnotationTimelineProps> = ({
         contentWidth={contentWidth}
         onTrackPointerDown={handleTrackPointerDown}
       >
-        <TimelineGroup title="Match Segments">
-          {matchSegments.length === 0 ? (
-            <div className="annotation-timeline__empty">No match segments</div>
-          ) : (
-            <SegmentRow
-              segments={matchSegments}
-              matchPeriods={matchData?.match_periods ?? null}
-              scaleStart={scaleStart}
-              scaleEnd={scaleEnd}
-              sourceBounds={sourceBounds}
-              labelWidth={TIMELINE_LABEL_WIDTH}
-              trackWidth={trackWidth}
-              currentFrameOffsetPercent={currentFrameOffsetPercent}
-              onRangeChange={setSegmentRange}
-              onSplit={splitSegment}
-              onDelete={removeSegment}
-              clipFrame={clipFrame}
-              onScaleRequest={requestScaleEnd}
-              onScaleRelease={releaseScale}
-            />
-          )}
-        </TimelineGroup>
+        {/* The footage is a single row, so it sits straight under Clip rather than in a titled group. */}
+        <div className="annotation-timeline__group">
+          <SegmentRow
+            segments={matchSegments}
+            matchPeriods={matchData?.match_periods ?? null}
+            scaleStart={scaleStart}
+            scaleEnd={scaleEnd}
+            sourceBounds={sourceBounds}
+            labelWidth={TIMELINE_LABEL_WIDTH}
+            trackWidth={trackWidth}
+            currentFrameOffsetPercent={currentFrameOffsetPercent}
+            onRangeChange={setSegmentRange}
+            onSplit={splitSegment}
+            onDelete={removeSegment}
+            clipFrame={clipFrame}
+            onScaleRequest={requestScaleEnd}
+            onScaleRelease={releaseScale}
+          />
+        </div>
 
         <TimelineGroup title="Overlays">
           {overlaySegments.length === 0 ? (

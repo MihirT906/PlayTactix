@@ -68,50 +68,8 @@
   color: #f8fafc;
 }
 
-/* The slider, with a tick laid over it wherever one moment hands over to the next. */
-.frame-slider-wrap {
-  grid-area: slider;
-  position: relative;
-  display: flex;
-  align-items: center;
-  min-width: 0;
-}
-
-/* A wide, invisible hit area around a thin line, so the tick is easy to hover and click. */
-.frame-slider-boundary {
-  position: absolute;
-  top: 50%;
-  width: 10px;
-  height: 16px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  transform: translate(-50%, -50%);
-  cursor: pointer;
-}
-
-.frame-slider-boundary::before {
-  content: '';
-  position: absolute;
-  top: 2px;
-  bottom: 2px;
-  left: 50%;
-  width: 2px;
-  transform: translateX(-50%);
-  background: rgba(248, 250, 252, 0.8);
-}
-
-.frame-slider-boundary:hover::before,
-.frame-slider-boundary:focus-visible::before {
-  background: var(--color-accent);
-}
-
-.frame-slider-boundary:focus-visible {
-  outline: 2px solid var(--focus-outline-color);
-  outline-offset: 1px;
-}
-
 .frame-slider {
+  grid-area: slider;
   width: 100%;
   -webkit-appearance: none;
   appearance: none;

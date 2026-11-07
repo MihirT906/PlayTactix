@@ -17,7 +17,6 @@ type WorkspaceSidebarProps = {
   onActivePanelChange: (panel: SidebarPanel) => void
   matchData: MatchData | null
   timelineStore: TimelineStore
-  segmentRange: { start: number; end: number }
   onAddSegment: (start: number, end: number) => void
   keyMomentsData: KeyMomentsData | null
 }
@@ -27,7 +26,6 @@ function WorkspaceSidebar({
   onActivePanelChange,
   matchData,
   timelineStore,
-  segmentRange,
   onAddSegment,
   keyMomentsData,
 }: WorkspaceSidebarProps) {
@@ -203,7 +201,6 @@ function WorkspaceSidebar({
       ) : isSearchPanelOpen ? (
         <div id="search-sidebar-panel" className="settings-sidebar-panel">
           <KeyMomentFinderComponent
-            segmentRange={segmentRange}
             onAddSegment={onAddSegment}
             keyMomentsData={keyMomentsData}
             matchData={matchData}

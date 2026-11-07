@@ -513,7 +513,6 @@ function AppContent({
                   }
                   matchData={matchMetaData}
                   timelineStore={timelineStore}
-                  segmentRange={segmentRange}
                   onAddSegment={handleAddSegment}
                   keyMomentsData={keyMomentsData}
                 />

@@ -9,11 +9,11 @@ import {
   OUT_OF_POSSESSION_PHASE_TYPES,
   formatEventValue,
 } from '../constants/eventData'
+import { FRAME_RATE, findMatchClock, formatBroadcastClock, formatMatchClockAt, parseBroadcastClock } from '../services/matchClock'
 import MultiSelectDropdown from './MultiSelectDropdown'
 import './KeyMomentFinderComponent.css'
 
 interface KeyMomentFinderComponentProps {
-  segmentRange: { start: number; end: number }
   onAddSegment: (start: number, end: number) => void
   keyMomentsData: KeyMomentsData | null
   matchData: MatchData | null
@@ -53,6 +53,9 @@ const LED_TO_OPTIONS: Array<{ value: LedTo; label: string }> = [
 ]
 
 const PERIOD_LABELS: Record<number, string> = { 1: '1st', 2: '2nd' }
+
+// How long a custom moment runs unless the user says otherwise.
+const DEFAULT_CUSTOM_DURATION_SECONDS = 20
 
 const formatDuration = (seconds: number) => {
   const rounded = Math.round(seconds)
@@ -145,11 +148,12 @@ export function SegmentedControl<T extends string | number | null>({
   )
 }
 
-function KeyMomentFinderComponent({ segmentRange, onAddSegment, keyMomentsData, matchData }: KeyMomentFinderComponentProps) {
+function KeyMomentFinderComponent({ onAddSegment, keyMomentsData, matchData }: KeyMomentFinderComponentProps) {
   const { homeTeamColor, awayTeamColor } = useStyleConfig()
   const { session, setCurrentClipFrame, stopPlayback } = useMatchSession()
-  const [startFrame, setStartFrame] = useState(segmentRange.start.toString())
-  const [endFrame, setEndFrame] = useState(segmentRange.end.toString())
+  // A custom moment, as the match clock it starts at ("52:10", "45+1:30") and its length in seconds.
+  const [customStart, setCustomStart] = useState('')
+  const [customDuration, setCustomDuration] = useState(String(DEFAULT_CUSTOM_DURATION_SECONDS))
   const [customError, setCustomError] = useState<string | null>(null)
   const [expandedGroups, setExpandedGroups] = useState({
     // Goals: false,
@@ -166,30 +170,38 @@ function KeyMomentFinderComponent({ segmentRange, onAddSegment, keyMomentsData, 
   }, [justAddedKey])
 
   const periods = matchData?.match_periods ?? []
-  const frameBounds = periods.length > 0
-    ? { min: Math.min(...periods.map((p) => p.start_frame)), max: Math.max(...periods.map((p) => p.end_frame)) }
-    : null
 
-  // The button stays enabled; a range that can't be added says why instead.
+  // The button stays enabled; a moment that can't be added says why instead.
   const handleAddSegment = () => {
-    const start = Number.parseInt(startFrame, 10)
-    const end = Number.parseInt(endFrame, 10)
+    if (periods.length === 0) {
+      setCustomError("This match's times haven't loaded yet.")
+      return
+    }
+    const clock = parseBroadcastClock(customStart)
+    const durationSeconds = Number(customDuration)
+    if (clock === null) {
+      setCustomError('Enter a start time like 52:10, or 45+1:30 for stoppage time.')
+      return
+    }
+    if (!Number.isFinite(durationSeconds) || durationSeconds <= 0) {
+      setCustomError('Enter a duration in seconds.')
+      return
+    }
 
-    if (Number.isNaN(start) || Number.isNaN(end)) {
-      setCustomError('Enter a start and an end frame.')
+    const found = findMatchClock(clock, periods)
+    if (!found) {
+      setCustomError(`${customStart.trim()} isn't in this match.`)
       return
     }
-    if (end <= start) {
-      setCustomError('The end frame must come after the start frame.')
-      return
-    }
-    if (frameBounds && (start < frameBounds.min || end > frameBounds.max)) {
-      setCustomError(`This match runs from frame ${frameBounds.min} to ${frameBounds.max}.`)
+    const end = found.frame + Math.round(durationSeconds * FRAME_RATE)
+    if (end > found.period.end_frame) {
+      const halfName = `${PERIOD_LABELS[found.period.period] ?? formatEventValue(found.period.name)} half`
+      setCustomError(`That runs past the end of the ${halfName} at ${formatMatchClockAt(found.period.end_frame, periods)}.`)
       return
     }
 
     setCustomError(null)
-    onAddSegment(start, end)
+    onAddSegment(found.frame, end)
   }
 
   // A passage counts as in the clip while a segment still covers exactly its frames; one resized since no longer does.
@@ -226,6 +238,14 @@ function KeyMomentFinderComponent({ segmentRange, onAddSegment, keyMomentsData, 
     // Frame ranges are padded at both ends, so place the passage by its midpoint.
     const midFrame = (moment.frame_start + moment.frame_end) / 2
     return periods.find((p) => midFrame >= p.start_frame && midFrame <= p.end_frame)
+  }
+
+  // The data writes a passage's start on the running clock ("46:10"); shown as a broadcast would ("45+1:10").
+  const momentClock = (moment: KeyMomentItem) => {
+    const [minutes, seconds] = moment.time_start.split(':').map(Number)
+    const period = periodOf(moment)
+    if (!period || !Number.isFinite(minutes) || !Number.isFinite(seconds)) return moment.time_start
+    return formatBroadcastClock(minutes * 60 + seconds, period.period)
   }
 
   const applyFilters = (moments: KeyMomentItem[]) =>
@@ -297,7 +317,7 @@ function KeyMomentFinderComponent({ segmentRange, onAddSegment, keyMomentsData, 
                   >
                     <span className="key-moment-row key-moment-headline">
                       <span className="key-moment-when">
-                        <span className="key-moment-primary">{moment.time_start}</span>
+                        <span className="key-moment-primary">{momentClock(moment)}</span>
                         <span className="key-moment-meta">{formatDuration(moment.duration_seconds)}</span>
                       </span>
                       {/* "Led to" marks an earlier passage of a move whose shot came later. */}
@@ -455,28 +475,28 @@ function KeyMomentFinderComponent({ segmentRange, onAddSegment, keyMomentsData, 
           Create Custom Moment
         </h3>
         <div className="key-moment-custom-fields">
-          <label className="key-moment-input-group">
-            <span className="key-moment-input-label">Enter Frame Start</span>
+          <label className="key-moment-filter-row">
+            <span className="key-moment-filter-row-label">Start (match clock)</span>
             <input
-              type="number"
+              type="text"
               className="key-moment-input"
-              placeholder="Start Frame"
-              value={startFrame}
+              placeholder="52:10 or 45+1:30"
+              value={customStart}
               onChange={(e) => {
-                setStartFrame(e.target.value)
+                setCustomStart(e.target.value)
                 setCustomError(null)
               }}
             />
           </label>
-          <label className="key-moment-input-group">
-            <span className="key-moment-input-label">Enter Frame End</span>
+          <label className="key-moment-filter-row">
+            <span className="key-moment-filter-row-label">Duration (seconds)</span>
             <input
               type="number"
+              min={1}
               className="key-moment-input"
-              placeholder="End Frame"
-              value={endFrame}
+              value={customDuration}
               onChange={(e) => {
-                setEndFrame(e.target.value)
+                setCustomDuration(e.target.value)
                 setCustomError(null)
               }}
             />

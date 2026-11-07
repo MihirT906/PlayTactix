@@ -1,4 +1,4 @@
-import { formatClock, formatFrameDuration, matchClockSecondsAt } from '../../services/matchClock'
+import { formatFrameDuration, formatMatchClockAt } from '../../services/matchClock'
 import type { Segment } from '../../types/ClipInterfaces'
 import type { MatchData } from '../../types/MatchDataInterfaces'
 import type { FrameRange } from './useRangeDrag'
@@ -25,15 +25,15 @@ function sourceRangeFor(segment: Segment, range: FrameRange) {
 function describeSegment(name: string, segment: Segment, range: FrameRange, periods: MatchData['match_periods'] | undefined) {
   const source = sourceRangeFor(segment, range)
   const duration = formatFrameDuration(source.end - source.start)
-  const start = matchClockSecondsAt(source.start, periods)
-  const end = matchClockSecondsAt(source.end, periods)
+  const start = formatMatchClockAt(source.start, periods)
+  const end = formatMatchClockAt(source.end, periods)
   if (start === null) return { text: `${name} · ${duration}`, title: `${name} · ${duration}` }
 
   const period = periods?.find((p) => source.start >= p.start_frame && source.start <= p.end_frame)?.period
   const halfName = period ? PERIOD_NAMES[period] ?? `Period ${period}` : null
-  const clockRange = end === null ? formatClock(start) : `${formatClock(start)}–${formatClock(end)}`
+  const clockRange = end === null ? start : `${start}–${end}`
   return {
-    text: `${formatClock(start)} · ${duration}`,
+    text: `${start} · ${duration}`,
     title: [name, halfName, clockRange, duration].filter(Boolean).join(' · '),
   }
 }

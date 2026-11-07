@@ -1,6 +1,3 @@
-import { Link } from 'react-router-dom'
-import { docsPagePath } from '../docsNav'
-
 export default function KeyMoments() {
   return (
     <>
@@ -62,9 +59,9 @@ export default function KeyMoments() {
       </p>
       <p>
         To add a stretch that isn't in the list, use <strong>Create Custom Moment</strong> at the bottom of the panel:
-        enter a start and end frame and press <strong>Add to clip</strong>. Hover the clocks above the pitch to see the
-        current frame number (see <Link to={docsPagePath('playback-and-the-timeline')}>Playback and the timeline</Link>
-        ).
+        enter the match clock time it starts at and how many seconds it runs, then press <strong>Add to clip</strong>.
+        Write stoppage time as a broadcast would: <strong>45+1:30</strong> is first-half stoppage, and{' '}
+        <strong>46:30</strong> is the second half.
       </p>
     </>
   )

@@ -20,7 +20,6 @@ export type EventMapItem = {
   playerPosition: string
   frameStart: number
   frameEnd: number
-  clock: string // Match clock when it starts, "MM:SS"; empty when the data has none
   x: number
   y: number
   x2: number
@@ -46,13 +45,6 @@ export function clockSecondsAt(event: Event, frame: number): number | null {
   return Math.max(0, minutes * 60 + seconds - (event.frame_end - frame) / FRAME_RATE)
 }
 
-// The match clock at `frame` as "MM:SS"; empty when the data has none.
-function clockAt(event: Event, frame: number): string {
-  const total = clockSecondsAt(event, frame)
-  if (total === null) return ''
-  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(Math.floor(total % 60)).padStart(2, '0')}`
-}
-
 // Every carry, pass and off ball run of the match, sorted by start frame. Carries and passes are the
 // same links the sequence trails draw; a pass is not an event of its own, so it takes its team,
 // player and outcome from the possession it was played from.
@@ -70,7 +62,6 @@ export function buildEventMapItems(events: Event[] | null | undefined): EventMap
       playerPosition: event.player_position,
       frameStart: link.frameStart,
       frameEnd: link.frameEnd,
-      clock: clockAt(event, link.frameStart),
       x: link.x,
       y: link.y,
       x2: link.x2,
@@ -100,7 +91,6 @@ export function buildEventMapItems(events: Event[] | null | undefined): EventMap
         playerPosition: event.player_position,
         frameStart: event.frame_start,
         frameEnd: event.frame_end,
-        clock: clockAt(event, event.frame_start),
         x: event.x_start,
         y: event.y_start,
         x2: event.x_end,

@@ -15,6 +15,7 @@ import {
 } from '../plot/overlays/eventMapOverlay'
 import { FilterRow, SegmentedControl } from './KeyMomentFinderComponent'
 import MultiSelectDropdown from './MultiSelectDropdown'
+import { formatMatchClockAt } from '../services/matchClock'
 import './KeyMomentFinderComponent.css'
 
 type EventMapPanelProps = {
@@ -294,7 +295,9 @@ function EventMapPanel({ keyMomentsData, matchData }: EventMapPanelProps) {
               {matched.map((event) => (
                 <label key={event.id} className="key-moment-button key-moment-checkbox-row event-map-row">
                   <input type="checkbox" checked={!excluded.has(event.id)} onChange={() => toggleEvent(event.id)} />
-                  <span className="key-moment-primary event-map-row-time">{event.clock}</span>
+                  <span className="key-moment-primary event-map-row-time">
+                    {formatMatchClockAt(event.frameStart, matchData?.match_periods) ?? ''}
+                  </span>
                   <span className="key-moment-segment-dot" style={{ background: teamColor(event.teamId) }} aria-hidden="true" />
                   <span className="key-moment-primary">{KIND_ROW_LABELS[event.kind]}</span>
                   <span className="key-moment-meta event-map-row-who">

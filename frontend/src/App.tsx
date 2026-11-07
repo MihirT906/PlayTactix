@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
+import { FaExternalLinkAlt } from 'react-icons/fa'
 import { Link, Navigate, Route, Routes, matchPath, useBlocker, useMatch, useNavigate } from 'react-router-dom'
 import './App.css'
 import DataManager from './services/DataManager'
@@ -142,9 +143,12 @@ function AppContent({
       workFingerprint({ session, style: styleRef.current, matchData: matchMetaData, annotationStore, timelineStore })
     const [savedWorkRequest, setSavedWorkRequest] = useState(0)
     const markWorkSaved = useCallback(() => setSavedWorkRequest((request) => request + 1), [])
+    // Mirrored in state as well, so the Save button re-renders to show whether there are unsaved changes.
+    const [savedWork, setSavedWork] = useState<string | null>(null)
     useEffect(() => {
       if (savedWorkRequest === 0) return
       savedWorkRef.current = currentWork()
+      setSavedWork(savedWorkRef.current)
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [savedWorkRequest])
 
@@ -416,7 +420,8 @@ function AppContent({
                 </Link>
               </h1>
             </div>
-            <div className="navigation-bar">
+            {/* Places to go next to the brand; things to do with a project, then help, at the far end. */}
+            <nav className="navigation-bar" aria-label="Main">
               <button
                 type="button"
                 className={`app-header-action ${isPickerRoute ? 'is-active' : ''}`}
@@ -435,14 +440,8 @@ function AppContent({
                   Back to Workspace
                 </button>
               ) : null}
-              <button
-                type="button"
-                className={`app-header-action ${isDocsRoute ? 'is-active' : ''}`}
-                onClick={() => window.open(ROUTES.docs, '_blank', 'noopener')}
-                aria-label="Docs"
-              >
-                Docs
-              </button>
+            </nav>
+            <div className="app-header-actions">
               <ProjectControls
                 annotationStore={annotationStore}
                 timelineStore={timelineStore}
@@ -457,7 +456,20 @@ function AppContent({
                 }}
                 onProjectSaved={markWorkSaved}
                 confirmDiscardWork={confirmDiscardWork}
+                savedWork={selectedMatchId === null ? null : savedWork}
+                annotationVersion={annotationVersion}
               />
+              <span className="app-header-divider" aria-hidden="true" />
+              <button
+                type="button"
+                className={`app-header-action app-header-docs ${isDocsRoute ? 'is-active' : ''}`}
+                onClick={() => window.open(ROUTES.docs, '_blank', 'noopener')}
+                aria-label="Docs (opens in a new tab)"
+                title="Opens in a new tab"
+              >
+                Docs
+                <FaExternalLinkAlt aria-hidden="true" />
+              </button>
             </div>
           </header>
 

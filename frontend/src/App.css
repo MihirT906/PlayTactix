@@ -6,9 +6,11 @@
 
 .app-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-end;
   justify-content: flex-start;
-  gap: 56px;
+  column-gap: 56px;
+  row-gap: 12px;
   margin-bottom: 24px;
   padding: 0;
   background: transparent;
@@ -30,6 +32,56 @@
   display: flex;
   align-items: center;
   gap: 16px;
+}
+
+/* Saving, loading and the docs, pushed to the far end of the header. */
+.app-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+/* Bordered, so the project actions read as buttons rather than places to go. */
+.app-header .app-header-file-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px;
+  border: 1px solid var(--surface-subtle-border);
+  font-size: 0.9rem;
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.app-header .app-header-file-action:hover:not(:disabled) {
+  border-color: var(--surface-subtle-border-hover);
+  background: var(--surface-subtle-background);
+}
+
+.unsaved-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-accent);
+}
+
+.app-header-divider {
+  align-self: stretch;
+  width: 1px;
+  margin: 4px 6px;
+  background: var(--surface-subtle-border);
+}
+
+.app-header-docs {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.app-header-docs svg {
+  font-size: 0.7em;
+  opacity: 0.7;
 }
 
 .app-kicker {

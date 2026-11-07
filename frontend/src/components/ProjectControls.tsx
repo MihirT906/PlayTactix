@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMatchSession } from '../context/MatchSessionContext'
 import { useStyleConfig } from '../context/StyleConfigContext'
 import type AnnotationStore from '../services/AnnotationStore-optimized'
 import type TimelineStore from '../services/TimelineStore'
 import MatchDataManager from '../services/MatchDataManager'
-import { downloadProject, restoreProject, serializeProject, type RestoredProject } from '../services/projectSerializer'
+import { downloadProject, restoreProject, serializeProject, workFingerprint, type RestoredProject } from '../services/projectSerializer'
 import { parseProject } from '../types/SavedProject'
 import type { KeyMomentsData } from '../types/KeyMomentsDataInterfaces'
 import type { MatchData } from '../types/MatchDataInterfaces'
@@ -28,6 +28,10 @@ type ProjectControlsProps = {
   onProjectSaved: () => void
   // Asks the user before loading a project over work they haven't saved; false means stop.
   confirmDiscardWork: () => boolean
+  // The work as last saved, loaded or opened, to tell whether there are unsaved changes; null with no match open.
+  savedWork: string | null
+  // Bumped whenever the annotations change, which the store does not announce itself.
+  annotationVersion: number
 }
 
 const NOTICE_DURATION_MS = 6000
@@ -43,6 +47,8 @@ export default function ProjectControls({
   onProjectApplied,
   onProjectSaved,
   confirmDiscardWork,
+  savedWork,
+  annotationVersion,
 }: ProjectControlsProps) {
   const { session, selectMatch, restoreSession } = useMatchSession()
   const style = useStyleConfig()
@@ -50,6 +56,23 @@ export default function ProjectControls({
   const [pending, setPending] = useState<RestoredProject | null>(null)
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState<{ kind: 'info' | 'error'; text: string } | null>(null)
+
+  // The Insights tracks change in their own store, so listen for them to recheck for unsaved changes.
+  const [timelinesVersion, setTimelinesVersion] = useState(0)
+  useEffect(() => timelineStore.subscribe(() => setTimelinesVersion((version) => version + 1)), [timelineStore])
+
+  // Compared against what was last saved; the deps are the parts of the work that can change, so this
+  // is not redone on every frame of playback.
+  const { clip } = session.playback
+  const { eventMapFilters, eventMapExcludedIds, autoDisappearEvents, passNetworkConfig } = session.overlays
+  const { homeTeamColor, awayTeamColor, kitColors, teamVisibility, eventStyles, eventVisibility } = style
+  // The kit colours come as a fresh object each render, so their values are what is watched.
+  const { home: homeKitColor, away: awayKitColor } = kitColors
+  const hasUnsavedChanges = useMemo(
+    () => savedWork !== null && workFingerprint({ session, style, matchData, annotationStore, timelineStore }) !== savedWork,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [savedWork, clip, eventMapFilters, eventMapExcludedIds, autoDisappearEvents, passNetworkConfig, homeTeamColor, awayTeamColor, homeKitColor, awayKitColor, teamVisibility, eventStyles, eventVisibility, matchData, annotationVersion, timelinesVersion],
+  )
 
   useEffect(() => {
     if (!notice) return
@@ -144,20 +167,28 @@ export default function ProjectControls({
 
   return (
     <>
+      {/* Ahead of the buttons, so a message appearing does not shift them. */}
+      {notice ? (
+        <span className={`project-notice project-notice--${notice.kind}`} role="status">
+          {notice.text}
+        </span>
+      ) : null}
       {showSave ? (
         <button
           type="button"
-          className="app-header-action"
+          className="app-header-action app-header-file-action"
           onClick={handleSave}
           disabled={session.match.id === null || !matchReady}
-          aria-label="Save project"
+          aria-label={hasUnsavedChanges ? 'Save project (unsaved changes)' : 'Save project'}
+          title={hasUnsavedChanges ? 'You have unsaved changes' : undefined}
         >
+          {hasUnsavedChanges ? <span className="unsaved-dot" aria-hidden="true" /> : null}
           Save Project
         </button>
       ) : null}
       <button
         type="button"
-        className="app-header-action"
+        className="app-header-action app-header-file-action"
         onClick={() => {
           if (confirmDiscardWork()) fileInputRef.current?.click()
         }}
@@ -177,11 +208,6 @@ export default function ProjectControls({
           if (file) void handleFile(file)
         }}
       />
-      {notice ? (
-        <span className={`project-notice project-notice--${notice.kind}`} role="status">
-          {notice.text}
-        </span>
-      ) : null}
     </>
   )
 }

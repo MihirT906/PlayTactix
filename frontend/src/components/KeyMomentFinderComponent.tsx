@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { FaArrowRight, FaChevronDown } from 'react-icons/fa'
+import { FaArrowRight, FaFilter } from 'react-icons/fa'
 import { useStyleConfig } from '../context/StyleConfigContext'
 import { useMatchSession } from '../context/MatchSessionContext'
 import type { KeyMomentsData } from '../types/KeyMomentsDataInterfaces'
@@ -19,7 +19,6 @@ interface KeyMomentFinderComponentProps {
   matchData: MatchData | null
 }
 
-// type KeyMomentItem = KeyMomentsData['goals'][number] | KeyMomentsData['shots'][number] | KeyMomentsData['pops'][number]
 type KeyMomentItem = KeyMomentsData['pops'][number]
 
 type LedTo = 'any' | 'shot' | 'goal'
@@ -155,12 +154,9 @@ function KeyMomentFinderComponent({ onAddSegment, keyMomentsData, matchData }: K
   const [customStart, setCustomStart] = useState('')
   const [customDuration, setCustomDuration] = useState(String(DEFAULT_CUSTOM_DURATION_SECONDS))
   const [customError, setCustomError] = useState<string | null>(null)
-  const [expandedGroups, setExpandedGroups] = useState({
-    // Goals: false,
-    // Shots: false,
-    'Passages of Play': true,
-  })
   const [filters, setFilters] = useState<FilterConfig>(DEFAULT_FILTERS)
+  // Folded away to start with, leaving the panel to the moments themselves.
+  const [areFiltersOpen, setAreFiltersOpen] = useState(false)
   const [justAddedKey, setJustAddedKey] = useState<string | null>(null)
 
   useEffect(() => {
@@ -269,123 +265,187 @@ function KeyMomentFinderComponent({ onAddSegment, keyMomentsData, matchData }: K
       return true
     })
 
-  const renderMomentGroup = (title: keyof typeof expandedGroups, moments: KeyMomentItem[]) => {
-    const isExpanded = expandedGroups[title]
+  const resetFilters = () => setFilters(DEFAULT_FILTERS)
 
+  // The filters, shown between the Moments heading and the list once the filter icon opens them.
+  const filterRows = (
+    <>
+      {matchData && (
+        <FilterRow label="Team in possession">
+          <SegmentedControl<number | null>
+            ariaLabel="Team in possession"
+            options={teamOptions}
+            value={filters.attacking_team_id}
+            onChange={(attacking_team_id) => setFilters((f) => ({ ...f, attacking_team_id }))}
+          />
+        </FilterRow>
+      )}
+      <FilterRow label="Attacking phase">
+        <MultiSelectDropdown
+          ariaLabel="Attacking phase"
+          options={IN_POSSESSION_PHASE_TYPES}
+          selected={filters.attacking_phase_types}
+          onChange={(attacking_phase_types) => setFilters((f) => ({ ...f, attacking_phase_types }))}
+          formatOption={formatEventValue}
+        />
+      </FilterRow>
+      <FilterRow label="Defending phase">
+        <MultiSelectDropdown
+          ariaLabel="Defending phase"
+          options={OUT_OF_POSSESSION_PHASE_TYPES}
+          selected={filters.defending_phase_types}
+          onChange={(defending_phase_types) => setFilters((f) => ({ ...f, defending_phase_types }))}
+          formatOption={formatEventValue}
+        />
+      </FilterRow>
+      {periods.length > 1 && (
+        <FilterRow label="Half">
+          <SegmentedControl<number | null>
+            ariaLabel="Half"
+            options={[
+              { value: null, label: 'Any' },
+              ...periods.map((p) => ({ value: p.period, label: PERIOD_LABELS[p.period] ?? formatEventValue(p.name) })),
+            ]}
+            value={filters.period}
+            onChange={(period) => setFilters((f) => ({ ...f, period }))}
+          />
+        </FilterRow>
+      )}
+      <FilterRow label="Led to">
+        <SegmentedControl
+          ariaLabel="Led to"
+          options={LED_TO_OPTIONS}
+          value={filters.led_to}
+          onChange={(led_to) => setFilters((f) => ({ ...f, led_to }))}
+        />
+      </FilterRow>
+    </>
+  )
+
+  // The moments the filters leave, under a heading that says how many of the match's they are once any filter is on.
+  const renderMomentList = (moments: KeyMomentItem[]) => {
     const filteredMoments = applyFilters(moments)
 
     return (
-      <section className={`key-moment-group${isExpanded ? ' is-expanded' : ''}`}>
-        <div className="key-moment-header">
-          <span className="key-moment-label">{title}</span>
-          <button
-            type="button"
-            className="key-moment-toggle"
-            aria-expanded={isExpanded}
-            aria-controls={`key-moment-panel-${title.toLowerCase()}`}
-            onClick={() => {
-              setExpandedGroups((current) => ({
-                ...current,
-                [title]: !current[title],
-              }))
-            }}
-          >
-            <span className="key-moment-count">{filteredMoments.length}</span>
-            <FaChevronDown className={`key-moment-arrow${isExpanded ? ' is-expanded' : ''}`} aria-hidden="true" />
-          </button>
+      <section className="key-moment-results" aria-labelledby="key-moment-results-count">
+        <div className="key-moment-results-header">
+          <p id="key-moment-results-count" className="key-moment-results-count" aria-live="polite">
+            Moments{isFiltered ? ` · ${filteredMoments.length} of ${moments.length}` : null}
+          </p>
+          <div className="key-moment-filter-actions">
+            {isFiltered ? (
+              <button type="button" className="key-moment-toggle" onClick={resetFilters}>
+                Reset
+              </button>
+            ) : null}
+            <button
+              type="button"
+              className={`key-moment-filter-button${areFiltersOpen ? ' is-open' : ''}${isFiltered ? ' is-filtering' : ''}`}
+              onClick={() => setAreFiltersOpen((open) => !open)}
+              aria-expanded={areFiltersOpen}
+              aria-controls="key-moment-filter-rows"
+              aria-label={areFiltersOpen ? 'Hide filters' : 'Show filters'}
+              title={areFiltersOpen ? 'Hide filters' : 'Filters'}
+            >
+              <FaFilter aria-hidden="true" />
+            </button>
+          </div>
         </div>
-
-        {isExpanded ? (
-          <>
-            {filteredMoments.length > 0 ? (
-              <div className="key-moment-list" id={`key-moment-panel-${title.toLowerCase()}`}>
-                {filteredMoments.map((moment) => {
-                  const isHomeAttacking = moment.team_id === matchData?.home_team.id
-                  const attackingTeam = isHomeAttacking ? matchData?.home_team : matchData?.away_team
-                  const defendingTeam = isHomeAttacking ? matchData?.away_team : matchData?.home_team
-                  const chain = buildChain(moment)
-                  const key = momentKey(moment)
-                  const isInClip = segmentFor(moment) !== undefined
-
-                  return (
-                  <button
-                    key={`${title}-${key}`}
-                    type="button"
-                    className="key-moment-button"
-                    title={isInClip ? 'Already in your clip. Click to jump to it.' : 'Add to your clip'}
-                    onClick={() => handleMomentClick(moment)}
-                  >
-                    <span className="key-moment-row key-moment-headline">
-                      <span className="key-moment-when">
-                        <span className="key-moment-primary">{momentClock(moment)}</span>
-                        <span className="key-moment-meta">{formatDuration(moment.duration_seconds)}</span>
-                      </span>
-                      {/* "Led to" marks an earlier passage of a move whose shot came later. */}
-                      {moment.lead_to_goal ? (
-                        <span className="key-moment-outcome">
-                          {moment.has_shot ? 'Goal' : 'Led to goal'}
-                        </span>
-                      ) : moment.lead_to_shot || moment.has_shot ? (
-                        <span className="key-moment-outcome">
-                          {moment.has_shot ? 'Shot' : 'Led to shot'}
-                        </span>
-                      ) : null}
-                      {isInClip ? (
-                        <span className="key-moment-outcome key-moment-outcome--in-clip">
-                          {justAddedKey === key ? 'Added' : 'In clip'}
-                        </span>
-                      ) : null}
-                    </span>
-                    <span className="key-moment-row key-moment-story">
-                      <span className="key-moment-side">
-                        <span
-                          className="key-moment-team"
-                          style={{ borderLeftColor: isHomeAttacking ? homeTeamColor : awayTeamColor }}
-                          title={attackingTeam?.short_name}
-                        >
-                          {attackingTeam?.acronym ?? attackingTeam?.short_name}
-                        </span>
-                        <span className="key-moment-phase">{formatEventValue(moment.team_in_possession_phase_type)}</span>
-                      </span>
-                      <span className="key-moment-side is-defending">
-                        <span className="key-moment-phase">{formatEventValue(moment.team_out_of_possession_phase_type)}</span>
-                        <span
-                          className="key-moment-team"
-                          style={{ borderRightColor: isHomeAttacking ? awayTeamColor : homeTeamColor }}
-                          title={defendingTeam?.short_name}
-                        >
-                          {defendingTeam?.acronym ?? defendingTeam?.short_name}
-                        </span>
-                      </span>
-                    </span>
-                    {chain.length > 0 ? (
-                      <span className="key-moment-row key-moment-chain">
-                        {chain.map((step, i) => (
-                          <span key={i} className="key-moment-chain-step">
-                            {i > 0 ? <FaArrowRight className="key-moment-versus-arrow" aria-hidden="true" /> : null}
-                            {'skipped' in step ? (
-                              <span className="key-moment-chain-skipped">+{step.skipped}</span>
-                            ) : (
-                              <>
-                                {step.name ? <span>{step.name}</span> : null}
-                                {step.action ? <span className="key-moment-chain-action">{step.action}</span> : null}
-                              </>
-                            )}
-                          </span>
-                        ))}
-                      </span>
-                    ) : null}
-                  </button>
-                  )
-                })}
-              </div>
-            ) : (
-              <p className="key-moment-empty" id={`key-moment-panel-${title.toLowerCase()}`}>
-                No {title.toLowerCase()} match the current filters.
-              </p>
-            )}
-          </>
+        {areFiltersOpen ? (
+          <div id="key-moment-filter-rows" className="key-moment-filter-section">
+            {filterRows}
+          </div>
         ) : null}
+        {filteredMoments.length > 0 ? (
+          <div className="key-moment-list key-moment-list--moments">
+            {filteredMoments.map((moment) => {
+              const isHomeAttacking = moment.team_id === matchData?.home_team.id
+              const attackingTeam = isHomeAttacking ? matchData?.home_team : matchData?.away_team
+              const defendingTeam = isHomeAttacking ? matchData?.away_team : matchData?.home_team
+              const chain = buildChain(moment)
+              const key = momentKey(moment)
+              const isInClip = segmentFor(moment) !== undefined
+
+              return (
+              <button
+                key={key}
+                type="button"
+                className="key-moment-button"
+                title={isInClip ? 'Already in your clip. Click to jump to it.' : 'Add to your clip'}
+                onClick={() => handleMomentClick(moment)}
+              >
+                <span className="key-moment-row key-moment-headline">
+                  <span className="key-moment-when">
+                    <span className="key-moment-primary">{momentClock(moment)}</span>
+                    <span className="key-moment-meta">{formatDuration(moment.duration_seconds)}</span>
+                  </span>
+                  {/* "Led to" marks an earlier passage of a move whose shot came later. */}
+                  {moment.lead_to_goal ? (
+                    <span className="key-moment-outcome">
+                      {moment.has_shot ? 'Goal' : 'Led to goal'}
+                    </span>
+                  ) : moment.lead_to_shot || moment.has_shot ? (
+                    <span className="key-moment-outcome">
+                      {moment.has_shot ? 'Shot' : 'Led to shot'}
+                    </span>
+                  ) : null}
+                  {isInClip ? (
+                    <span className="key-moment-outcome key-moment-outcome--in-clip">
+                      {justAddedKey === key ? 'Added' : 'In clip'}
+                    </span>
+                  ) : null}
+                </span>
+                <span className="key-moment-row key-moment-story">
+                  <span className="key-moment-side">
+                    <span
+                      className="key-moment-team"
+                      style={{ borderLeftColor: isHomeAttacking ? homeTeamColor : awayTeamColor }}
+                      title={attackingTeam?.short_name}
+                    >
+                      {attackingTeam?.acronym ?? attackingTeam?.short_name}
+                    </span>
+                    <span className="key-moment-phase">{formatEventValue(moment.team_in_possession_phase_type)}</span>
+                  </span>
+                  <span className="key-moment-side is-defending">
+                    <span className="key-moment-phase">{formatEventValue(moment.team_out_of_possession_phase_type)}</span>
+                    <span
+                      className="key-moment-team"
+                      style={{ borderRightColor: isHomeAttacking ? awayTeamColor : homeTeamColor }}
+                      title={defendingTeam?.short_name}
+                    >
+                      {defendingTeam?.acronym ?? defendingTeam?.short_name}
+                    </span>
+                  </span>
+                </span>
+                {chain.length > 0 ? (
+                  <span className="key-moment-row key-moment-chain">
+                    {chain.map((step, i) => (
+                      <span key={i} className="key-moment-chain-step">
+                        {i > 0 ? <FaArrowRight className="key-moment-versus-arrow" aria-hidden="true" /> : null}
+                        {'skipped' in step ? (
+                          <span className="key-moment-chain-skipped">+{step.skipped}</span>
+                        ) : (
+                          <>
+                            {step.name ? <span>{step.name}</span> : null}
+                            {step.action ? <span className="key-moment-chain-action">{step.action}</span> : null}
+                          </>
+                        )}
+                      </span>
+                    ))}
+                  </span>
+                ) : null}
+              </button>
+              )
+            })}
+          </div>
+        ) : (
+          <p className="key-moment-empty">
+            No moments match these filters.{' '}
+            <button type="button" className="key-moment-reset-link" onClick={resetFilters}>
+              Reset filters
+            </button>
+          </p>
+        )}
       </section>
     )
   }
@@ -396,75 +456,12 @@ function KeyMomentFinderComponent({ onAddSegment, keyMomentsData, matchData }: K
         <h2 id="key-moment-finder-heading" className="key-moment-finder-title">
           Moments
         </h2>
-        <p className="key-moment-finder-description">Click a moment to add it to your clip, or add a custom frame range.</p>
+        <p className="key-moment-finder-description">Click a moment to add it to your clip, or create your own below.</p>
       </div>
 
       {keyMomentsData ? (
         <div className="key-moment-groups">
-          <section className="key-moment-filter-section" aria-labelledby="key-moment-filter-heading">
-            <div className="key-moment-filter-heading">
-              <h3 id="key-moment-filter-heading" className="key-moment-filter-title">
-                Filters
-              </h3>
-              {isFiltered ? (
-                <button type="button" className="key-moment-toggle" onClick={() => setFilters(DEFAULT_FILTERS)}>
-                  Reset
-                </button>
-              ) : null}
-            </div>
-            {matchData && (
-              <FilterRow label="Team in possession">
-                <SegmentedControl<number | null>
-                  ariaLabel="Team in possession"
-                  options={teamOptions}
-                  value={filters.attacking_team_id}
-                  onChange={(attacking_team_id) => setFilters((f) => ({ ...f, attacking_team_id }))}
-                />
-              </FilterRow>
-            )}
-            <FilterRow label="Attacking phase">
-              <MultiSelectDropdown
-                ariaLabel="Attacking phase"
-                options={IN_POSSESSION_PHASE_TYPES}
-                selected={filters.attacking_phase_types}
-                onChange={(attacking_phase_types) => setFilters((f) => ({ ...f, attacking_phase_types }))}
-                formatOption={formatEventValue}
-              />
-            </FilterRow>
-            <FilterRow label="Defending phase">
-              <MultiSelectDropdown
-                ariaLabel="Defending phase"
-                options={OUT_OF_POSSESSION_PHASE_TYPES}
-                selected={filters.defending_phase_types}
-                onChange={(defending_phase_types) => setFilters((f) => ({ ...f, defending_phase_types }))}
-                formatOption={formatEventValue}
-              />
-            </FilterRow>
-            {periods.length > 1 && (
-              <FilterRow label="Half">
-                <SegmentedControl<number | null>
-                  ariaLabel="Half"
-                  options={[
-                    { value: null, label: 'Any' },
-                    ...periods.map((p) => ({ value: p.period, label: PERIOD_LABELS[p.period] ?? formatEventValue(p.name) })),
-                  ]}
-                  value={filters.period}
-                  onChange={(period) => setFilters((f) => ({ ...f, period }))}
-                />
-              </FilterRow>
-            )}
-            <FilterRow label="Led to">
-              <SegmentedControl
-                ariaLabel="Led to"
-                options={LED_TO_OPTIONS}
-                value={filters.led_to}
-                onChange={(led_to) => setFilters((f) => ({ ...f, led_to }))}
-              />
-            </FilterRow>
-          </section>
-          {/* {renderMomentGroup('Goals', keyMomentsData.goals)}
-          {renderMomentGroup('Shots', keyMomentsData.shots)} */}
-          {renderMomentGroup('Passages of Play', keyMomentsData.pops)}
+          {renderMomentList(keyMomentsData.pops)}
         </div>
       ) : (
         <p className="key-moment-empty">No moments loaded.</p>

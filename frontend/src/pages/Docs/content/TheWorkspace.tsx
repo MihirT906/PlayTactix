@@ -37,7 +37,7 @@ export default function TheWorkspace() {
       <h2>Building a clip</h2>
       <ol>
         <li>
-          <strong>Find a moment.</strong> Open <strong>Moments</strong>, filter down to the passage of play you want,
+          <strong>Find a moment.</strong> Open <strong>Moments</strong>, filter down to the moment you want,
           and click it. It replaces the opening two minutes and appears under <strong>Match Segments</strong>. Add more
           moments to build up the clip. <Link to={docsPagePath('moments')}>More on Moments</Link>
         </li>

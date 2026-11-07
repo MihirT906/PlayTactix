@@ -7,7 +7,7 @@ type DocsHomeCard = { slug: string; icon: IconType; blurb: string }
 
 // The quick links on the docs home: the four things you do to build a clip. Titles come from the sidebar.
 const CARDS: DocsHomeCard[] = [
-  { slug: 'moments', icon: FaSearch, blurb: 'Filter the match down to the passages worth showing.' },
+  { slug: 'moments', icon: FaSearch, blurb: 'Filter the match down to the moments worth showing.' },
   {
     slug: 'overlays',
     icon: FaLayerGroup,

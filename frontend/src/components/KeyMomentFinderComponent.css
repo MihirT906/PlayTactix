@@ -188,6 +188,50 @@
   border-top: 1px solid var(--surface-subtle-border);
 }
 
+/* The Moments list: a count of what the filters leave, then the moments in a scroll box of their own. */
+.key-moment-results {
+  display: flex;
+  flex-direction: column;
+}
+
+.key-moment-results-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding-bottom: 0.45rem;
+}
+
+.key-moment-results-count {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-subtle);
+  font-variant-numeric: tabular-nums;
+}
+
+.key-moment-list--moments {
+  border-bottom: 1px solid var(--surface-subtle-border);
+}
+
+.key-moment-reset-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-accent);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.key-moment-reset-link:focus-visible {
+  outline: 2px solid var(--focus-outline-color);
+  outline-offset: 2px;
+}
+
 .key-moment-button:hover {
   transform: none;
   background: color-mix(in srgb, var(--color-accent) 10%, var(--surface-subtle-background-hover));
@@ -460,7 +504,6 @@
   border-top: 1px solid var(--surface-subtle-border);
 }
 
-.key-moment-filter-title,
 .key-moment-custom-title {
   margin: 0;
   padding-bottom: 12px;
@@ -473,18 +516,48 @@
   color: var(--color-text-subtle);
 }
 
-.key-moment-filter-heading {
+.key-moment-filter-actions {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.6rem;
-  margin-bottom: 4px;
-  border-bottom: 1px solid var(--surface-subtle-border);
+  align-items: center;
+  gap: 0.4rem;
 }
 
-.key-moment-filter-heading .key-moment-filter-title {
-  margin-bottom: 0;
-  border-bottom: 0;
+/* Icon-only, beside the Moments heading. Tinted while open, and accent-coloured while any filter is on. */
+.key-moment-filter-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  padding: 0;
+  border: 1px solid var(--surface-subtle-border);
+  border-radius: var(--match-section-radius, 0);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.key-moment-filter-button:hover {
+  background: var(--surface-subtle-background-hover);
+  border-color: var(--surface-subtle-border-hover);
+  color: var(--color-text-primary);
+}
+
+.key-moment-filter-button.is-open {
+  background: color-mix(in srgb, var(--color-accent) 24%, transparent);
+  color: var(--color-text-primary);
+}
+
+.key-moment-filter-button.is-filtering {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.key-moment-filter-button:focus-visible {
+  outline: 2px solid var(--focus-outline-color);
+  outline-offset: 2px;
 }
 
 .key-moment-outcome--in-clip {

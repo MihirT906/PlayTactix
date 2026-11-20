@@ -96,7 +96,7 @@ function pitchLines(): [number, number][][] {
     goal(-1),
   ]
 }
-const LINES = pitchLines()
+export const LINES = pitchLines()
 
 /** A rounded label: dark pill, white text, centred on (x, y). */
 export const Pill = ({ x, y, text, size, color = '#fff', bg = C.pill, opacity = 1 }: { x: number; y: number; text: string; size: number; color?: string; bg?: string; opacity?: number }) => {
@@ -208,7 +208,7 @@ export const PitchView = ({ id, view, clip, m, layers = {} }: { id: string; view
 type Project = (x: number, y: number) => Pt
 
 /** Who would win the ball if it arrived there: blue where blue gets there first, red where red does. */
-const PitchControl = ({ id, P, k, pos, opacity }: { id: string; P: Project; k: number; pos: Pt[]; opacity: number }) => {
+export const PitchControl = ({ id, P, k, pos, opacity }: { id: string; P: Project; k: number; pos: Pt[]; opacity: number }) => {
   const NX = 42
   const NY = 28
   const dx = 105 / NX

@@ -8,6 +8,10 @@
     "render:act2": "remotion render src/index.ts Act2 out/act2.mp4",
     "render:act3": "remotion render src/index.ts Act3 out/act3.mp4",
     "render:act4": "remotion render src/index.ts Act4 out/act4.mp4",
+    "render:docs-pitch": "remotion render src/index.ts ReadingThePitch out/workspace-markers.mp4 --scale=0.6666666666666666",
+    "render:docs-moment": "remotion render src/index.ts FindAMoment out/workspace-moment.mp4 --scale=0.6666666666666666",
+    "render:docs-draw": "remotion render src/index.ts DrawOnThePlay out/workspace-draw.mp4 --scale=0.6666666666666666",
+    "render:docs-timeline": "remotion render src/index.ts SetTheTiming out/workspace-timeline.mp4 --scale=0.6666666666666666",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

@@ -49,7 +49,7 @@ export const APP_CONFIG = {
 		teamShapeColor: '#4DD0E1', // A team shape takes its first player's team colour; this is for when none of its players has a team
 		teamShapeFillOpacity: 0.25,
 		teamShapeStrokeWidth: 2,
-		voronoiFillOpacity: 0.3,
+		voronoiFillOpacity: 0.2,
 		voronoiStrokeColor: 'rgba(255, 255, 255, 0.7)',
 		voronoiStrokeWidth: 1,
 		passNetworkMinWidth: 1, // A line of the fewest passes

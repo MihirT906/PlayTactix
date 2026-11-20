@@ -1,0 +1,24 @@
+{
+  "name": "tappd-video",
+  "private": true,
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "render": "remotion render src/index.ts Hero out/hero.mp4",
+    "render:act0": "remotion render src/index.ts Act0 out/act0.mp4",
+    "render:act2": "remotion render src/index.ts Act2 out/act2.mp4",
+    "render:act3": "remotion render src/index.ts Act3 out/act3.mp4",
+    "render:act4": "remotion render src/index.ts Act4 out/act4.mp4",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.544",
+    "@remotion/google-fonts": "4.0.544",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "remotion": "^4.0.544"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "typescript": "^7.0.2"
+  }
+}

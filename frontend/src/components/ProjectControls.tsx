@@ -9,6 +9,7 @@ import { parseProject } from '../types/SavedProject'
 import type { KeyMomentsData } from '../types/KeyMomentsDataInterfaces'
 import type { MatchData } from '../types/MatchDataInterfaces'
 import { getLogger } from '../services/logger'
+import { track } from '../services/analytics'
 
 const logger = getLogger('ProjectControls')
 
@@ -124,6 +125,7 @@ export default function ProjectControls({
         })
       )
       onProjectSaved()
+      track('project_saved', { match_id: session.match.id })
       setNotice({ kind: 'info', text: 'Project saved.' })
     } catch (error) {
       logger.error('Failed to save project', error)
@@ -141,6 +143,7 @@ export default function ProjectControls({
     }
 
     const { matchId } = project
+    track('project_loaded', { match_id: matchId })
     setBusy(true)
     if (session.match.id === matchId && matchReady) {
       // Same match is already open with its data loaded, so apply directly.

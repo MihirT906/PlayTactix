@@ -12,6 +12,7 @@ import { DEFAULT_PASS_NETWORK_CONFIG, type PassNetworkConfig } from '../plot/ove
 import type { Clip, OverlaySegmentKind } from '../types/ClipInterfaces'
 import * as clipManager from '../services/clipManager'
 import { getLogger } from '../services/logger'
+import { track } from '../services/analytics'
 
 const logger = getLogger('Clip')
 
@@ -175,6 +176,7 @@ export function MatchSessionProvider({
             dataManager.setMatchId(matchId)
 
             logger.info('Clip reset for new match', { matchId })
+            track('match_opened', { match_id: matchId })
             setSession(createInitialMatchSessionState(matchId))
         },
 

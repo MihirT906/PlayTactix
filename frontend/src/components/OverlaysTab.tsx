@@ -9,6 +9,7 @@ import { findOverlayAt } from '../services/clipManager'
 import { buildEventMapItems, resolveEventMap } from '../plot/overlays/eventMapOverlay'
 import EventMapPanel from './EventMapPanel'
 import PassNetworkPanel from './PassNetworkPanel'
+import { track } from '../services/analytics'
 import './TimelineTab.css'
 
 type OverlaysTabProps = {
@@ -35,6 +36,7 @@ function OverlaysTab({
   const { clip, currentClipFrame } = session.playback
 
   const togglePanel = (panel: 'event_map' | 'pass_network') => {
+    if (openPanel !== panel) track('overlay_panel_opened', { panel })
     setOpenPanel((previousValue) => (previousValue === panel ? null : panel))
   }
 
@@ -61,6 +63,7 @@ function OverlaysTab({
     if (isShowing(kind)) {
       setRefusedKind(null)
       endOverlaySegmentAt(kind, currentClipFrame)
+      track('overlay_toggled', { kind, on: false })
       return
     }
     if (isAtClipEnd) {
@@ -69,6 +72,7 @@ function OverlaysTab({
     }
     setRefusedKind(null)
     addOverlaySegmentFrom(kind, currentClipFrame)
+    track('overlay_toggled', { kind, on: true })
   }
 
   // Derived from the current frame, so it clears itself once the playhead moves off the clip end.

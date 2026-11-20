@@ -5,6 +5,9 @@ import App from './App.tsx';
 import DataManager from './services/DataManager.ts';
 import AnnotationStore from './services/AnnotationStore-optimized.ts';
 import TimelineStore from './services/TimelineStore.ts';
+import { initAnalytics } from './services/analytics.ts';
+
+initAnalytics()
 
 const dataManager = new DataManager()
 const annotationStore = new AnnotationStore()

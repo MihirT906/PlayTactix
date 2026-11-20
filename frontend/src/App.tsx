@@ -24,6 +24,7 @@ import ChoiceDialog from './components/ChoiceDialog'
 import { hasPlaceholder, isPlaceholderUntouched } from './services/clipManager'
 import { MatchSessionProvider, useMatchSession } from './context/MatchSessionContext'
 import { workFingerprint, type LiveStyle } from './services/projectSerializer'
+import { track } from './services/analytics'
 
 const DISCARD_WORK_MESSAGE = 'Your project has changes you have not saved. Discard them?'
 
@@ -361,6 +362,7 @@ function AppContent({
     }, [isPlaying, isFetching, playbackSpeed])
 
     const handlePlayPause = () => {
+      if (!isPlaying) track('playback_started', { speed: playbackSpeed })
       togglePlayback()
     }
 
@@ -377,6 +379,7 @@ function AppContent({
         handleAnnotationUpdate()
       }
       appendSegment(start, end, keepPlaceholder)
+      track('moment_added', { kept_opening_clip: keepPlaceholder })
       stopPlayback() // Pause playback when a new segment is added
     }
 
@@ -520,9 +523,10 @@ function AppContent({
               <div className={`app-container app-container--active ${activeSidebarPanel !== null ? 'app-container--settings-open' : ''}`}>
                 <WorkspaceSidebar
                   activePanel={activeSidebarPanel}
-                  onActivePanelChange={(panel) => 
+                  onActivePanelChange={(panel) => {
+                    if (panel) track('sidebar_panel_opened', { panel })
                     setSidebarPanel(panel)
-                  }
+                  }}
                   matchData={matchMetaData}
                   timelineStore={timelineStore}
                   onAddSegment={handleAddSegment}

@@ -49,6 +49,7 @@ import {
 } from '../plot/annotationGeometry'
 
 import { getLogger } from "../services/logger";
+import { track } from "../services/analytics";
 
 const logger = getLogger("PlotComponent");
 
@@ -917,6 +918,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
       if (Math.hypot(end.x - start.x, end.y - start.y) < MIN_DRAW_SIZE) return
       if (tool === 'arrow') annotationStore.addArrowAnnotation(start.x, start.y, end.x, end.y, clipFrame)
       else annotationStore.addDrawAnnotation({ type: tool, x0: start.x, y0: start.y, x1: end.x, y1: end.y }, clipFrame)
+      track('annotation_added', { type: tool })
       setAnnotationTick((tick) => tick + 1)
       onAnnotationUpdate?.()
     }
@@ -938,6 +940,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
     }
     logger.info("Adding player line annotation between players:", firstPoint, "and", playerId)
     annotationStore.addPlayerLineAnnotation(firstPoint, playerId, clipFrame)
+    track('annotation_added', { type: 'player_link' })
     setAnnotationTick((tick) => tick + 1)
     onAnnotationUpdate?.()
     setFirstPoint(null)
@@ -951,6 +954,8 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
   const pickShapePlayer = (playerId: number) => {
     const players = toggledShapePlayers(playerId)
     setShapePlayers(players)
+    // Counted once per shape, when its first player is picked.
+    if (shapeKeyRef.current === null) track('annotation_added', { type: 'team_shape' })
     shapeKeyRef.current = annotationStore.setTeamShapePlayers(shapeKeyRef.current, players, clipFrame)
     setAnnotationTick((tick) => tick + 1)
     onAnnotationUpdate?.()
@@ -990,6 +995,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
       // A focus is an annotation with its own range on the timeline: clicking focuses the player from
       // this frame on, and clicking a focused player ends the focus here.
       annotationStore.togglePlayerFocus(clickedPlayerId, clipFrame)
+      track('annotation_added', { type: 'player_focus' })
       setAnnotationTick((tick) => tick + 1)
       onAnnotationUpdate?.()
       logger.info("Player focus toggled:", clickedPlayerId)

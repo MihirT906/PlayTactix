@@ -22,7 +22,9 @@
 .docs-sidebar-link.is-active { color: var(--color-accent); }
 .docs-sidebar-link:focus-visible { outline: 2px solid var(--focus-outline-color); outline-offset: 2px; }
 
-.docs-article { max-width: 48rem; }
+/* The article spans the column so a text-and-screenshot row can use it all; everything else keeps a readable width */
+.docs-article { max-width: 72rem; }
+.docs-article > :not(.docs-body), .docs-body > :not(.docs-split) { max-width: 48rem; }
 .docs-title { margin: 0 0 1.5rem; font-size: 2.4rem; font-weight: 700; line-height: 1.15; }
 .docs-title--home { color: var(--color-accent); }
 .docs-lede { margin: 0 0 2rem; font-size: 1.25rem; line-height: 1.6; color: var(--color-text-muted); }
@@ -42,8 +44,15 @@
 .docs-body strong { color: var(--color-text-primary); font-weight: 600; }
 .docs-body a { color: var(--color-accent); }
 .docs-body code { padding: 0.1rem 0.35rem; background: var(--surface-subtle-background); border: 1px solid var(--surface-subtle-border); font-size: 0.9em; }
-.docs-screenshot { display: grid; place-items: center; min-height: 12rem; margin: 1.5rem 0; border: 1px dashed var(--surface-subtle-border-hover); background: var(--surface-subtle-background); }
-.docs-screenshot figcaption { font-size: 0.9rem; color: var(--color-text-subtle); }
+.docs-media { margin: 1.25rem 0 2rem; }
+.docs-media img, .docs-media video { display: block; width: 100%; height: auto; border: 1px solid var(--surface-subtle-border); }
+.docs-media figcaption { margin-top: 0.5rem; font-size: 0.9rem; color: var(--color-text-subtle); }
+/* Text beside a screenshot; stacks with the text first on narrow screens */
+.docs-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 1.75rem; align-items: start; margin-bottom: 2rem; }
+.docs-split > .docs-media { margin: 0; }
+.docs-split p:last-child { margin-bottom: 0; }
+@media (max-width: 40rem) { .docs-split { grid-template-columns: 1fr; } }
+.docs-media--missing { display: grid; place-items: center; min-height: 12rem; padding: 1rem; border: 1px dashed var(--surface-subtle-border-hover); background: var(--surface-subtle-background); text-align: center; }
 
 /* Previous / next at the foot of each page; the empty span keeps Next on the right when there is no Previous */
 .docs-pager { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--surface-subtle-border); }

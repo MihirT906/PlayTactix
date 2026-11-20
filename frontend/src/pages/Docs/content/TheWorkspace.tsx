@@ -59,7 +59,7 @@ export default function TheWorkspace() {
         Pause, pick a tool under <strong>Draw</strong>, and mark the pitch.{' '}
         <Link to={docsPagePath('annotations')}>More on annotations</Link>
       </p>
-      <Media src="workspace-draw.mp4" caption="Pausing and spotlighting a player with Player Focus." />
+      <Media src="workspace-draw.mp4" caption="Each Draw tool in turn, then erasing a mark." />
 
       <h3>4. Set the timing</h3>
       <p>

@@ -12,6 +12,8 @@
     "render:docs-moment": "remotion render src/index.ts FindAMoment out/workspace-moment.mp4 --scale=0.6666666666666666",
     "render:docs-draw": "remotion render src/index.ts DrawOnThePlay out/workspace-draw.mp4 --scale=0.6666666666666666",
     "render:docs-timeline": "remotion render src/index.ts SetTheTiming out/workspace-timeline.mp4 --scale=0.6666666666666666",
+    "render:docs-overlays": "remotion render src/index.ts Overlays out/overlays.mp4 --scale=0.6666666666666666",
+    "render:overlap-coach": "remotion render src/index.ts OverlapCoachCut out/overlap-coach-cut.mp4",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

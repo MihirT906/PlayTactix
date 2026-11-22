@@ -9,6 +9,8 @@ import { DRAW_ON_THE_PLAY_DURATION, DrawOnThePlay } from './docs/DrawOnThePlay'
 import { FIND_A_MOMENT_DURATION, FindAMoment } from './docs/FindAMoment'
 import { SET_THE_TIMING_DURATION, SetTheTiming } from './docs/SetTheTiming'
 import { READING_THE_PITCH_DURATION, ReadingThePitch } from './docs/ReadingThePitch'
+import { OVERLAYS_DURATION, Overlays } from './docs/Overlays'
+import { OVERLAP_COACH_DURATION, OverlapCoachCut } from './breakdowns/overlap/OverlapCoachCut'
 
 // Act 0 ends on black with the TV off; Act 2 picks up on the viewer's laptop. (There is no Act 1: the analysis
 // room was cut.)
@@ -46,5 +48,9 @@ export const RemotionRoot = () => (
     <Composition id="DrawOnThePlay" component={DrawOnThePlay} durationInFrames={DRAW_ON_THE_PLAY_DURATION} {...size} />
     {/* The docs' "Set the timing" clip (frontend/public/docs-media/workspace-timeline.mp4). */}
     <Composition id="SetTheTiming" component={SetTheTiming} durationInFrames={SET_THE_TIMING_DURATION} {...size} />
+    {/* The docs' Overlays clip (frontend/public/docs-media/overlays.mp4). */}
+    <Composition id="Overlays" component={Overlays} durationInFrames={OVERLAYS_DURATION} {...size} />
+    {/* Breakdown 2's coach cut, on the screen recording (video/breakdowns/02-the-overlap-coach-cut.md). */}
+    <Composition id="OverlapCoachCut" component={OverlapCoachCut} durationInFrames={OVERLAP_COACH_DURATION} {...size} />
   </>
 )

@@ -1,0 +1,212 @@
+{
+  "format": "tappd.project",
+  "schemaVersion": 2,
+  "savedAt": "2026-11-22T05:03:08.185Z",
+  "savedBy": {
+    "app": "tappd",
+    "build": "99fd654"
+  },
+  "match": {
+    "provider": "skillcorner",
+    "sport": "soccer",
+    "id": "1925299",
+    "label": "Brisbane FC v Perth Glory, 2024-12-21"
+  },
+  "clip": {
+    "length": 316,
+    "matchSegments": [
+      {
+        "matchId": "1925299",
+        "clipStart": 0,
+        "clipEnd": 160,
+        "sourceFrameStart": 49370,
+        "sourceFrameEnd": 49530
+      },
+      {
+        "matchId": "1925299",
+        "clipStart": 166,
+        "clipEnd": 316,
+        "sourceFrameStart": 44180,
+        "sourceFrameEnd": 44330
+      }
+    ],
+    "overlaySegments": [
+      {
+        "type": "event_map",
+        "clipStart": 0,
+        "clipEnd": 161
+      },
+      {
+        "type": "event_map",
+        "clipStart": 175,
+        "clipEnd": 316
+      },
+      {
+        "type": "voronoi",
+        "clipStart": 69,
+        "clipEnd": 105
+      },
+      {
+        "type": "voronoi",
+        "clipStart": 234,
+        "clipEnd": 249
+      },
+      {
+        "type": "pass_option_prob",
+        "clipStart": 259,
+        "clipEnd": 316
+      }
+    ]
+  },
+  "annotations": [
+    {
+      "key": "playerFocus|mwr7goc3-0",
+      "frameStart": 62,
+      "frameEnd": 166,
+      "type": "playerFocus",
+      "shape": {
+        "playerId": 560986
+      }
+    },
+    {
+      "key": "playerFocus|mwr7gpae-1",
+      "frameStart": 49,
+      "frameEnd": 166,
+      "type": "playerFocus",
+      "shape": {
+        "playerId": 51722
+      }
+    },
+    {
+      "key": "arrow|mwr7hhos-0",
+      "frameStart": 66,
+      "frameEnd": 159,
+      "type": "arrow",
+      "shape": {
+        "x0": 10.77441860465116,
+        "y0": -10.766325431034481,
+        "x1": 16.950000000000003,
+        "y1": -8.407704741379305
+      }
+    },
+    {
+      "key": "playerFocus|mwr7qnmh-2",
+      "frameStart": 190,
+      "frameEnd": null,
+      "type": "playerFocus",
+      "shape": {
+        "playerId": 795533
+      }
+    },
+    {
+      "key": "playerFocus|mwr7qofx-3",
+      "frameStart": 190,
+      "frameEnd": null,
+      "type": "playerFocus",
+      "shape": {
+        "playerId": 11897
+      }
+    },
+    {
+      "key": "rect|mwr8pcf4-0",
+      "frameStart": 82,
+      "frameEnd": 112,
+      "type": "rect",
+      "shape": {
+        "x0": 18.658139534883716,
+        "y0": -20.13529094827586,
+        "x1": 38.36744186046512,
+        "y1": -27.866325431034483
+      }
+    },
+    {
+      "key": "rect|mwr8q9lu-1",
+      "frameStart": 241,
+      "frameEnd": null,
+      "type": "rect",
+      "shape": {
+        "x0": -47.43372093023256,
+        "y0": 22.450915948275863,
+        "x1": -33.11162790697675,
+        "y1": 16.947467672413794
+      }
+    }
+  ],
+  "style": {
+    "homeTeamColor": null,
+    "awayTeamColor": null,
+    "teamVisibility": {
+      "home": true,
+      "away": true
+    }
+  },
+  "analysis": {
+    "sport": "soccer",
+    "eventMap": {
+      "filters": {
+        "scope": "clip",
+        "kinds": [
+          "carry",
+          "off_ball_run"
+        ],
+        "teamId": null,
+        "playerIds": [],
+        "ledTo": "any",
+        "channels": [],
+        "thirds": [],
+        "positions": [],
+        "runTypes": [],
+        "carryStartTypes": [],
+        "carryEndTypes": []
+      },
+      "excludedIds": [
+        "8_860",
+        "8_861",
+        "8_787",
+        "8_786",
+        "1_373",
+        "1_374",
+        "1_375",
+        "1_377",
+        "1_378",
+        "1_379",
+        "1_380",
+        "1_415",
+        "1_414"
+      ],
+      "autoDisappear": false
+    },
+    "passNetwork": {
+      "window": "match",
+      "rangeStartMinute": 0,
+      "rangeEndMinute": 45,
+      "build": "full",
+      "teamId": null
+    },
+    "timelines": [],
+    "eventStyles": {
+      "playerPossession": {
+        "color": "#FFD60A",
+        "width": 2
+      },
+      "passingOption": {
+        "color": "#32D7FF",
+        "width": 2
+      },
+      "onBallEngagement": {
+        "color": "#FF4D9D",
+        "width": 2
+      },
+      "offBallRun": {
+        "color": "#FF6B3D",
+        "width": 2
+      }
+    },
+    "eventVisibility": {
+      "playerPossession": true,
+      "passingOption": true,
+      "onBallEngagement": true,
+      "offBallRun": true
+    }
+  }
+}

@@ -17,7 +17,8 @@ export default function Overlays() {
       <p>
         Each overlay gets a bar under <strong>Overlays</strong> on the timeline. Drag and trim it to set exactly when
         it shows (see <Link to={docsPagePath('playback-and-the-timeline')}>Playback and the timeline</Link>). Event
-        Map and Pass Network have settings, so clicking them opens those first.
+        Map and Pass Network have settings, so clicking them opens those, with <strong>Turn on from here</strong> at
+        the top.
       </p>
 
       <h2>The overlays</h2>
@@ -51,6 +52,9 @@ export default function Overlays() {
         their team's colour. It is a quick way to see the gaps between lines. Like Pitch Control, it follows a player
         you drag.
       </p>
+      <p>
+        See it used in a breakdown: <Link to={docsPagePath('the-overlap')}>The overlap</Link>.
+      </p>
 
       <h3>Event Map</h3>
       <p>
@@ -60,8 +64,8 @@ export default function Overlays() {
       </p>
       <p>
         Untick single events under <strong>Pick individually</strong>, and turn on <strong>Auto Disappear</strong> to
-        clear each event from the pitch once it is over. The Event Map has no bar on the timeline: it is on whenever
-        your filters draw something.
+        clear each event from the pitch once it is over. Your filters pick which events are drawn; the bar picks when
+        they show.
       </p>
 
       <h3>Pass Network</h3>

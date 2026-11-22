@@ -9,8 +9,7 @@ import { DOCS_CONTENT } from './content'
 import { DOCS_GUIDES, docsPagePath, findDocsPage, type DocsGuideId } from './docsNav'
 import './Docs.css'
 
-// Serves a guide's home (no slug) and each of its pages: /docs and /docs/:slug for the user guide,
-// /docs/developers and /docs/developers/:slug for the developer docs.
+// Serves the guide's home (/docs) and each of its pages (/docs/:slug).
 export default function DocsPage({ guide }: { guide: DocsGuideId }) {
   const { slug } = useParams()
   // Moving between pages (from the pager at the foot of one, say) starts the next at its top.
@@ -26,14 +25,9 @@ export default function DocsPage({ guide }: { guide: DocsGuideId }) {
       <DocsSidebar guide={guide} />
       <article className="docs-article">
         <h1 className={`docs-title ${page ? '' : 'docs-title--home'}`}>
-          {page ? page.title : guide === 'user' ? 'Make your point on the pitch.' : 'Developer docs'}
+          {page ? page.title : 'Make your point on the pitch.'}
         </h1>
-        {page ? null : guide === 'developers' ? (
-          <p className="docs-lede">
-            How {APP_CONFIG.brand.title} is built and why: the path match data takes from the provider to the pitch,
-            and the decisions behind it.
-          </p>
-        ) : (
+        {page ? null : (
           <>
             <p className="docs-lede">
               {APP_CONFIG.brand.title} is a whiteboard with a library of real matches you can load onto it. The player

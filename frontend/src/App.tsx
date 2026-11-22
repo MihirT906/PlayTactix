@@ -34,8 +34,6 @@ const ROUTES = {
   workspace: '/matches/:matchId',
   docs: '/docs',
   docsPage: '/docs/:slug',
-  developerDocs: '/docs/developers',
-  developerDocsPage: '/docs/developers/:slug',
 } as const
 
 const workspacePath = (matchId: number) => `/matches/${matchId}`
@@ -565,8 +563,6 @@ function AppContent({
 
           <Route path={ROUTES.docs} element={<DocsPage guide="user" />} />
           <Route path={ROUTES.docsPage} element={<DocsPage guide="user" />} />
-          <Route path={ROUTES.developerDocs} element={<DocsPage guide="developers" />} />
-          <Route path={ROUTES.developerDocsPage} element={<DocsPage guide="developers" />} />
 
           <Route path="*" element={<Navigate to={ROUTES.landing} replace />} />
           </Routes>

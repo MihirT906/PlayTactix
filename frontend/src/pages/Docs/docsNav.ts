@@ -10,9 +10,9 @@ export type DocsNavSection = {
   pages: DocsNavPage[]
 }
 
-// The docs come in two guides, each with its own home, sidebar and page order: one for people
-// using the app, one for people working on its code.
-export type DocsGuideId = 'user' | 'developers'
+// The docs are one guide, for people using the app. It keeps the guide shape (its own home, sidebar and
+// page order) so another guide could sit beside it later.
+export type DocsGuideId = 'user'
 
 export type DocsGuide = {
   id: DocsGuideId
@@ -24,7 +24,6 @@ export type DocsGuide = {
 const brand = APP_CONFIG.brand.title
 
 export const DOCS_HOME_PATH = '/docs'
-export const DEVELOPER_DOCS_HOME_PATH = '/docs/developers'
 
 export const DOCS_GUIDES: Record<DocsGuideId, DocsGuide> = {
   user: {
@@ -58,24 +57,11 @@ export const DOCS_GUIDES: Record<DocsGuideId, DocsGuide> = {
           { slug: 'saving-and-loading-projects', title: 'Saving and loading projects' },
         ],
       },
-    ],
-  },
-  developers: {
-    id: 'developers',
-    title: 'Developers',
-    homePath: DEVELOPER_DOCS_HOME_PATH,
-    sections: [
       {
-        title: 'How it works',
+        // Worked analyses of real match moments, using the tools from the deep dive.
+        title: 'Breakdowns',
         pages: [
-          { slug: 'architecture', title: 'Architecture' },
-        ],
-      },
-      {
-        title: 'Design decisions',
-        pages: [
-          { slug: 'frame-data-caching-proposal', title: 'Frame data caching proposal' },
-          { slug: 'multi-user-match-caching', title: 'Multi-user match caching' },
+          { slug: 'the-overlap', title: 'The overlap' },
         ],
       },
     ],
@@ -85,9 +71,7 @@ export const DOCS_GUIDES: Record<DocsGuideId, DocsGuide> = {
 // Every page of a guide in sidebar order, across its sections.
 const guidePages = (guide: DocsGuideId) => DOCS_GUIDES[guide].sections.flatMap((section) => section.pages)
 
-const guideOf = (slug: string): DocsGuideId => (guidePages('developers').some((page) => page.slug === slug) ? 'developers' : 'user')
-
-export const docsPagePath = (slug: string) => `${DOCS_GUIDES[guideOf(slug)].homePath}/${slug}`
+export const docsPagePath = (slug: string) => `${DOCS_GUIDES.user.homePath}/${slug}`
 
 export const findDocsPage = (guide: DocsGuideId, slug: string) =>
   guidePages(guide).find((page) => page.slug === slug) ?? null

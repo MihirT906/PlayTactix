@@ -17,18 +17,10 @@ const PITCH_MARKERS = [
 export default function TheWorkspace() {
   return (
     <>
-      <div className="docs-split">
-        <div>
-          <p>Once a match is open, you're in the workspace, where you turn it into a clip.</p>
-          <p>
-            Here is one being built from a Western Sydney goal against Wellington. On the pitch, Wellington's defensive
-            block is outlined, Cléùr is in the spotlight, and a box marks the open space ahead of him. Below, the
-            timeline charts the threat of each off-ball run and sets when each piece of the clip shows.
-          </p>
-          <p>The rest of this page shows how to create your own clip.</p>
-        </div>
-        <Media src="workspace-layout.jpeg" caption="A clip in progress in the workspace." />
-      </div>
+      <p>
+        Once a match is open, you're in the workspace, where you turn it into a clip. For a finished one, see{' '}
+        <Link to={docsPagePath('the-overlap')}>The overlap</Link>.
+      </p>
 
       <h2>Reading the pitch</h2>
       <p>A match opens on its first two minutes. Press play, and markers show what the players are doing:</p>
@@ -52,7 +44,7 @@ export default function TheWorkspace() {
         Open <strong>Overlays</strong> and click one, such as Pass Probability.{' '}
         <Link to={docsPagePath('overlays')}>More on overlays</Link>
       </p>
-      <Media src="workspace-overlay.mp4" caption="Turning on Pass Probability to read a decision." />
+      <Media src="overlays.mp4" caption="Opening Overlays and turning on each overlay in turn." />
 
       <h3>3. Draw on the play</h3>
       <p>

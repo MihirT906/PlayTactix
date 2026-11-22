@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import type { IconType } from 'react-icons'
 import { GiAbstract006, GiFlagObjective, GiHoneycomb, GiNodular, GiPathDistance, GiTargeting } from 'react-icons/gi'
 import { useMatchSession } from '../context/MatchSessionContext'
@@ -6,7 +6,6 @@ import type { KeyMomentsData } from '../types/KeyMomentsDataInterfaces'
 import type { MatchData } from '../types/MatchDataInterfaces'
 import { OVERLAY_SEGMENT_LABELS, type OverlaySegmentKind } from '../types/ClipInterfaces'
 import { findOverlayAt } from '../services/clipManager'
-import { buildEventMapItems, resolveEventMap } from '../plot/overlays/eventMapOverlay'
 import EventMapPanel from './EventMapPanel'
 import PassNetworkPanel from './PassNetworkPanel'
 import { track } from '../services/analytics'
@@ -42,20 +41,6 @@ function OverlaysTab({
 
   const isShowing = (kind: OverlaySegmentKind) => findOverlayAt(clip, kind, currentClipFrame) !== undefined
   const isAtClipEnd = currentClipFrame >= clip.length
-
-  // The Event Map has no bar of its own; it counts as on while its filters draw anything.
-  const eventMapItems = useMemo(() => buildEventMapItems(keyMomentsData?.events), [keyMomentsData])
-  const eventMapCount = useMemo(
-    () =>
-      resolveEventMap(
-        eventMapItems,
-        session.overlays.eventMapFilters,
-        session.overlays.eventMapExcludedIds,
-        clip.matchSegments,
-        matchData?.match_periods ?? [],
-      ).drawn.length,
-    [eventMapItems, session.overlays.eventMapFilters, session.overlays.eventMapExcludedIds, clip.matchSegments, matchData],
-  )
 
   // Each overlay turns on or off from the current frame: on runs it to the end of the clip (or the next
   // bar of its type), off ends the bar showing here.
@@ -105,19 +90,19 @@ function OverlaysTab({
               </button>
             )
           })}
+          {/* The Event Map and Pass Network have settings, so their buttons open them; each is turned on and off from there. */}
           <button
             type="button"
-            className={`app-header-action workspace-sidebar-action timeline-add-option${eventMapCount > 0 ? ' is-active' : ''}`}
+            className={`app-header-action workspace-sidebar-action timeline-add-option${isShowing('event_map') ? ' is-active' : ''}`}
             aria-expanded={openPanel === 'event_map'}
             aria-controls="event-map-panel"
-            title={eventMapCount > 0 ? `Drawing ${eventMapCount} events. Open to change the filters.` : 'Choose events to draw'}
+            title={isShowing('event_map') ? 'Showing now. Open to change the filters.' : 'Open to choose events and turn on'}
             onClick={() => togglePanel('event_map')}
           >
             <GiFlagObjective aria-hidden="true" />
-            <span>Event Map</span>
-            {eventMapCount > 0 ? <span className="overlay-option-state">On</span> : null}
+            <span>{OVERLAY_SEGMENT_LABELS.event_map}</span>
+            {isShowing('event_map') ? <span className="overlay-option-state">On</span> : null}
           </button>
-          {/* The Pass Network has settings, so like the Event Map its button opens them; it is turned on and off from there. */}
           <button
             type="button"
             className={`app-header-action workspace-sidebar-action timeline-add-option${isShowing('pass_network') ? ' is-active' : ''}`}
@@ -140,7 +125,12 @@ function OverlaysTab({
 
         {openPanel === 'event_map' ? (
           <div id="event-map-panel">
-            <EventMapPanel keyMomentsData={keyMomentsData} matchData={matchData} />
+            <EventMapPanel
+              keyMomentsData={keyMomentsData}
+              matchData={matchData}
+              isOn={isShowing('event_map')}
+              onToggle={() => handleOverlayToggle('event_map')}
+            />
           </div>
         ) : null}
 

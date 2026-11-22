@@ -21,6 +21,8 @@ import './KeyMomentFinderComponent.css'
 type EventMapPanelProps = {
   keyMomentsData: KeyMomentsData | null
   matchData: MatchData | null
+  isOn: boolean // Whether the overlay is showing at the current frame
+  onToggle: () => void // Turns it on or off from the current frame
 }
 
 // The one-word type shown on a list row.
@@ -51,7 +53,7 @@ const LED_TO_OPTIONS: Array<{ value: EventMapFilters['ledTo']; label: string }> 
 
 const uniqueValues = (values: string[]) => Array.from(new Set(values.filter(Boolean))).sort()
 
-function EventMapPanel({ keyMomentsData, matchData }: EventMapPanelProps) {
+function EventMapPanel({ keyMomentsData, matchData, isOn, onToggle }: EventMapPanelProps) {
   const [isMoreOpen, setIsMoreOpen] = useState(false)
   const [isListOpen, setIsListOpen] = useState(false)
   const { session, updateEventMapFilters, setEventMapExcludedIds, resetEventMap, setAutoDisappearEvents } = useMatchSession()
@@ -107,6 +109,13 @@ function EventMapPanel({ keyMomentsData, matchData }: EventMapPanelProps) {
 
   return (
     <div className="key-moment-groups">
+      <div className="event-map-summary" role="status">
+        <span>{isOn ? 'Showing at this frame' : 'Not showing at this frame'}</span>
+        <button type="button" className="key-moment-toggle" onClick={onToggle}>
+          {isOn ? 'Turn off from here' : 'Turn on from here'}
+        </button>
+      </div>
+
       <section className="key-moment-filter-section" aria-label="Event map filters">
         <FilterRow label="Scope">
           <SegmentedControl
@@ -250,8 +259,8 @@ function EventMapPanel({ keyMomentsData, matchData }: EventMapPanelProps) {
         ) : null}
       </section>
 
-      <div className="event-map-summary" role="status">
-        <span>{filters.kinds.length === 0 ? 'Choose what to show.' : `${drawn.length} on the pitch`}</span>
+      <div className="event-map-summary">
+        <span>{filters.kinds.length === 0 ? 'Choose what to show.' : `${drawn.length} chosen`}</span>
         <button type="button" className="key-moment-toggle" onClick={resetEventMap}>
           Clear
         </button>

@@ -204,6 +204,7 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
   const sequenceTrailsOverlay = findOverlayAt(session.playback.clip, 'sequence_trails', clipFrame)
   const isVoronoiActive = findOverlayAt(session.playback.clip, 'voronoi', clipFrame) !== undefined
   const isPassNetworkActive = findOverlayAt(session.playback.clip, 'pass_network', clipFrame) !== undefined
+  const isEventMapActive = findOverlayAt(session.playback.clip, 'event_map', clipFrame) !== undefined
   // Annotation tools only work while paused: the selected tool is suspended during playback and back on pause.
   const selectedTool = session.ui.editMode
   const editMode = isPlaying ? null : selectedTool
@@ -722,14 +723,16 @@ const PlotComponent: React.FC<PlotComponentProps> = ({ currentFrame, clipFrame, 
   // The Event Map split by how it is drawn: the ball moving (a pass) as a comet, a player moving (a
   // carry or an off ball run) as an arrow.
   const eventMap = useMemo(() => {
-    const visible = session.overlays.autoDisappearEvents
-      ? eventMapDrawn.filter((event) => currentFrame <= event.frameEnd)
-      : eventMapDrawn
+    const visible = !isEventMapActive
+      ? []
+      : session.overlays.autoDisappearEvents
+        ? eventMapDrawn.filter((event) => currentFrame <= event.frameEnd)
+        : eventMapDrawn
     return {
       passes: visible.filter((event) => event.kind === 'pass'),
       movements: visible.filter((event) => event.kind !== 'pass'),
     }
-  }, [eventMapDrawn, session.overlays.autoDisappearEvents, currentFrame])
+  }, [eventMapDrawn, isEventMapActive, session.overlays.autoDisappearEvents, currentFrame])
 
   // --- Drag-to-reposition players while paused -----------------------------
   // Plotly can't drag individual scatter points, so we hit-test the player
